@@ -1,7 +1,12 @@
-Simple Dungeon
+Simple dungeon : Avator chat / MMO enabler
 
 
-"Simple Dungeon" provides a set of web apis to run avator chat service upon.
 
+Summary: "Simple dungeon" provides a set of web APIs to run avator chat service upon.
 
+License: GNU General Public License (GPL).
+
+Requirements:
+  Erlang/OTP
+  Yaws
 
