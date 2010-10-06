@@ -1,0 +1,56 @@
+Simple dungeon API Reference
+
+- Overview
+
+To use Simple dungeon, client program calls web apis, and get result with JSON format.
+
+The client programs
+
+
+
+
+- APIs
+
+
+1) login (player)
+
+Method: POST
+Path: /login
+Parameters:
+  id
+  password
+
+
+
+
+
+2) logout (player)
+
+Method: POST
+Path: /logout
+Parameters:
+  cid
+  token
+
+
+
+3) talk (player)
+
+
+
+4) set property (player)
+
+
+5) get in-game information (player)
+
+
+6) change login password (player)
+
+
+
+7) login (admin)
+
+8) logout (admin)
+
+9) get list of players (admin)
+

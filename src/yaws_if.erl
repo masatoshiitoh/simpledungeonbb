@@ -24,9 +24,34 @@
 -include("mmoasp.hrl").
 -compile(export_all).
 
-% yawsのモジュール。
+% Module for Yaws.
 
 
+%% GET version of login. This is only for test with web browser.
+%% This will be disabled soon.
+out(A, 'GET', ["service", SVID, "login"]) ->
+	Params = dict:from_list(yaws_api:parse_query(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	%% io:format("yaws_if. login requested. ~p~n", [Id]),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = mmoasp:login(self(), Id, Pw, Ipaddr),
+	case Result of
+		{ok, Cid, Token} ->
+			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
+		{ng} ->
+			mout:return_html(mout:encode_json_array_with_result("failed", []))
+	end;
+
+
+%% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
+out(A, 'GET', ["service", SVID, "stream", "listtoknow", CID]) ->
+	spawn(character_stream, start, [CID,A#arg.pid]),
+	{streamcontent, "text/html", ""};
+
+
+
+% Add New Player Character.
 out(A, 'POST', ["service", SVID, "subscribe"]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Id = param(Params, "id"),
@@ -42,7 +67,8 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
-%% sample for "GET http://localhost:8002/service/hibari/change_password/?id=id0001&password=pw0001&newpassword=pw9991"
+%% Change Password.
+%% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
 out(A, 'POST', ["service", SVID, "change_password"]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Id = param(Params, "id"),
@@ -58,13 +84,8 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 	end;
 
 
-%% stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
-out(A, 'GET', ["service", SVID, "stream", "listtoknow", CID]) ->
-	spawn(character_stream, start, [CID,A#arg.pid]),
-	{streamcontent, "text/html", ""};
-
-
-%% sample for "GET http://localhost:8002/service/hibari/login/?id=id0001&password=pw0001"
+%% Login
+%% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
 out(A, 'POST', ["service", SVID, "login"]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Id = param(Params, "id"),
@@ -81,24 +102,9 @@ out(A, 'POST', ["service", SVID, "login"]) ->
 	end;
 
 
-%% こっちはブラウザで確認できるGET版。本番ではパスワードをURL埋め込みするのは避けたいのでGETは使いません。
-out(A, 'GET', ["service", SVID, "login"]) ->
-	Params = dict:from_list(yaws_api:parse_query(A)),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	%% io:format("yaws_if. login requested. ~p~n", [Id]),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:login(self(), Id, Pw, Ipaddr),
-	case Result of
-		{ok, Cid, Token} ->
-			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
-		{ng} ->
-			mout:return_html(mout:encode_json_array_with_result("failed", []))
-	end;
 
-
-
-%% sample for "GET http://localhost:8001/service/hibari/logout/cid0001?token=Token"
+%% Logout
+%% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
 out(A, 'POST', ["service", SVID, "logout", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Token = param(Params, "token"),
@@ -110,20 +116,21 @@ out(A, 'POST', ["service", SVID, "logout", CidX]) ->
 		{ng} ->
 			mout:return_json(mout:encode_json_array_with_result("failed",[]))
 	end;
-	
-%% sample for "GET http://localhost:8002/service/hibari/listtoknow/cid0001?token=Token"
+
+%% Get list to know (Your client calls this every xx sec.)
+%% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
 out(A, 'POST', ["service", SVID, "listtoknow", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Token = param(Params, "token"),
 	%% io:format("yaws_if. listtoknow requested. ~p~n", [CidX]),
-
 	X = world:get_session(CidX),
 	X#session.pid ! {self(), update_neighbor_status, 10},
 
 	{ListToKnow, NeighborStats} = mmoasp:get_list_to_know(self(), CidX, Token),
 	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
 
-%% sample for "GET http://localhost:8001/service/hibari/talk/cid1234?token=Token&talked=hello"
+%% Talk (open talk)
+%% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
 out(A, 'POST', ["service", SVID, "talk", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Token = param(Params, "token"),
@@ -132,7 +139,22 @@ out(A, 'POST', ["service", SVID, "talk", CidX]) ->
 	Result = mmoasp:talk(open, CidX, Talked, 100),
 	mout:return_json(json:encode({struct, [Result]}));
 
-%% sample for "GET http://localhost:8001/service/hibari/move/cid1234?token=Token&x=3&y=3"
+%% Whisper (person to person talk)
+%% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
+out(_A, 'GET', ["service", SVID, "whisper", CidX, TalkTo, Talked]) ->
+	[{character, Cid, Pid}] = world_server:lookup(CidX),
+	Clist = world_server:test_getdump(),	%% NOT IMPLEMENTED.
+	lists:map(fun({character, _CidN, PidN}) ->
+			PidN ! {self(), {talk, Cid, Talked}}
+		end,
+		Clist),
+	{html,
+		io_lib:format(
+			"(~p) Talk by ~p (Pid = ~p) => ~p<br>",
+			[SVID,Cid,Pid,Talked])};
+
+%% Move
+%% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
 out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Token = param(Params, "token"),
@@ -144,21 +166,8 @@ out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	%	mout:return_json(json:encode({struct, [Result]}));
 
 
-
-%% sample for "GET http://localhost:8001/service/hibari/talk/cid1234/hello"
-out(_A, 'GET', ["service", SVID, "whisper", CidX, TalkTo, Talked]) ->
-	[{character, Cid, Pid}] = world_server:lookup(CidX),
-	Clist = world_server:test_getdump(),	%% ここはgroup_serverに問い合わせるよう変更
-	lists:map(fun({character, _CidN, PidN}) ->
-			PidN ! {self(), {talk, Cid, Talked}}
-		end,
-		Clist),
-	{html,
-		io_lib:format(
-			"(~p) Talk by ~p (Pid = ~p) => ~p<br>",
-			[SVID,Cid,Pid,Talked])};
-
-%% sample for "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
+%% Set attribute
+%% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
 out(A, 'GET', ["service", SVID, "set", Cid, Key]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Value = param(Params, "value"),
@@ -203,8 +212,9 @@ out(A, 'GET', ["service", SVID, "setgood", CidX]) ->
 	{html, io_lib:format("setgood called.<br>", [])};
 
 
+%% Json sending test code.
 %% sample for "GET http://localhost:8002/service/hibari/json"
-%% 参考になる→ http://d.hatena.ne.jp/takkkun/20080626/1214468050
+%% Thanks to http://d.hatena.ne.jp/takkkun/20080626/1214468050
 out(_A, 'GET', ["service", SVID, "json"]) ->
 	mout:return_json(json:encode({struct, [{"field1", "foo"}, {field2, "gova"}]}));
 

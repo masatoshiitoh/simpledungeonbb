@@ -1,0 +1,37 @@
+======================================
+7 Steps to start Simple dungeon server
+======================================
+
+1st setup ? Please follow Step 1 to Step 7.
+re-run it? you need to do "Step 7" only.
+
+
+
+Required OS: Windows or Linux
+
+
+
+
+Step 1) Install Erlang/OTP and Yaws
+
+
+Step 2) Unzip and place Simple dungeon files.
+
+
+Step 3) Modify yaws.conf
+
+
+Step 4) Start yaws
+
+
+Step 5) Initialize DB.
+
+
+Step 6) run Test
+
+
+Step 7) run Simple dungeon.
+
+
+
+
