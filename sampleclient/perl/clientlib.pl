@@ -27,7 +27,7 @@ use Data::Dumper;
 use JSON;
 use Jcode;
 
-# これはmmoasp apiをインタラクティブに操作するためのスクリプトです。
+# This is a 'simple dungeon' api caller library.
 
 my $base_url = "http://localhost:8002";
 

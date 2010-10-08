@@ -3,16 +3,20 @@ Using perl test client.
 
 General information:
 
-account list
+1) account list
+
+In this release, following 4 ids are installed.
+You can add new ids with subscribe interface.
+
 id0001 pw0001
 id0002 pw0002
 id0003 pw0003
 id0004 pw0004
 
 
-Map.
+2) Map
 
--01234
++01234
 0xxxxx
 1x   x
 2x x x
@@ -25,12 +29,18 @@ x: wall
 
 Start perl client in this package.
 
-Step 1) clientlib.plのURL定義を変更
+Step 1) check access url in clientlib.pl
+
 perl test.pl
-プロンプトから
+prompt>
+
 login id0001 pw0001
 talk hello
-get
 move 3 1
+move 1 3
 logout
+get
+
+
+
 

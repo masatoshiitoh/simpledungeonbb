@@ -6,32 +6,127 @@
 re-run it? you need to do "Step 7" only.
 
 
-
-Required OS: Windows or Linux
-
-
+Requirement:
+  OS: Windows or Linux
 
 
-Step 1) Install Erlang/OTP and Yaws
+------------------------------------------
+Step 1) Unzip and place Simple dungeon files.
+------------------------------------------
+
+If you got this package with zip file, half of this step is already done. :)
+
+Put unziped files in certain directry.
 
 
-Step 2) Unzip and place Simple dungeon files.
+
+------------------------------------------
+Step 2) Install Erlang/OTP and Yaws
+------------------------------------------
+
+Please download Erlang/OTP and Yaws installer from following sites.
+
+Erlang/OTP : http://www.erlang.org/
+Yaws : http://yaws.hyber.org/
 
 
+When you've done this step, you can run "erl" (Erlang command line shell) and "yaws" from your shell.
+
+Erlang:
+  $ erl [ENTER]
+
+Yaws:
+  $ yaws -i [ENTER]
+
+To exit from erl/yaws shell:
+  Enter "q().[ENTER]"
+
+
+
+------------------------------------------
 Step 3) Modify yaws.conf
+------------------------------------------
+
+Add simple dungeon configuration in your yaws.conf with text editor.
+
+Please change BASEIDR to real directory name that you put them in.
+
+====================================================
+
+ebin_dir = "BASEDIR/trunk/ebin"
+<server erlangtestserver>
+        port = 8002
+        listen = 0.0.0.0
+        docroot  = "BASEDIR/trunk/docroot"
+        appmods = </service, yaws_if>
+</server>
+
+====================================================
 
 
-Step 4) Start yaws
+
+------------------------------------------
+Step 4) build BEAM files
+------------------------------------------
+
+Compile .erl files to .beam file.
+
+From command shell:
+
+$ cd BASEDIR/trunk/src
+$ erl -make
+$ cp *.beam ../ebin
 
 
-Step 5) Initialize DB.
+
+------------------------------------------
+Step 5) Start yaws
+------------------------------------------
+
+Run yaws web server.
+With above setting, yaws binds 8002/TCP to Simple dungeon service.
+
+  $ yaws -i [ENTER]
+
+With "-i" option, yaws runs  interactive mode.
 
 
-Step 6) run Test
+
+------------------------------------------
+Step 6) Check
+------------------------------------------
+
+On yaws interactive mode:
+
+DB setup.
+> mmoasp:change_schema().
+
+Test.
+> mmoasp:run_tests().
 
 
+
+------------------------------------------
 Step 7) run Simple dungeon.
+------------------------------------------
 
+On yaws interactive mode:
+
+> mmoasp:start().
+
+
+You will see output like this.
+---------------------------------
+make_edge {pos,1,1} to {pos,2,1}  ok with ['$e'|0]
+   :
+   :
+make_edge {pos,3,3} to {pos,3,2}  ok with ['$e'|15]
+{ok,<0.209.0>}
+3>
+---------------------------------
+
+Did you get "{ok, <**.**.**>}" line ?
+Now, simple dungeon is on.  Let's try it with sample clients.
 
 
 
