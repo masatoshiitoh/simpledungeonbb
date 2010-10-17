@@ -25,6 +25,7 @@ use LWP::UserAgent;
 use HTTP::Request::Common qw(POST GET);
 use Data::Dumper;
 use JSON;
+use Jcode;
 
 # This is a 'simple dungeon' api caller library.
 
@@ -179,6 +180,10 @@ sub get_list_to_know
 sub talk
 {
 	$talked = shift;
+	
+	@result = getcode(\$talked);
+	print $result[0] . "\n";
+	Jcode::convert(\$talked, "utf8");
 	my $target_url = "$base_url/service/$sv/talk/$cid"; 
 	my %params = ('token' => $token, 'talked' => $talked);
 	return &call_api($target_url, %params);
