@@ -31,44 +31,46 @@ stop()	-> gen_server:call(?MODULE, stop).
 
 lookup_path(StartPos, DestPos)	-> gen_server:call(?MODULE, {lookup, StartPos, DestPos}).
 
+
 init([]) ->
-	% 有向グラフの準備
+	% setup digraph.
 	G = digraph:new(),
 	
-	% mapのローディング処理
+	%% ** Place map loading here. **
 	
-	% 1次元配列に詰め込まれたmapタプルを作る
+	
+	
+	% Make an array holds map tupples.
 	Map = path_finder:make_map_from_arraymap(path_finder:arraymap(),5, 5),
 	
-	% mapタプルの中身を使って、各マスをVertexとして取り出す。VertexをAddしたときにマスの名前（posのタプル）との対応を保持してPListとして返す
+	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
 	{G, PList } = path_finder:make_all_vertex(Map,G),
 	
-	% posタプルからVertexを参照したい。という名前解決するためのdictを作る
+	% dictionary for pos tupple - vertex reference.
 	VertexDict = dict:from_list(PList),
 	
-	% mapタプルの中身から隣接セルへの移動可能な「辺」を調べ、Gに追加していく
+	% fill connected path by Map into G
 	path_finder:make_all_edges(Map, G, VertexDict, PList),
 	
-	% Vertexからposタプルを参照したい、という名前解決するためのdictを作る
+	% dictionary for vertex - pos reference.
 	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),
 	
-	% 初期化完了!
+	% End of initialize.
 	{ok, {map, Map, G, PList, VertexDict, RevDict}}.
 
+% How to use multiple maps:
+%
+% 1. Hold multiple G/Map/PosList/VertexDict/RevDict sets.
+% 2. Hold one G, multiple Map/PosList/VertexDict/RevDict sets.
 
-% 複数マップをサポートする方法
-% G/Map/PosList/VertexDict/RevDictを複数持つ
-% Gは1つ、Map/PosList/VertexDict/RevDictを複数持つ
 
-% この第3引数のTabが「引き回しデータ」になっている
-% handle_callの戻りで違うTabを戻すと、次のhandle_callではそのTabになってる。
-% とりあえず処理のたびに何かされるデータの引き回しはこれでやるんだね
 
 handle_call({lookup, StartPos, DestPos}, _From, {map, Map, G, PList, VertexDict, RevDict}) ->
 	{reply,
 		{ok,
 			pick_path(G, VertexDict, RevDict, StartPos, DestPos)},
 			{map, Map, G, PList, VertexDict, RevDict}};
+
 handle_call(stop, _From, State) ->
 	{stop, normal, stopped, State}.
 
@@ -78,7 +80,7 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
-% 先頭は「現在位置」。
+% path top is current position ( not a first waypoint! )
 pick_path(G, VertexDict, RevDict, StartPos, DestPos) ->
 	{ok, StartVertex} = dict:find(StartPos, VertexDict),
 	{ok, DestVertex} = dict:find(DestPos, VertexDict),

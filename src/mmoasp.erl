@@ -28,8 +28,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 %-----------------------------------------------------------
-% このファイルに、外部(当面はyaws_if)向けAPIを集約する。
-% 外に出さない関数は別ファイルに移す。
+%% implement simple api for yaws_if.erl
 %-----------------------------------------------------------
 
 %% admnistration use.
@@ -190,11 +189,15 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 		Other -> Other
 	end.
 
-%%※ loginの代入を失敗すると(束縛済み変数に代入しようとしたり)、子プロセスがとりあえず起動してしまう。spawnと代入がアトミックではないので、常に「生成したのに失敗する」という可能性がある。チェックによる自動終了はおこなわず。タイムアウト自動ログアウトで、一定時間後に復旧するのを利用する。
-% caution !!
-% General purpose setter.(use this for configuration store, or other misc operation.
-% DO NOT USE for set gaming parameters(like hit point or money) from client.).
-
+% caution!
+% mmoasp:login/4 cannot detect its failure before return value.
+% for example,
+% > a = 1,
+% > a = login(.....)
+%
+% in such case, requested character will be set to on-line, but no one can handle it.
+% Timeout mechanism will clear this situation.
+%
 login(From, Id, Pw, Ipaddr) ->	uauth:db_login(From, Id, Pw, Ipaddr).
 logout(From, Cid, Token) ->
 	case uauth:db_logout(From, Cid, Token) of
@@ -206,6 +209,11 @@ stop_all_characters(From) -> world:stop_all_characters(From).
 
 knock_all_characters(From) ->
 	world:knock_all_characters(From).	% knock_all is send 'whoareyou' to all character processes.
+
+
+% caution !!
+% General purpose setter.(use this for configuration store, or other misc operation.
+% DO NOT USE for set gaming parameters(like hit point or money) from client.).
 
 setter(From, Cid, Token, Key, Value) ->character:setter(From, Cid,Token, Key, Value).
 
@@ -319,8 +327,7 @@ move(Cid, DestPos) ->
 			world:apply_session(Cid, FS)
 	end.
 
-%% ここまで動いた。
-%% この下は開発中。
+%% Following codes are under developing...
 
 %talk(group, SenderCid, GroupId, MessageBody) ->
 %	[talk_to(X#state.pid, SenderCid, MessageBody, open)

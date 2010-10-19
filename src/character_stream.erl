@@ -23,13 +23,8 @@
 -include_lib("mmoasp.hrl").
 -compile(export_all).
 
-% 設定に基づいてyaws_ifモジュールに起動されます(streamリクエストがきたときに)。
-% 1キャラクタに1つのcharacter_streamプロセスが起動されます。
-% 一定時間ごとにcharacterに「状況リストをよこせ」をリクエストします。
-% リクエストして入手した状況リストはyawsのstreamに送出します。
 
-% 未実装:
-% characterが終了するときには、のこりの状況を送出するとともにyawsのstreamプロセスに終了を通知します
+%% UNDER CONSTRUCTION !!!
 
 start(Cid, YawsPid) ->
 	Sess = world:get_session(Cid),
@@ -38,7 +33,7 @@ start(Cid, YawsPid) ->
 	F = fun() -> mnesia:write(Sess#session{stream_pid = StreamPid}) end,
 	mnesia:transaction(F).		
 
-% Sess は、対応するcharacterモジュールのプロセスを含むsession型データ。
+% Sess: holds session type data that has character module process.
 loop(Sess, YawsPid) ->
 	link(YawsPid),		% this 'link' works "process living checker".
 	{A1, S1} = mmoasp:get_list_to_know(self(), Sess#session.cid, Sess#session.token),

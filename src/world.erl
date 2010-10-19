@@ -60,7 +60,7 @@ apply_location(Cid, F) ->
 apply_cid_indexed_table(Cond, F) ->
 	L = fun() ->
 		case qlc:e(Cond) of
-			[] -> {ng, "no such character"};	% この返し方だと、値が{atomic, {ng,"no~"}}となる。どする？
+			[] -> {ng, "no such character"};	% this style makes return value as {atomic, {ng,"no~"}}
 			[R] -> F(R)
 		end
 	end,

@@ -24,30 +24,21 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
-%% 外部向けAPI
+
+
 db_subscribe(_From, Svid, Id, Pw, Ipaddr)->
 	create_account(Svid, Id, Pw).
-
-
-
-
-
 
 create_account(Svid, Id, Pw) ->
 	db:add_single(Id, Pw).
 
 
-
-
-%% ok, this function tested.
 db_change_password(_From, Svid, Id, Pw, NewPw, Ipaddr)->
 	case get_cid({basic, Id, Pw}) of
 		void -> {ng, check_id_and_password};
 		Cid -> basic_change_password(Cid,NewPw)
 	end.
 
-
-%% ok, this function tested.
 basic_change_password(Cid, NewPw) ->
 	mnesia:transaction(fun() ->
 		case mnesia:read({auth_basic, Cid}) of
@@ -58,10 +49,6 @@ basic_change_password(Cid, NewPw) ->
 				ok
 			end
 		end).
-		
-
-
-
 
 db_login(_From, Id, Pw, Ipaddr)->
 	Loaded = load_character(Id,Pw),
@@ -92,7 +79,7 @@ db_login(_From, Id, Pw, Ipaddr)->
 		end.
 
 
-% キャラクタプロセスのみが呼ぶ。
+% db_logout : this will be called by character process.
 db_logout(_From, Cid, _Token) ->
 	io:format("character:logout(~p)~n", [Cid]),
 	Radius = 100,

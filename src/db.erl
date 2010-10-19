@@ -82,7 +82,7 @@ do_this_once() ->
 	mnesia:stop().
 
 %% *************************
-%% 以下は本番稼働では基本的に不要なコードです
+%% following codes are only for developing use.
 %% *************************
 
 demo(select_auth) ->
@@ -163,14 +163,8 @@ example_tables() ->
 
 	{estate, item_sword01, "cid0001", false},
 	{estate, item_sword02, "cid0001", false},
-	{estate, item_shield01, "cid0002", false}% ,
+	{estate, item_shield01, "cid0002", false}
 	
-
-	%% 以下はテスト用レコード。通常はtradeもstateも空でスタートする。
-%	{trade, u:cid_pair("cid0001", "cid1234"), no,no},
-
-%	{state, "cid0001", void, {192,168,1,1}, u:make_new_id(),void},
-%	{state, "cid1234", void, {192,168,1,2}, u:make_new_id(),void}
 
 	].
 

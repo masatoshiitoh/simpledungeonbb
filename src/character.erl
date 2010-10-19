@@ -39,14 +39,14 @@ stop_child(Cid) ->
 		fun(X) -> X#session.pid ! {self(), stop_process, X#session.token} end).
 
 % core loop -----------------------------------------------
+
 % process user operation.
 % uauth:db_login spawns this loop.
 
+% this loop will expire 1800 second (just hard coded) after last operation.
+
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
-% receiveのパターンマッチにより、届いたメッセージが正しいトークンのときだけ処理が起動します。
-% ここから呼ばれる関数はトークンには問題がなかったとしていきなり処理していい。
-% loopのガード節で動き分ける。「タイムアウトしたときに自動ログアウト」。
 loop(Cid, _CData, _EventQueue, _StatDict, Token, _UTimer, {idle, SinceLastOp, _LastOp})
 	when SinceLastOp > 1800*1000*1000->
 	
@@ -60,7 +60,6 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			morningcall:cancel_all(UTimer),
 			From ! {ok, Cid};
 		
-		%% list_to_knowを送信。
 		{From, request_list_to_know, Token} ->
 			From ! {list_to_know, get_elements(EventQueue), get_stats(StatDict)},
 			% io:format("character: get request_list_to_know. ~p~n", [EventQueue]),
@@ -116,15 +115,14 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			SelfPid ! {_From, move, CurrPos, WayPoints},
 			loop(Cid, CData, EventQueue, StatDict, Token, UTimer, mk_idle_reset());
 
+		% interval-timer base character move:
 		{_From, move, CurrPos, WayPoints} ->
-			% 先頭を取り、現在位置→取り出した位置、を再帰し、ウェイポイントリストが空になったら終了。
 			db_setpos(Cid, CurrPos),
 			case WayPoints of
 				[] -> 
 					%%io:format("character: ~p arrived at: ~p~n", [Cid, CurrPos]),
 					loop(Cid, CData, EventQueue, StatDict, Token, UTimer, mk_idle_update(LastOp));
 				[H | T] -> 			
-					% ここは「次のタイムサイクルでmorningcallに呼んでほしい関数を作成/登録するだけ」
 					%%io:format("character: ~p start move: ~p to ~p ~n", [Cid, CurrPos, H]),
 					Radius = 100,
 					mmoasp:notice_move(Cid, {transition, CurrPos, H, 1000}, Radius),

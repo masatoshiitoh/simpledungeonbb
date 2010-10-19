@@ -55,7 +55,7 @@ store_kvpairs(KVPairList, Dict) ->
 		V -> dict:store(K, V, Dict)
 	end).
 
-% 最初のシンプルすぎる実装。
+% First implementation: its too simple...
 %store_kvpairs(KVPairList, Dict) ->
 %	[{K,V}|T] = KVPairList,
 %	store_kvpairs(T, dict:store(K,V, Dict)).

@@ -20,44 +20,35 @@
 
 
 %% Mnesia table structure
-%% 全域で、CIDとIDはSVID付きタプルとする。 {svid, 生cid} , {svid, 生id}
 
-% Admin
+% ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
 -record(admin_session, {key, svid, adm_id, token, last_op_time}).
 
--record(id_next, {svid, next}).  %% これは次のCIDを保持する。取り出すときにアトミックに1インクリメントする。
+-record(id_next, {svid, next}).  %% Holds next CID. Increment when getter called.
 
-% ■認証
+% ** Authentication **
 -record(auth_basic,	{cid, id, pass}). 
 
-% ■共通
+% ** Base **
 -record(private_kv,	{cid, attr}).	%% private (hidden from other player) information(last window position, shortcut...
 -record(cdata,	{cid, name, attr}).
 -record(session, {cid, pid, stream_pid, ipaddr, token}). 
 %-record(friends, {cid, list}).
 -record(money,	{cid,  amount, offer}).
 -record(supplies,	{id, cid, item_id, amount, offer}).
-
-% ■キャラ成長
 %-record(level, {cid, lv, exp}).
 %-record(skill, {cid, list, rest_exp, used_exp}).
 
-% ■MMOっぽい
+% ** MMO style inventory: you can lookup them by character id **
 -record(location, {cid, initmap,initpos, map,  pos}).
 -record(estate,	{item_id, cid, is_offer}).
 -record(trade,	{id, confirm_l, confirm_r}).
 -record(u_trade, {cid, tid}).
 -record(neighbors, {cid, list, updated}).
 
-%% inventory: you can lookup them by character id.
-%% cid を、{cid, SID, CID}のかたちに拡張することでマルチサービス対応にする。
-%% 最初はシングル想定でいい。タプル同士の大小比較も問題なく動く
-%% （falseの逆条件はちゃんとtrueで返ってくる）
-
 %% item master table.
 %-record(m_item,		{id, data}).
-
 
 %% Just records. Not for Mnesia
 -record(inventory, {cid, money, supplies, estate}).

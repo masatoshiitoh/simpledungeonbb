@@ -87,8 +87,9 @@ lookup_cidpair_and_do_transaction(Cid, F) ->
 	end.
 
 
-%% --transaction実行はここまで。以下はtransactionの内側で呼ばれる関数 --
-
+%%
+%% following functions will be use IN transatction.
+%%
 get_trade_confirmation(CidPair) ->
 	reform_trade_confirm_flag(db_trade_confirm_flag(CidPair)).
 
@@ -165,9 +166,8 @@ trade_execute(CidPair) ->
 	estate_transfer(Cid1, Cid2),
 	supplies_transfer(Cid1, Cid2).
 
-%% トランザクションでくくらずに、各操作を部品として使えるように変更する！！！
 
-% ここから消耗品アイテム（supplies）の操作
+% Operation for countable objects.
 
 get_supplies_by_cid(Cid) ->
 	qlc:e(qlc:q([X
@@ -235,23 +235,20 @@ supplies_transfer(Cid1, Cid2) ->
 	supplies_transfer_1(Cid2, Cid1).
 	
 supplies_transfer_1(From, To) ->
-	%% 交換対象のサプライ情報抽出
 	Sents = qlc:e(qlc:q([X
 		|| X <- mnesia:table(supplies),
 			X#supplies.cid == From,
 			X#supplies.offer > 0])),
-
-	%% 送り側減算処理
+	%% Drop from seller
 	supplies_apply_offer_all(From),
-
-	%% 受け手側加算処理
+	%% Add to buyer
 	lists:map(fun(SentOne) ->
 		{supplies, _Id,_Cid,ItemId,_Amount,Offer} = SentOne,
 		supplies_add_1(To, ItemId, Offer)
 	end, Sents).
 
 
-% ここからユニークアイテム（estate）の操作
+% Unique(Identified) items
 get_estate_by_cid(Cid) ->
 	qlc:e(qlc:q([X || X <- mnesia:table(estate), X#estate.cid == Cid])).
 
@@ -283,7 +280,7 @@ estate_transfer_1(From, To) ->
 			X#estate.cid == From,
 			X#estate.is_offer == true])).
 
-% ここからお金（money）の操作
+% MONEY operation
 get_money_by_cid(Cid) ->
 	[C] = mnesia:read(money, Cid),
 	C.
