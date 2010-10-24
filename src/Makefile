@@ -24,7 +24,7 @@
 program = simpledungeon
 objs = character.beam character_stream.beam db.beam mmoasp.beam morningcall.beam mout.beam move.beam path_finder.beam trade.beam u.beam uauth.beam world.beam yaws_if.beam
 
-DESTDIR = ..\ebin
+DESTDIR = ../ebin
 INSTALL = MOVE
 RM = DEL
 
