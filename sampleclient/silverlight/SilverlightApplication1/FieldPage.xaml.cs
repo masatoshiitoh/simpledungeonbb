@@ -55,7 +55,7 @@ namespace SilverlightApplication1
         public Page1()
         {
             InitializeComponent();
-            service = new Mmoasp("http://localhost:8002/service/hibari");
+            service = new Mmoasp("http://219.121.56.65:8002/service/hibari");
             syncContext = SynchronizationContext.Current;
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
             framecount = 0;
@@ -65,7 +65,7 @@ namespace SilverlightApplication1
         {
             OnTimer();
         }
-        // ユーザーがこのページに移動したときに実行されます。
+        // run this function when user has been moved here.
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
 
@@ -88,7 +88,7 @@ namespace SilverlightApplication1
         }
         internal string FormatDateTime(DateTime dt)
         {
-            string s = dt.ToString("ただいま yyyy年 M月 d日のtt h時 m分 s秒です。");
+            string s = dt.ToString("Now,  M/d/yyyy tt h m s");
             return s;
         }
 
@@ -128,7 +128,7 @@ namespace SilverlightApplication1
                         MmoChar c = new MmoChar();
                         c.cid = jv["cid"];
                         c.name = jv["name"];
-                        // その他外観や属性の取り込みをここに。。。
+                        // fill attribute update in here.
                         mmoChars.Add(c.cid, c);
                     }
                     else if (jv["type"] == "move")
@@ -138,7 +138,7 @@ namespace SilverlightApplication1
                         mmoChars.TryGetValue(jv["cid"], out walker);
                         if (walker != null)
                         {
-                            txtLog.Text += String.Format("移動: {0} さんが、({1}, {2})から({3},{4}へ) 所要時間 {5}ms.", new object[] { walker.name, jv["from_x"], jv["from_y"], jv["to_x"], jv["to_y"], jv["duration"] }) + Environment.NewLine;
+                            txtLog.Text += String.Format("MOVE: {0} move from ({1}, {2}) to ({3},{4}) within {5}ms.", new object[] { walker.name, jv["from_x"], jv["from_y"], jv["to_x"], jv["to_y"], jv["duration"] }) + Environment.NewLine;
                         }
                     }
                     else if (jv["type"] == "login")
@@ -150,7 +150,7 @@ namespace SilverlightApplication1
                         mmoChars.TryGetValue(jv["cid"], out exiter);
                         if (exiter != null)
                         {
-                            txtLog.Text += (exiter.name + " がログアウトしました。" + Environment.NewLine);
+                            txtLog.Text += (exiter.name + " is logged out." + Environment.NewLine);
                         }
                     }
                 }
@@ -243,7 +243,7 @@ namespace SilverlightApplication1
                     return;
             }
 
-            // どっちにしろ単にリターンするだけ。
+            // just only return.
             if (entry["result"] == "ok")
             {
                 return;
