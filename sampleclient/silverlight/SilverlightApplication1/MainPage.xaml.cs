@@ -49,7 +49,7 @@ namespace SilverlightApplication1
         public MainPage()
         {
             InitializeComponent();
-            service = new Mmoasp("http://219.121.56.65:8002/service/hibari");
+            service = new Mmoasp("http://simpledungeons.com:8002/service/hibari");
             syncContext = SynchronizationContext.Current;
         }
         public void OutputWrite()
