@@ -107,11 +107,12 @@ namespace SilverlightApplication1
         void list_to_know_receiver(object arg)
         {
             UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
-            try
+
+            //txtLog.Text = FormatDateTime(DateTime.Now) + Environment.NewLine;
+            JsonValue v = JsonObject.Parse(e.Result);
+            foreach (JsonValue jv in v)
             {
-                //txtLog.Text = FormatDateTime(DateTime.Now) + Environment.NewLine;
-                JsonValue v = JsonObject.Parse(e.Result);
-                foreach (JsonValue jv in v)
+                try
                 {
                     //txtLog.Text += jv["type"] + Environment.NewLine;
                     if (jv["type"] == "talk")
@@ -158,11 +159,12 @@ namespace SilverlightApplication1
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    //txtLog.Text = ex.Message;
+                }
             }
-            catch (Exception ex)
-            {
-                // do nothing
-            }
+
         }
 
         private void btnLogout_Click(object sender, RoutedEventArgs e)
