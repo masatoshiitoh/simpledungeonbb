@@ -49,6 +49,10 @@ namespace SilverlightApplication1
         SynchronizationContext syncContext;
         int framecount;
 
+        int deltax;
+        int deltay;
+        int posx; int posy;
+
         Dictionary<String, MmoChar> mmoChars = new Dictionary<String, MmoChar>();
         List<String> chatLog = new List<string>();
 
@@ -60,6 +64,14 @@ namespace SilverlightApplication1
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
             framecount = 0;
 
+
+            //Field.Children.Add(sprite1);
+            Canvas.SetLeft(sprite1, 100);
+            Canvas.SetTop(sprite1, 20);
+            deltax = 1;
+            deltay = 1;
+            posx = 100;
+            posy = 100;
         }
         void CompositionTarget_Rendering(object sender, EventArgs e)
         {
@@ -85,6 +97,16 @@ namespace SilverlightApplication1
                 framecount = 0;
                 get_list_to_know();
             }
+
+            if (Canvas.GetLeft(sprite1) > 300) { deltax *= -1; }
+            if (Canvas.GetLeft(sprite1) <= 0) { deltax *= -1; }
+            if (Canvas.GetTop(sprite1) > 240) { deltay *= -1; }
+            if (Canvas.GetTop(sprite1) <= 0) { deltay *= -1; }
+            posx += deltax;
+            posy += deltay;
+
+            Canvas.SetLeft(sprite1, posx);
+            Canvas.SetTop(sprite1, posy);
         }
         internal string FormatDateTime(DateTime dt)
         {
@@ -115,35 +137,81 @@ namespace SilverlightApplication1
                 try
                 {
                     //txtLog.Text += jv["type"] + Environment.NewLine;
-                    if (jv["type"] == "talk")
+                    if (jv["type"] == "pc")
+                    {
+
+                        MmoChar c = null;
+                        mmoChars.TryGetValue(jv["cid"], out c);
+                        if (c != null)
+                        {
+                            // update information.
+                            c.cid = jv["cid"];
+                            c.name = jv["name"];
+                            c.x = jv["x"];
+                            c.y = jv["y"];
+
+
+                            Canvas ca = (Canvas)c.img;
+                            ca.Height = 32;
+                            ca.Width = 32;
+                            ca.Background = new SolidColorBrush(Colors.Green);
+                            c.img = ca;
+                            Canvas.SetLeft(c.img, 32);
+                            Canvas.SetTop(c.img, 32);
+
+                        }
+                        else
+                        {
+                            // add new character.
+
+                            c = new MmoChar();
+                            c.cid = jv["cid"];
+                            c.name = jv["name"];
+                            c.x = jv["x"];
+                            c.y = jv["y"];
+
+                            Canvas ca = new Canvas();
+                            ca.Height = 32;
+                            ca.Width = 32;
+                            ca.Background = new SolidColorBrush(Colors.Green);
+                            c.img = ca;
+                            Canvas.SetLeft(c.img, 32);
+                            Canvas.SetTop(c.img, 32);
+
+                            // fill attribute update in here.
+                            mmoChars.Add(c.cid, c);
+                            Field.Children.Add(c.img);
+
+                        }
+                    }
+                    else if (jv["type"] == "talk")
                     {
                         MmoChar talker = null;
                         mmoChars.TryGetValue(jv["cid"], out talker);
                         if (talker != null)
                         {
                             txtLog.Text = (talker.name + " : " + jv["content"] + Environment.NewLine) + txtLog.Text;
+                            Random r = new Random();
+                            Canvas.SetLeft(talker.img, r.Next(320));
+                            Canvas.SetTop(talker.img, r.Next(240));
                         }
                         else
                         {
                             txtLog.Text = (jv["cid"] + " : " + txtInput.Text + Environment.NewLine) + txtLog.Text;
                         }
                     }
-                    else if (jv["type"] == "pc")
-                    {
-                        MmoChar c = new MmoChar();
-                        c.cid = jv["cid"];
-                        c.name = jv["name"];
-                        // fill attribute update in here.
-                        mmoChars.Add(c.cid, c);
-                    }
+
                     else if (jv["type"] == "move")
                     {
-                        // jv["cid"]
                         MmoChar walker = null;
                         mmoChars.TryGetValue(jv["cid"], out walker);
                         if (walker != null)
                         {
                             txtLog.Text = String.Format("MOVE: {0} move from ({1}, {2}) to ({3},{4}) within {5}ms.", new object[] { walker.name, jv["from_x"], jv["from_y"], jv["to_x"], jv["to_y"], jv["duration"] }) + Environment.NewLine + txtLog.Text;
+                            walker.x = jv["from_x"];
+                            walker.y = jv["from_y"];
+                            Canvas.SetLeft(walker.img, walker.x * 32);
+                            Canvas.SetTop(walker.img, walker.y * 32);
                         }
                     }
                     else if (jv["type"] == "login")
@@ -212,6 +280,7 @@ namespace SilverlightApplication1
         {
             if (e.Key == Key.Enter)
             {
+                /*
                 MmoChar talker = null;
                 mmoChars.TryGetValue(cid, out talker);
                 if (talker != null)
@@ -222,6 +291,7 @@ namespace SilverlightApplication1
                 {
                     txtLog.Text = (cid + " : " + txtInput.Text + Environment.NewLine) + txtLog.Text;
                 }
+                 * */
                 sendChat(txtInput.Text, "open");
                 txtInput.Text = "";
             }
@@ -264,6 +334,11 @@ namespace SilverlightApplication1
             {
                 return;
             }
+        }
+
+        private void txtInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
         }
 
     }

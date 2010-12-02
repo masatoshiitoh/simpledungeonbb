@@ -74,6 +74,6 @@ namespace SilverlightApplication1
         public int map { get; set; }
         public int x { get; set; }
         public int y { get; set; }
-
+        public UIElement img;
     }
 }

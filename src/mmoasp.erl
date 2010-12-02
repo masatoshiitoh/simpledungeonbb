@@ -216,6 +216,7 @@ knock_all_characters(From) ->
 % DO NOT USE for set gaming parameters(like hit point or money) from client.).
 
 setter(From, Cid, Token, Key, Value) ->character:setter(From, Cid,Token, Key, Value).
+setter(Cid, Key, Value) ->character:setter(Cid, Key, Value).
 
 get_list_to_know(_From, Cid, Token) ->
 	
@@ -255,7 +256,7 @@ get_neighbor_char_sessions(Cid, R) ->
 	Me = world:get_location(Cid),
 	F = fun() ->
 		qlc:e(qlc:q([Sess || Loc <- mnesia:table(location),
-			Loc#location.cid =/= Cid,
+		%%	Loc#location.cid =/= Cid,
 			u:distance(Loc#location.pos, Me#location.pos) < R,
 			Loc#location.map == Me#location.map,
 			Sess <- mnesia:table(session),	
@@ -270,7 +271,7 @@ get_neighbor_char_cdata(Cid, R) ->
 	Me = world:get_location(Cid),
 	F = fun() ->
 		qlc:e(qlc:q([CData || Loc <- mnesia:table(location),
-			Loc#location.cid =/= Cid,
+		%%	Loc#location.cid =/= Cid,
 			u:distance(Loc#location.pos, Me#location.pos) < R,
 			Loc#location.map == Me#location.map,
 			CData <- mnesia:table(cdata),	

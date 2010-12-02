@@ -34,6 +34,12 @@ setter(From, Cid, Token, Key, Value) ->
 	world:apply_session(Cid,
 		fun(X) -> X#session.pid ! {From, set, Token, Key, Value} end).
 
+setter(Cid, Key, Value) ->
+	world:apply_session(Cid,
+		fun(X) -> X#session.pid ! {set, Key, Value} end).
+
+
+
 stop_child(Cid) ->
 	world:apply_session(Cid,
 		fun(X) -> X#session.pid ! {self(), stop_process, X#session.token} end).
@@ -106,8 +112,6 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 					, EventQueue),
 				StatDict, Token, UTimer, mk_idle_update(LastOp));
 			
-
-
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
 			SelfPid = self(),
@@ -120,10 +124,18 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			db_setpos(Cid, CurrPos),
 			case WayPoints of
 				[] -> 
-					%%io:format("character: ~p arrived at: ~p~n", [Cid, CurrPos]),
+					io:format("character: ~p arrived at: ~p~n", [Cid, CurrPos]),
+					{pos, X, Y} = CurrPos,
+					mmoasp:setter(Cid, "x", X),
+					mmoasp:setter(Cid, "y", Y),
 					loop(Cid, CData, EventQueue, StatDict, Token, UTimer, mk_idle_update(LastOp));
 				[H | T] -> 			
-					%%io:format("character: ~p start move: ~p to ~p ~n", [Cid, CurrPos, H]),
+					io:format("character: ~p start move: ~p to ~p ~n", [Cid, CurrPos, H]),
+
+					{pos, X, Y} = CurrPos,
+					mmoasp:setter(Cid, "x", X),
+					mmoasp:setter(Cid, "y", Y),
+
 					Radius = 100,
 					mmoasp:notice_move(Cid, {transition, CurrPos, H, 1000}, Radius),
 					SelfPid = self(),
@@ -149,6 +161,11 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} ->
+			NewCData = db_setter(Cid, Key, Value),
+			loop(Cid, NewCData, EventQueue, StatDict, Token, UTimer, mk_idle_reset());
+
+		%% Attribute setter simple
+		{set, Key, Value} ->
 			NewCData = db_setter(Cid, Key, Value),
 			loop(Cid, NewCData, EventQueue, StatDict, Token, UTimer, mk_idle_reset());
 

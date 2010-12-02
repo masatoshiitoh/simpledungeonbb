@@ -8,12 +8,14 @@
            d:DesignWidth="640" d:DesignHeight="480"
            Title="Field Page" Name="FieldPage" xmlns:my="clr-namespace:SilverlightApplication1" xmlns:riaControls="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls.DomainServices" xmlns:sdk="http://schemas.microsoft.com/winfx/2006/xaml/presentation/sdk">
     <Grid x:Name="LayoutRoot">
-        <Canvas Height="145" HorizontalAlignment="Left" Margin="71,20,0,0" Name="canvas1" VerticalAlignment="Top" Width="323"></Canvas>
-        <TextBox Height="23" HorizontalAlignment="Left" Margin="71,324,0,0" Name="txtInput" VerticalAlignment="Top" Width="323" KeyDown="txtInput_KeyDown" />
-        <TextBox Height="150" HorizontalAlignment="Left" Margin="71,171,0,0" Name="txtLog" VerticalAlignment="Top" Width="323" IsReadOnly="True" />
-        <Button Content="Logout" Height="27" HorizontalAlignment="Left" Margin="448,35,0,0" Name="btnLogout" VerticalAlignment="Top" Width="144" Click="btnLogout_Click" />
+        <Canvas Height="245" HorizontalAlignment="Left" Name="Field" VerticalAlignment="Top" Width="320" Margin="74,0,0,0">
+            <Canvas Background="#FFFA0000" Canvas.Left="10" Canvas.Top="10" Height="32" Name="sprite1" Width="32" />
+        </Canvas>
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="74,324,0,0" Name="txtInput" VerticalAlignment="Top" Width="320" KeyDown="txtInput_KeyDown" TextChanged="txtInput_TextChanged" />
+        <TextBox Height="70" HorizontalAlignment="Left" Margin="74,251,0,0" Name="txtLog" VerticalAlignment="Top" Width="320" IsReadOnly="True" />
+        <Button Content="Logout" Height="27" HorizontalAlignment="Left" Margin="415,320,0,0" Name="btnLogout" VerticalAlignment="Top" Width="144" Click="btnLogout_Click" />
         <riaControls:DomainDataSource Name="domainDataSource1" />
         <sdk:Label Height="22" HorizontalAlignment="Left" Margin="27,328,0,0" Name="label1" VerticalAlignment="Top" Width="40" Content="Chat:" HorizontalContentAlignment="Left" />
-        <sdk:Label Height="23" HorizontalAlignment="Left" Margin="0,170,0,0" Name="label2" VerticalAlignment="Top" Width="67" Content="Messages:" />
+        <sdk:Label Height="23" HorizontalAlignment="Left" Margin="0,251,0,0" Name="label2" VerticalAlignment="Top" Width="67" Content="Messages:" />
     </Grid>
 </navigation:Page>
