@@ -147,8 +147,16 @@ namespace SilverlightApplication1
                             // update information.
                             c.cid = jv["cid"];
                             c.name = jv["name"];
-                            c.x = jv["x"];
-                            c.y = jv["y"];
+                           
+                            
+                            if (jv.ContainsKey("x"))
+                            {
+                                c.x = jv["x"];
+                            }
+                            if (jv.ContainsKey("y"))
+                            {
+                                c.y = jv["y"];
+                            }
 
 
                             Canvas ca = (Canvas)c.img;
@@ -156,8 +164,8 @@ namespace SilverlightApplication1
                             ca.Width = 32;
                             ca.Background = new SolidColorBrush(Colors.Green);
                             c.img = ca;
-                            Canvas.SetLeft(c.img, 32);
-                            Canvas.SetTop(c.img, 32);
+                            Canvas.SetLeft(c.img, c.x * 32);
+                            Canvas.SetTop(c.img, c.y * 32);
 
                         }
                         else
@@ -175,8 +183,8 @@ namespace SilverlightApplication1
                             ca.Width = 32;
                             ca.Background = new SolidColorBrush(Colors.Green);
                             c.img = ca;
-                            Canvas.SetLeft(c.img, 32);
-                            Canvas.SetTop(c.img, 32);
+                            Canvas.SetLeft(c.img, c.x * 32);
+                            Canvas.SetTop(c.img, c.y * 32);
 
                             // fill attribute update in here.
                             mmoChars.Add(c.cid, c);
