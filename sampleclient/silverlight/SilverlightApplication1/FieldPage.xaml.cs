@@ -150,21 +150,9 @@ namespace SilverlightApplication1
                         if (c != null)
                         {
                             // update information.
-                            //c.cid = jv["cid"];
-                            //c.name = jv["name"];
-                           
-                            /*
-                            if (jv.ContainsKey("x"))
-                            {
-                                c.x = jv["x"];
-                            }
-                             * */
-                            //if (jv.ContainsKey("y"))
-                            //{
-                            //    c.y = jv["y"];
-                            //}
-                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(0));
-                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(0));
+
+                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
+                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
                             Canvas ca = (Canvas)c.img;
                             ca.Height = 32;
                             ca.Width = 32;
@@ -181,14 +169,8 @@ namespace SilverlightApplication1
                             c = new MmoChar();
                             c.cid = jv["cid"];
                             c.name = jv["name"];
-                            if (jv.ContainsKey("x"))
-                            {
-                                c.x = jv["x"];
-                            }
-                            if (jv.ContainsKey("y"))
-                            {
-                                c.y = jv["y"];
-                            }
+                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
+                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
 
                             Canvas ca = new Canvas();
                             ca.Height = 32;

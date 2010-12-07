@@ -54,7 +54,7 @@ stop_child(Cid) ->
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
 loop(Cid, _CData, _EventQueue, _StatDict, Token, _UTimer, {idle, SinceLastOp, _LastOp})
-	when SinceLastOp > 60*1000*1000->
+	when SinceLastOp > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
 	uauth:db_logout(self(), Cid, Token);
