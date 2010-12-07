@@ -53,6 +53,8 @@ namespace SilverlightApplication1
         int deltay;
         int posx; int posy;
 
+        Boolean listenable = true; // this page is be instanciated after authentication.
+
         Dictionary<String, MmoChar> mmoChars = new Dictionary<String, MmoChar>();
         List<String> chatLog = new List<string>();
 
@@ -90,9 +92,9 @@ namespace SilverlightApplication1
         public void OnTimer()
         {
             framecount++;
-            if (framecount % 120 == 0)
+            if (framecount % 30 == 0)
             {
-                // 2 sec.
+                // 2 sec.=120frames
                 // txtLog.Text = FormatDateTime(DateTime.Now);
                 framecount = 0;
                 get_list_to_know();
@@ -116,6 +118,7 @@ namespace SilverlightApplication1
 
         void get_list_to_know()
         {
+            if (listenable == false) return;
             Dictionary<String, String> dict = new Dictionary<string, string>();
             dict.Add("token", token);
             service.Call("/listtoknow/" + cid, dict, list_to_know_callback);
@@ -126,12 +129,14 @@ namespace SilverlightApplication1
             syncContext.Post(list_to_know_receiver, e);
         }
 
+
         void list_to_know_receiver(object arg)
         {
             UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
+            
+            if (listenable == false) return;
 
-            //txtLog.Text = FormatDateTime(DateTime.Now) + Environment.NewLine;
-            JsonValue v = JsonObject.Parse(e.Result);
+            JsonValue v = JsonObject.Parse(e.Result); // Exception here! list_to_know call after logout cause it. fix!!
             foreach (JsonValue jv in v)
             {
                 try
@@ -145,20 +150,21 @@ namespace SilverlightApplication1
                         if (c != null)
                         {
                             // update information.
-                            c.cid = jv["cid"];
-                            c.name = jv["name"];
+                            //c.cid = jv["cid"];
+                            //c.name = jv["name"];
                            
-                            
+                            /*
                             if (jv.ContainsKey("x"))
                             {
                                 c.x = jv["x"];
                             }
-                            if (jv.ContainsKey("y"))
-                            {
-                                c.y = jv["y"];
-                            }
-
-
+                             * */
+                            //if (jv.ContainsKey("y"))
+                            //{
+                            //    c.y = jv["y"];
+                            //}
+                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(0));
+                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(0));
                             Canvas ca = (Canvas)c.img;
                             ca.Height = 32;
                             ca.Width = 32;
@@ -175,8 +181,14 @@ namespace SilverlightApplication1
                             c = new MmoChar();
                             c.cid = jv["cid"];
                             c.name = jv["name"];
-                            c.x = jv["x"];
-                            c.y = jv["y"];
+                            if (jv.ContainsKey("x"))
+                            {
+                                c.x = jv["x"];
+                            }
+                            if (jv.ContainsKey("y"))
+                            {
+                                c.y = jv["y"];
+                            }
 
                             Canvas ca = new Canvas();
                             ca.Height = 32;
@@ -248,7 +260,9 @@ namespace SilverlightApplication1
             Dictionary<String, String> dict = new Dictionary<string, string>();
             dict.Add("token", token);
 
+            listenable = false;
             service.Call("/logout/" + cid, dict, logout_callback);
+
         }
 
         void logout_callback(object sender, UploadStringCompletedEventArgs e)

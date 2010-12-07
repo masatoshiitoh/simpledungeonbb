@@ -150,7 +150,7 @@ example_tables() ->
 	{location,"cid0001", 1, {pos, 1,3}, offline, offline},
 	{location,"cid0002", 1, {pos, 3,3}, offline, offline},
 	{location,"cid0003", 1, {pos, 2,3}, offline, offline},
-	{location,"cid0004", 2, {pos, 3,2}, offline, offline},
+	{location,"cid0004", 1, {pos, 3,2}, offline, offline},
 	
 	
 	%% inventory ( key colomn is cid.)
