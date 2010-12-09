@@ -84,7 +84,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 pick_path(G, VertexDict, RevDict, StartPos, DestPos) ->
 	{ok, StartVertex} = dict:find(StartPos, VertexDict),
 	{ok, DestVertex} = dict:find(DestPos, VertexDict),
-	Path = digraph:get_path(G, StartVertex, DestVertex),
+	Path = digraph:get_short_path(G, StartVertex, DestVertex),
 	case is_list(Path) of
 		true ->
 			Result = lists:map(fun(X) -> {ok, P} = dict:find(X, RevDict), P end, Path);
