@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" xmlns:sdk="http://schemas.microsoft.com/winfx/2006/xaml/presentation/sdk" Height="356" Width="664" xmlns:my="clr-namespace:SilverlightApplication1" Loaded="UserControl_Loaded">
+    mc:Ignorable="d" xmlns:sdk="http://schemas.microsoft.com/winfx/2006/xaml/presentation/sdk" Height="480" Width="640" xmlns:my="clr-namespace:SilverlightApplication1" Loaded="UserControl_Loaded">
     <Grid Height="161" Width="339">
         <Button Click="btnLogin_Click" Content="Login" Height="28" HorizontalAlignment="Left" Margin="125,120,0,0" Name="btnLogin" VerticalAlignment="Top" Width="105" TabIndex="3" />
         <TextBox Height="23" HorizontalAlignment="Left" Margin="179,20,0,0" Name="txtId" VerticalAlignment="Top" Width="123" TabIndex="1" />

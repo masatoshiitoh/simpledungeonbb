@@ -92,9 +92,9 @@ namespace SilverlightApplication1
         public void OnTimer()
         {
             framecount++;
-            if (framecount % 30 == 0)
+            if (framecount % 60 == 0)
             {
-                // 2 sec.=120frames
+                // 1 sec.=60frames
                 // txtLog.Text = FormatDateTime(DateTime.Now);
                 framecount = 0;
                 get_list_to_know();
@@ -132,10 +132,11 @@ namespace SilverlightApplication1
 
         void list_to_know_receiver(object arg)
         {
-            UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
-            
             if (listenable == false) return;
 
+            UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
+            txtReceive.Text = e.Result;
+            
             JsonValue v = JsonObject.Parse(e.Result); // Exception here! list_to_know call after logout cause it. fix!!
             foreach (JsonValue jv in v)
             {

@@ -7,7 +7,7 @@
            xmlns:navigation="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls.Navigation"
            d:DesignWidth="640" d:DesignHeight="480"
            Title="Field Page" Name="FieldPage" xmlns:my="clr-namespace:SilverlightApplication1" xmlns:riaControls="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls.DomainServices" xmlns:sdk="http://schemas.microsoft.com/winfx/2006/xaml/presentation/sdk">
-    <Grid x:Name="LayoutRoot">
+    <Grid x:Name="LayoutRoot" Width="640" Height="480">
         <Canvas Height="245" HorizontalAlignment="Left" Name="Field" VerticalAlignment="Top" Width="320" Margin="74,0,0,0">
             <Canvas Background="#FFFA0000" Canvas.Left="10" Canvas.Top="10" Height="32" Name="sprite1" Width="32" />
         </Canvas>
@@ -17,5 +17,7 @@
         <riaControls:DomainDataSource Name="domainDataSource1" />
         <sdk:Label Height="22" HorizontalAlignment="Left" Margin="27,328,0,0" Name="label1" VerticalAlignment="Top" Width="40" Content="Chat:" HorizontalContentAlignment="Left" />
         <sdk:Label Height="23" HorizontalAlignment="Left" Margin="0,251,0,0" Name="label2" VerticalAlignment="Top" Width="67" Content="Messages:" />
+        <sdk:Label Height="20" HorizontalAlignment="Left" Margin="27,358,0,0" Name="label3" VerticalAlignment="Top" Width="40" Content="JSON:" />
+        <TextBox Height="90" IsReadOnly="True" Name="txtReceive" Width="554" Margin="74,358,12,32" TextWrapping="Wrap" />
     </Grid>
 </navigation:Page>
