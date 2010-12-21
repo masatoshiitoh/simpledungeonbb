@@ -162,6 +162,9 @@ namespace SilverlightApplication1
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
 
+                            Canvas.SetLeft(c.label, c.x * 32);
+                            Canvas.SetTop(c.label, c.y * 32 - 24);
+
                         }
                         else
                         {
@@ -181,9 +184,21 @@ namespace SilverlightApplication1
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
 
+                            Label la = new Label();
+                            la.Height = 32;
+                            la.Width = 200;
+                            la.Content = c.name;
+                            la.FontFamily = new System.Windows.Media.FontFamily("Comic Sans MS, Verdana");
+                            la.Foreground = new SolidColorBrush(Colors.Black);
+                            c.label = la;
+                            Canvas.SetLeft(c.label, c.x * 32);
+                            Canvas.SetTop(c.label, c.y * 32 - 24);
+
+
                             // fill attribute update in here.
                             mmoChars.Add(c.cid, c);
                             Field.Children.Add(c.img);
+                            Field.Children.Add(c.label);
 
                         }
                     }
@@ -227,6 +242,8 @@ namespace SilverlightApplication1
                         if (exiter != null)
                         {
                             txtLog.Text = (exiter.name + " is logged out." + Environment.NewLine) + txtLog.Text;
+                            Field.Children.Remove(exiter.img);
+                            Field.Children.Remove(exiter.label);
                         }
                     }
                 }

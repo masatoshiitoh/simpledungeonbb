@@ -41,7 +41,7 @@ init([]) ->
 	
 	
 	% Make an array holds map tupples.
-	Map = path_finder:make_map_from_arraymap(path_finder:arraymap(),5, 5),
+	Map = path_finder:make_map_from_arraymap(path_finder:arraymap()),
 	
 	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
 	{G, PList } = path_finder:make_all_vertex(Map,G),
@@ -150,13 +150,21 @@ get_eight_dir() -> [
 	{pos, -1, 1},{pos, 0, 1},{pos, 1, 1}
 ].
 
-arraymap()-> [
-	[1,1,1,1,1],
-	[1,0,0,0,1],
-	[1,0,1,0,1],
-	[1,0,1,0,1],
-	[1,1,1,1,1]
-].
+arraymap()-> {arraymap,
+10, %% size X
+10, %% size Y
+[
+	[1,1,1,1,1,1,1,1,1,1],
+	[1,0,0,0,0,0,0,0,0,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,0,1,1,1,0,1,1,1,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,0,1,0,0,0,0,0,0,1],
+	[1,1,1,1,1,1,1,1,1,1]
+]}.
 
 get_width(Map) ->
 	{map, SizeX, _SizeY, _} = Map,
@@ -184,7 +192,7 @@ get_value(X, Y, Map) ->
 			->void
 	end.
 
-make_map_from_arraymap(Arraymap, SizeX, SizeY) ->
+make_map_from_arraymap({arraymap, SizeX, SizeY, Arraymap}) ->
 	{map, SizeX, SizeY, array:from_list(lists:flatten(Arraymap))}.
 
 

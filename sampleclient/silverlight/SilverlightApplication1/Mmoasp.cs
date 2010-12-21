@@ -75,5 +75,6 @@ namespace SilverlightApplication1
         public int x { get; set; }
         public int y { get; set; }
         public UIElement img;
+        public UIElement label;
     }
 }
