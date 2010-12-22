@@ -363,5 +363,59 @@ namespace SilverlightApplication1
 
         }
 
+        private void mapLeftDown(object sender, MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(Field);
+            int x = ((int)p.X) / 32;
+            int y = ((int)p.Y) / 32;
+            //txtLog.Text = ("Clicked " + p.ToString() + Environment.NewLine) + txtLog.Text;
+
+            txtLog.Text = ("Clicked " + x.ToString() + " " + y.ToString() + Environment.NewLine) + txtLog.Text;
+            // なんか、Childrenがあると、クリックイベントはそこが先にとって、親に投げない設定になってるとそこでクリックが消える。おいー
+            // 不可視を1層いれるか
+            // ただのCanvasを1層上に配置してみたりしたけど、どうもクリックイベントが起きないっっぽい。色を塗ったりしないとだめ？
+            // 色を設定するのが正解でした。なんでーーーー！
+
+            Dictionary<String, String> dict = new Dictionary<string, string>();
+            dict.Add("token", token);
+            dict.Add("x", x.ToString());
+            dict.Add("y", y.ToString());
+
+            service.Call("/move/" + cid, dict, move_callback);
+
+        
+        }
+
+        void move_callback(object sender, UploadStringCompletedEventArgs e)
+        {
+            syncContext.Post(move_receiver, e);
+        }
+
+        void move_receiver(object arg)
+        {
+            JsonValue entry;
+            UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
+
+            JsonValue v = JsonObject.Parse(e.Result);
+
+            switch (v.JsonType)
+            {
+                case JsonType.Array:
+                    entry = v[0];
+                    break;
+                case JsonType.Object:
+                    entry = v;
+                    break;
+                default:
+                    return;
+            }
+
+            // just only return.
+            if (entry["result"] == "ok")
+            {
+                return;
+            }
+        }
+
     }
 }
