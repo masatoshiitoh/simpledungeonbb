@@ -66,6 +66,16 @@ db_login(_From, Id, Pw, Ipaddr)->
 					Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
 					mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, ipaddr=Ipaddr, token=Token}) end),
 					mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
+					
+					%% copy location data from location table to cdata attribute.
+					Me = world:get_location(Cid),
+					{pos, X, Y} = Me#location.initpos,
+					Map = Me#location.initmap,
+					mmoasp:setter(Cid, "map", Map),
+					mmoasp:setter(Cid, "x", X),
+					mmoasp:setter(Cid, "y", Y),
+
+					
 					Radius = 100,
 					mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
 					{ok, Cid, Token};

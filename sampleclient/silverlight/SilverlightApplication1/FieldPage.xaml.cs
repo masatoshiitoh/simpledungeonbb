@@ -368,13 +368,7 @@ namespace SilverlightApplication1
             Point p = e.GetPosition(Field);
             int x = ((int)p.X) / 32;
             int y = ((int)p.Y) / 32;
-            //txtLog.Text = ("Clicked " + p.ToString() + Environment.NewLine) + txtLog.Text;
-
             txtLog.Text = ("Clicked " + x.ToString() + " " + y.ToString() + Environment.NewLine) + txtLog.Text;
-            // なんか、Childrenがあると、クリックイベントはそこが先にとって、親に投げない設定になってるとそこでクリックが消える。おいー
-            // 不可視を1層いれるか
-            // ただのCanvasを1層上に配置してみたりしたけど、どうもクリックイベントが起きないっっぽい。色を塗ったりしないとだめ？
-            // 色を設定するのが正解でした。なんでーーーー！
 
             Dictionary<String, String> dict = new Dictionary<string, string>();
             dict.Add("token", token);
@@ -382,8 +376,6 @@ namespace SilverlightApplication1
             dict.Add("y", y.ToString());
 
             service.Call("/move/" + cid, dict, move_callback);
-
-        
         }
 
         void move_callback(object sender, UploadStringCompletedEventArgs e)
