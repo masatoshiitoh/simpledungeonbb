@@ -8,16 +8,18 @@
            d:DesignWidth="640" d:DesignHeight="480"
            Title="Field Page" Name="FieldPage" xmlns:my="clr-namespace:SilverlightApplication1" xmlns:riaControls="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls.DomainServices" xmlns:sdk="http://schemas.microsoft.com/winfx/2006/xaml/presentation/sdk">
     <Grid x:Name="LayoutRoot" Width="640" Height="480">
-        <TextBox Height="23" HorizontalAlignment="Left" Margin="74,324,0,0" Name="txtInput" VerticalAlignment="Top" Width="320" KeyDown="txtInput_KeyDown" TextChanged="txtInput_TextChanged" />
-        <TextBox Height="70" HorizontalAlignment="Left" Margin="74,251,0,0" Name="txtLog" VerticalAlignment="Top" Width="320" IsReadOnly="True" />
-        <Button Content="Logout" Height="27" HorizontalAlignment="Left" Margin="415,320,0,0" Name="btnLogout" VerticalAlignment="Top" Width="144" Click="btnLogout_Click" />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="74,412,0,0" Name="txtInput" VerticalAlignment="Top" Width="320" KeyDown="txtInput_KeyDown" TextChanged="txtInput_TextChanged" />
+        <TextBox Height="80" HorizontalAlignment="Left" Margin="74,326,0,0" Name="txtLog" VerticalAlignment="Top" Width="320" IsReadOnly="True" />
+        <Button Content="Logout" Height="27" HorizontalAlignment="Left" Margin="484,408,0,0" Name="btnLogout" VerticalAlignment="Top" Width="144" Click="btnLogout_Click" />
         <riaControls:DomainDataSource Name="domainDataSource1" />
-        <sdk:Label Height="22" HorizontalAlignment="Left" Margin="27,328,0,0" Name="label1" VerticalAlignment="Top" Width="40" Content="Chat:" HorizontalContentAlignment="Left" />
-        <sdk:Label Height="23" HorizontalAlignment="Left" Margin="0,251,0,0" Name="label2" VerticalAlignment="Top" Width="67" Content="Messages:" />
-        <sdk:Label Height="20" HorizontalAlignment="Left" Margin="27,358,0,0" Name="label3" VerticalAlignment="Top" Width="40" Content="JSON:" />
-        <Canvas Height="245" HorizontalAlignment="Left" Margin="74,0,0,0" Name="Field" VerticalAlignment="Top" Width="320" MouseLeftButtonDown="mapLeftDown" Background="#FFEEF6F6">
-            <Canvas Background="#FFFA0000" Canvas.Left="10" Canvas.Top="10" Height="32" Name="sprite1" Width="32" />
+        <sdk:Label Height="22" HorizontalAlignment="Left" Margin="39,416,0,0" Name="label1" VerticalAlignment="Top" Width="40" Content="Chat:" HorizontalContentAlignment="Left" />
+        <sdk:Label Height="23" HorizontalAlignment="Left" Margin="12,326,0,0" Name="label2" VerticalAlignment="Top" Width="67" Content="Messages:" />
+        <sdk:Label Height="20" HorizontalAlignment="Left" Margin="400,12,0,0" Name="label3" VerticalAlignment="Top" Width="40" Content="JSON:" />
+        <Canvas Height="320" HorizontalAlignment="Left" Margin="74,0,0,0" Name="Field" VerticalAlignment="Top" Width="320" MouseLeftButtonDown="mapLeftDown">
+            <Canvas.Background>
+                <ImageBrush ImageSource="/SilverlightApplication1;component/map1.png" Stretch="None" />
+            </Canvas.Background>
         </Canvas>
-        <TextBox Height="90" IsReadOnly="True" Name="txtReceive" Width="554" Margin="74,358,12,32" TextWrapping="Wrap" />
+        <TextBox IsReadOnly="True" Name="txtReceive" Margin="400,34,12,178" TextWrapping="Wrap" />
     </Grid>
 </navigation:Page>

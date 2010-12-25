@@ -61,15 +61,14 @@ namespace SilverlightApplication1
         public Page1()
         {
             InitializeComponent();
+
             service = new Mmoasp("http://simpledungeons.com:8002/service/hibari");
             syncContext = SynchronizationContext.Current;
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
+            
             framecount = 0;
 
 
-            //Field.Children.Add(sprite1);
-            Canvas.SetLeft(sprite1, 100);
-            Canvas.SetTop(sprite1, 20);
             deltax = 1;
             deltay = 1;
             posx = 100;
@@ -92,23 +91,14 @@ namespace SilverlightApplication1
         public void OnTimer()
         {
             framecount++;
-            if (framecount % 60 == 0)
+            if (framecount % 30 == 0)
             {
-                // 1 sec.=60frames
+                // 1 sec.=60frames ( set in App.xaml.cs )
                 // txtLog.Text = FormatDateTime(DateTime.Now);
                 framecount = 0;
                 get_list_to_know();
             }
 
-            if (Canvas.GetLeft(sprite1) > 300) { deltax *= -1; }
-            if (Canvas.GetLeft(sprite1) <= 0) { deltax *= -1; }
-            if (Canvas.GetTop(sprite1) > 240) { deltay *= -1; }
-            if (Canvas.GetTop(sprite1) <= 0) { deltay *= -1; }
-            posx += deltax;
-            posy += deltay;
-
-            Canvas.SetLeft(sprite1, posx);
-            Canvas.SetTop(sprite1, posy);
         }
         internal string FormatDateTime(DateTime dt)
         {

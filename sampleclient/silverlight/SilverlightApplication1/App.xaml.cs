@@ -21,6 +21,7 @@ namespace SilverlightApplication1
             this.Exit += this.Application_Exit;
             this.UnhandledException += this.Application_UnhandledException;
 
+            this.Host.Settings.MaxFrameRate = 60;// 60fps
             InitializeComponent();
         }
 
