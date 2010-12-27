@@ -144,11 +144,11 @@ namespace SilverlightApplication1
 
                             c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
                             c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
-                            Canvas ca = (Canvas)c.img;
-                            ca.Height = 32;
-                            ca.Width = 32;
-                            ca.Background = new SolidColorBrush(Colors.Green);
-                            c.img = ca;
+                            //Canvas ca = (Canvas)c.img;
+                            //ca.Height = 32;
+                            //ca.Width = 32;
+                            //ca.Background = new SolidColorBrush(Colors.Green);
+                            //c.img = ca;
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
 
@@ -166,10 +166,11 @@ namespace SilverlightApplication1
                             c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
                             c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
 
-                            Canvas ca = new Canvas();
+                            //Canvas ca = new Canvas();
+                            Sprite ca = new Sprite();
                             ca.Height = 32;
                             ca.Width = 32;
-                            ca.Background = new SolidColorBrush(Colors.Green);
+                            //ca.Background = new SolidColorBrush(Colors.Green);
                             c.img = ca;
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
