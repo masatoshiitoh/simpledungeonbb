@@ -104,8 +104,8 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Sprite.xaml">
-      <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
@@ -114,18 +114,12 @@
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
-<<<<<<< .mine
   <ItemGroup>
     <Resource Include="map1.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="char.png" />
   </ItemGroup>
-=======
-  <ItemGroup>
-    <Resource Include="map1.png" />
-  </ItemGroup>
->>>>>>> .r26
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Silverlight\$(SilverlightVersion)\Microsoft.Silverlight.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
