@@ -192,8 +192,8 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 % caution!
 % mmoasp:login/4 cannot detect its failure before return value.
 % for example,
-% > a = 1,
-% > a = login(.....)
+% > a = 1.
+% > a = login(.....).  <- a is already bound!
 %
 % in such case, requested character will be set to on-line, but no one can handle it.
 % Timeout mechanism will clear this situation.
