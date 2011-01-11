@@ -1,7 +1,11 @@
 Do you want to see how move the simple dungeon service now?
 Please visit my simple dungeon server.
 
-http://219.121.56.65:8002/
+Silverlight client is hosted on:
+http://simpledungeons.com/
+
+Simpledungeon server runs at:
+http://simpledungeons.com:8002/
 
 
 
