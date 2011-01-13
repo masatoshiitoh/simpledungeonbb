@@ -19,6 +19,8 @@
 %%
 
 
+--this-syntax-error-is-intentional.
+
 -module(mmoasp).
 -compile(export_all).
 
