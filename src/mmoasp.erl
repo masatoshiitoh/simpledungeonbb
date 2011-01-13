@@ -17,7 +17,7 @@
 %%  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 %%  http://www.gnu.org/copyleft/gpl.html
 %%
-
+--intentional syntax error line.
 
 -module(mmoasp).
 -compile(export_all).
