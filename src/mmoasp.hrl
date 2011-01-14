@@ -40,6 +40,8 @@
 %-record(level, {cid, lv, exp}).
 %-record(skill, {cid, list, rest_exp, used_exp}).
 
+
+-record(npcdata, {npcid, name, basetype, attr}).
 % ** MMO style inventory: you can lookup them by character id **
 -record(location, {cid, initmap,initpos, map,  pos}).
 -record(estate,	{item_id, cid, is_offer}).

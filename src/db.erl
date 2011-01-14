@@ -40,7 +40,7 @@ do(Q) ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, money, supplies, estate], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, money, supplies, estate, npcdata], 30000).
 
 reset_tables() ->
 	mnesia:clear_table(service),
@@ -53,6 +53,7 @@ reset_tables() ->
 	mnesia:clear_table(estate),
 	mnesia:clear_table(session),
 	mnesia:clear_table(location),
+	mnesia:clear_table(npcdata),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -79,6 +80,8 @@ do_this_once() ->
 	mnesia:create_table(trade,		[{attributes, record_info(fields, trade)}]),
 	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
+	mnesia:create_table(npcdata,	[{attributes, record_info(fields, npcdata)}]),
+
 	mnesia:stop().
 
 %% *************************
@@ -90,6 +93,9 @@ demo(select_auth) ->
 
 demo(select_trade) ->
 	do(qlc:q([X || X <- mnesia:table(trade)])).
+
+demo(npcdata, Npcid) ->
+	do(qlc:q([X || X <- mnesia:table(npcdata), X#npcdata.npcid == Npcid]));
 
 demo(cdata, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
@@ -136,6 +142,11 @@ example_tables() ->
 	%% service
 	{service, "hibari", "s0001", "p0001", unlimited},
 
+
+
+	%% npcdata
+	{npcdata,"npc0004", "Slime", "Slime",	[{"x", 1}, {"y", 2}, {map, 1}, {hp, 2}]},
+
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
 	{auth_basic,"cid0002","id0002",	"pw0002"},
@@ -151,7 +162,6 @@ example_tables() ->
 	{location,"cid0002", 1, {pos, 3,3}, offline, offline},
 	{location,"cid0003", 1, {pos, 2,3}, offline, offline},
 	{location,"cid0004", 1, {pos, 3,2}, offline, offline},
-	
 	
 	%% inventory ( key colomn is cid.)
 	{money, "cid0001", 1000, 15},
