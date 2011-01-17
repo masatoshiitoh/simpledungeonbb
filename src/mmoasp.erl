@@ -32,7 +32,7 @@
 start_object(Objid) ->
 	case lookup_pid_by_objid(Objid) of
 		void ->
-			Pid = "dummypid", %spawn_link(),
+			Pid = spawn_object_process(Objid),
 			case mnesia:transaction(fun() ->
 					mnesia:write(#online_object{objid=Objid, pid=Pid}),
 					mnesia:write(#object_location{objid=Objid, map=1, x=2, y=2})
@@ -53,7 +53,9 @@ lookup_pid_by_objid(Objid) ->
 spawn_object_process(Objid) ->
 	case string:substr(Objid, 1, 3) of
 		"npc" -> 0;
-		"cid" -> 1
+		"cid" ->
+			{ok, Pid, Token} = uauth:setup_player_character(Objid),
+			Pid
 	end.
 
 	

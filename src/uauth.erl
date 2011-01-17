@@ -50,6 +50,8 @@ basic_change_password(Cid, NewPw) ->
 			end
 		end).
 
+
+
 setup_player_character(Cid)->
 	{character, Cid, CData} = db_get_cdata(Cid),
 	Token = uauth:gen_token("nil", Cid),
@@ -65,7 +67,7 @@ setup_player_character(Cid)->
 	
 	Radius = 100,
 	mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
-	{ok, Token}.
+	{ok, Child, Token}.
 
 setup_player_location(Cid) ->
 	%% copy location data from location table to cdata attribute.
@@ -85,7 +87,7 @@ db_login(_From, Id, Pw, Ipaddr)->
 			case P of
 				[] ->
 					% Not found.. Instanciate requested character !
-					{ok, Token} = setup_player_character(Cid),
+					{ok, Pid, Token} = setup_player_character(Cid),
 					{ok, Cid, Token};
 				[Cid] ->
 					% found.
