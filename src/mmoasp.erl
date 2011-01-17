@@ -27,6 +27,52 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
+%% for NPC implementation
+
+start_object(Objid) ->
+	case lookup_pid_by_objid(Objid) of
+		void ->
+			Pid = "dummypid", %spawn_link(),
+			case mnesia:transaction(fun() ->
+					mnesia:write(#online_object{objid=Objid, pid=Pid}),
+					mnesia:write(#object_location{objid=Objid, map=1, x=2, y=2})
+					end) of
+				{atomic,ok}-> Pid;
+				AbortedWithReason -> AbortedWithReason
+			end;
+		FoundPid -> FoundPid
+	end.
+
+lookup_pid_by_objid(Objid) ->
+	case db:do(qlc:q([X || X <- mnesia:table(online_object), X#online_object.objid =:= Objid])) of
+		[] -> void;
+		[X] -> X#online_object.pid
+	end.
+
+
+spawn_object_process(Objid) ->
+	case string:substr(Objid, 1, 3) of
+		"npc" -> 0;
+		"cid" -> 1
+	end.
+
+	
+
+stop_object(Objid) ->
+	case lookup_pid_by_objid(Objid) of
+		void -> void;
+		FoundPid ->
+			FoundPid ! {stop, self()},
+			case mnesia:transaction(fun() ->
+					mnesia:delete({object_location, Objid}),
+					mnesia:delete({online_object, Objid})
+					end) of
+				{atomic,ok}-> ok;
+				AbortedWithReason -> AbortedWithReason
+			end
+	end.
+
+
 %-----------------------------------------------------------
 %% implement simple api for yaws_if.erl
 %-----------------------------------------------------------

@@ -50,6 +50,33 @@ basic_change_password(Cid, NewPw) ->
 			end
 		end).
 
+setup_player_character(Cid)->
+	{character, Cid, CData} = db_get_cdata(Cid),
+	Token = uauth:gen_token("nil", Cid),
+	UTimer = morningcall:new(),
+	EventQueue = queue:new(),
+	StatDict = [],
+	db_location_online(Cid),
+	Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, ipaddr="nil", token=Token}) end),
+	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
+	
+	setup_player_location(Cid),
+	
+	Radius = 100,
+	mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
+	{ok, Token}.
+
+setup_player_location(Cid) ->
+	%% copy location data from location table to cdata attribute.
+	Me = world:get_location(Cid),
+	{pos, X, Y} = Me#location.initpos,
+	Map = Me#location.initmap,
+	mmoasp:setter(Cid, "map", Map),
+	mmoasp:setter(Cid, "x", X),
+	mmoasp:setter(Cid, "y", Y),
+	{pos, X, Y}.
+
 db_login(_From, Id, Pw, Ipaddr)->
 	Loaded = load_character(Id,Pw),
 	case Loaded of 
@@ -58,26 +85,7 @@ db_login(_From, Id, Pw, Ipaddr)->
 			case P of
 				[] ->
 					% Not found.. Instanciate requested character !
-					Token = uauth:gen_token(Ipaddr, Cid),
-					UTimer = morningcall:new(),
-					EventQueue = queue:new(),
-					StatDict = [],
-					db_location_online(Cid),
-					Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
-					mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, ipaddr=Ipaddr, token=Token}) end),
-					mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
-					
-					%% copy location data from location table to cdata attribute.
-					Me = world:get_location(Cid),
-					{pos, X, Y} = Me#location.initpos,
-					Map = Me#location.initmap,
-					mmoasp:setter(Cid, "map", Map),
-					mmoasp:setter(Cid, "x", X),
-					mmoasp:setter(Cid, "y", Y),
-
-					
-					Radius = 100,
-					mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
+					{ok, Token} = setup_player_character(Cid),
 					{ok, Cid, Token};
 				[Cid] ->
 					% found.
@@ -88,6 +96,15 @@ db_login(_From, Id, Pw, Ipaddr)->
 			{ng, "character: authentication failed"}
 		end.
 
+db_get_cid(Id, Pw) ->
+	Loaded = load_character(Id,Pw),
+	case Loaded of 
+		{character, Cid, CData} -> {character, Cid};
+		void -> {ng, "character: authentication failed"}
+		end.
+
+db_get_cdata(Cid) ->
+	{character, Cid, lookup_cdata(Cid)}.
 
 % db_logout : this will be called by character process.
 db_logout(_From, Cid, _Token) ->

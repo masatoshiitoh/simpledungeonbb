@@ -21,6 +21,12 @@
 
 %% Mnesia table structure
 
+%% under development:
+-record(npcdata, {npcid, name, basetype, attr}).
+-record(online_object, {objid, pid}).
+-record(object_location, {objid, map, x, y}).
+
+
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
 -record(admin_session, {key, svid, adm_id, token, last_op_time}).
@@ -41,7 +47,6 @@
 %-record(skill, {cid, list, rest_exp, used_exp}).
 
 
--record(npcdata, {npcid, name, basetype, attr}).
 % ** MMO style inventory: you can lookup them by character id **
 -record(location, {cid, initmap,initpos, map,  pos}).
 -record(estate,	{item_id, cid, is_offer}).

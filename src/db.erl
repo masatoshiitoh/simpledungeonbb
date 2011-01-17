@@ -54,6 +54,8 @@ reset_tables() ->
 	mnesia:clear_table(session),
 	mnesia:clear_table(location),
 	mnesia:clear_table(npcdata),
+	mnesia:clear_table(online_object),
+	mnesia:clear_table(object_location),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -81,6 +83,8 @@ do_this_once() ->
 	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
 	mnesia:create_table(npcdata,	[{attributes, record_info(fields, npcdata)}]),
+	mnesia:create_table(online_object,	[{attributes, record_info(fields, online_object)}]),
+	mnesia:create_table(object_location,	[{attributes, record_info(fields, object_location)}]),
 
 	mnesia:stop().
 
@@ -145,7 +149,10 @@ example_tables() ->
 
 
 	%% npcdata
-	{npcdata,"npc0004", "Slime", "Slime",	[{"x", 1}, {"y", 2}, {map, 1}, {hp, 2}]},
+	{npcdata,"npc0001", "Slime", "Slime",	[{"x", 1}, {"y", 2}, {"map", 1}, {"hp", 2}]},
+	{npcdata,"npc0002", "Slime", "Slime",	[{"x", 3}, {"y", 3}, {"map", 1}, {"hp", 2}]},
+	{npcdata,"npc0003", "Slime", "Slime",	[{"x", 5}, {"y", 7}, {"map", 1}, {"hp", 2}]},
+	{npcdata,"npc0004", "Slime", "Slime",	[{"x", 8}, {"y", 8}, {"map", 1}, {"hp", 2}]},
 
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
