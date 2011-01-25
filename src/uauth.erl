@@ -60,7 +60,7 @@ setup_player_character(Cid)->
 	StatDict = [],
 	db_location_online(Cid),
 	Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
-	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, ipaddr="nil", token=Token}) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, type=pc, ipaddr=nil, token=Token}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
 	setup_player_location(Cid),

@@ -65,7 +65,12 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			io:format("character: child process terminated by stop_process message.~n"),
 			morningcall:cancel_all(UTimer),
 			From ! {ok, Cid};
-		
+
+		{From, force_stop_process} ->
+			io:format("character: child process terminated by force_stop_process message.~n"),
+			morningcall:cancel_all(UTimer),
+			From ! {ok, Cid};		
+
 		{From, request_list_to_know, Token} ->
 			From ! {list_to_know, get_elements(EventQueue), get_stats(StatDict)},
 			% io:format("character: get request_list_to_know. ~p~n", [EventQueue]),
@@ -216,6 +221,7 @@ db_setter(Cid, Key, Value) ->
 		mnesia:write(NewCData)
 	end,
 	world:apply_cdata(Cid, F).
+
 
 db_setpos(Cid, Pos) ->
 	F = fun(X) ->

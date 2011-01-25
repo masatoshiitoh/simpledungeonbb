@@ -23,8 +23,8 @@
 
 %% under development:
 -record(npcdata, {npcid, name, basetype, attr}).
--record(online_object, {objid, pid}).
--record(object_location, {objid, map, x, y}).
+%-record(online_object, {objid, pid}).
+%-record(object_location, {objid, map, pos}).
 
 
 % ** Admin **
@@ -39,7 +39,7 @@
 % ** Base **
 -record(private_kv,	{cid, attr}).	%% private (hidden from other player) information(last window position, shortcut...
 -record(cdata,	{cid, name, attr}).
--record(session, {cid, pid, stream_pid, ipaddr, token}). 
+-record(session, {cid, pid, type, stream_pid, ipaddr, token}). 
 %-record(friends, {cid, list}).
 -record(money,	{cid,  amount, offer}).
 -record(supplies,	{id, cid, item_id, amount, offer}).

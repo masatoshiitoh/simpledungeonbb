@@ -54,8 +54,8 @@ reset_tables() ->
 	mnesia:clear_table(session),
 	mnesia:clear_table(location),
 	mnesia:clear_table(npcdata),
-	mnesia:clear_table(online_object),
-	mnesia:clear_table(object_location),
+	%mnesia:clear_table(online_object),
+	%mnesia:clear_table(object_location),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -83,14 +83,17 @@ do_this_once() ->
 	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
 	mnesia:create_table(npcdata,	[{attributes, record_info(fields, npcdata)}]),
-	mnesia:create_table(online_object,	[{attributes, record_info(fields, online_object)}]),
-	mnesia:create_table(object_location,	[{attributes, record_info(fields, object_location)}]),
+	%mnesia:create_table(online_object,	[{attributes, record_info(fields, online_object)}]),
+	%mnesia:create_table(object_location,	[{attributes, record_info(fields, object_location)}]),
 
 	mnesia:stop().
 
 %% *************************
 %% following codes are only for developing use.
 %% *************************
+
+demo(session) ->
+	do(qlc:q([X || X <- mnesia:table(session)]));
 
 demo(select_auth) ->
 	do(qlc:q([X || X <- mnesia:table(auth_basic)]));
