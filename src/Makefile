@@ -30,6 +30,7 @@ RM = DEL
 
 ERLC = erlc
 ERLCFLAGS = -o $(DESTDIR)
+#ERLCFLAGS =
 
 .SUFFIXES: .erl .beam
 

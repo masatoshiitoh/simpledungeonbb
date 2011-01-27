@@ -89,11 +89,11 @@ logout(From, Cid, Token) ->
 setter(From, Cid, Token, Key, Value) ->character:setter(From, Cid,Token, Key, Value).
 setter(Cid, Key, Value) ->character:setter(Cid, Key, Value).
 
-get_list_to_know(_From, Cid, Token) ->
+get_list_to_know(_From, Cid) ->
 	
 	% send message.
 	F = fun(X) ->
-		X#session.pid ! {self(), request_list_to_know, Token}
+		X#session.pid ! {self(), request_list_to_know}
 	end,
 	world:apply_session(Cid, F),
 	
@@ -123,31 +123,28 @@ talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageB
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {self(), init_move, CurrentPos, Path}.
 
-get_neighbor_char_sessions(Cid, R) ->
-	Me = world:get_location(Cid),
+get_neighbor_char_sessions(Oid, R) ->
+	Me = world:get_session(Oid),
+	
 	F = fun() ->
-		qlc:e(qlc:q([Sess || Loc <- mnesia:table(location),
-		%%	Loc#location.cid =/= Cid,
-			u:distance(Loc#location.pos, Me#location.pos) < R,
-			Loc#location.map == Me#location.map,
-			Sess <- mnesia:table(session),
-			Sess#session.type == pc,	
-			Sess#session.cid == Loc#location.cid]))
+		%%	Sess#session.oid =/= Oid,
+		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
+			u:distance({session, Sess}, {session,Me}) < R,
+			Sess#session.type == "pc"]))
 	end,
 	case mnesia:transaction(F) of
 		{atomic, Result} -> Result;
 		Other -> Other
 	end.
 
-get_neighbor_char_cdata(Cid, R) ->
-	Me = world:get_location(Cid),
+get_neighbor_char_cdata(Oid, R) ->
+	Me = world:get_session(Oid),
 	F = fun() ->
-		qlc:e(qlc:q([CData || Loc <- mnesia:table(location),
+		qlc:e(qlc:q([CData || Sess <- mnesia:table(session),
 		%%	Loc#location.cid =/= Cid,
-			u:distance(Loc#location.pos, Me#location.pos) < R,
-			Loc#location.map == Me#location.map,
+			u:distance({session, Sess}, {session, Me}) < R,
 			CData <- mnesia:table(cdata),	
-			CData#cdata.cid == Loc#location.cid]))
+			CData#cdata.cid == Sess#session.oid]))
 	end,
 	case mnesia:transaction(F) of
 		{atomic, Result} -> Result;
@@ -186,10 +183,11 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 
 move(Cid, DestPos) ->
 	F = fun(X) ->
-		{ok, Result} = path_finder:lookup_path(X#location.pos, DestPos),
+		NowPos = {pos, X#session.x, X#session.y},
+		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
 		Result
 	end,
-	{atomic, WayPoints} = world:apply_location(Cid, F),
+	{atomic, WayPoints} = world:apply_session(Cid, F),
 	case WayPoints of
 		[] -> io:format("path unavailable.  no waypoints found.~n", []),
 			[];

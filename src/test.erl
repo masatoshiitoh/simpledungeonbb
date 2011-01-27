@@ -71,9 +71,9 @@ run_tests() ->
 	X2 = world:get_session(Cid2),
 	X2#session.pid ! {self(), update_neighbor_status, 10},
 	
-	{A1, S1} = mmoasp:get_list_to_know(self(), Cid1, Token1),
+	{A1, S1} = mmoasp:get_list_to_know(self(), Cid1),
 	io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
-	{A2, S2} = mmoasp:get_list_to_know(self(), Cid2, Token2),
+	{A2, S2} = mmoasp:get_list_to_know(self(), Cid2),
 	io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	%% state check
@@ -81,7 +81,8 @@ run_tests() ->
 
 	%% state check
 	io:format("distance check for Cid1 - Cid2:~p~n",
-		[u:distance((world:get_location(Cid1))#location.pos, (world:get_location(Cid2))#location.pos)]),
+		[u:distance({session, world:get_session(Cid1)}, {session, world:get_session(Cid2)})]),
+%		[u:distance((world:get_location(Cid1))#location.pos, (world:get_location(Cid2))#location.pos)]),
 		
 	io:format("get neighbor Cid1 (1) :~p~n",
 		[mmoasp:get_neighbor_char_sessions(Cid1, 1)]),

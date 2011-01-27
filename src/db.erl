@@ -40,7 +40,7 @@ do(Q) ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, money, supplies, estate, npcdata], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate, npcdata], 30000).
 
 reset_tables() ->
 	mnesia:clear_table(service),
@@ -54,8 +54,6 @@ reset_tables() ->
 	mnesia:clear_table(session),
 	mnesia:clear_table(location),
 	mnesia:clear_table(npcdata),
-	%mnesia:clear_table(online_object),
-	%mnesia:clear_table(object_location),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -83,8 +81,6 @@ do_this_once() ->
 	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
 	mnesia:create_table(npcdata,	[{attributes, record_info(fields, npcdata)}]),
-	%mnesia:create_table(online_object,	[{attributes, record_info(fields, online_object)}]),
-	%mnesia:create_table(object_location,	[{attributes, record_info(fields, object_location)}]),
 
 	mnesia:stop().
 
@@ -108,7 +104,7 @@ demo(cdata, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
 
 demo(session, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]));
+	do(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]));
 
 demo(supplies, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid]));
@@ -168,10 +164,10 @@ example_tables() ->
 	{cdata,"cid0003", "charlie",	[{"align", "good"}]},
 	{cdata,"cid0004", "delta",	[{"align", "good"}]},
 
-	{location,"cid0001", 1, {pos, 1,3}, offline, offline},
-	{location,"cid0002", 1, {pos, 3,3}, offline, offline},
-	{location,"cid0003", 1, {pos, 2,3}, offline, offline},
-	{location,"cid0004", 1, {pos, 3,2}, offline, offline},
+	{location,"cid0001", 1, 1, 3},
+	{location,"cid0002", 1, 3, 3},
+	{location,"cid0003", 1, 2, 3},
+	{location,"cid0004", 1, 3, 2},
 	
 	%% inventory ( key colomn is cid.)
 	{money, "cid0001", 1000, 15},

@@ -49,7 +49,7 @@ get_location(Cid) ->
 
 %% F requires 1 arg (session record).
 apply_session(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid, X#session.type == pc]), F).
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid, X#session.type == "pc"]), F).
 %% F requires 1 arg (cdata record).
 apply_cdata(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]), F).

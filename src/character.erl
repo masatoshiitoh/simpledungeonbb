@@ -42,7 +42,7 @@ setter(Cid, Key, Value) ->
 
 stop_child(Cid) ->
 	world:apply_session(Cid,
-		fun(X) -> X#session.pid ! {self(), stop_process, X#session.token} end).
+		fun(X) -> X#session.pid ! {self(), force_stop_process} end).
 
 % core loop -----------------------------------------------
 
@@ -71,7 +71,7 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			morningcall:cancel_all(UTimer),
 			From ! {ok, Cid};		
 
-		{From, request_list_to_know, Token} ->
+		{From, request_list_to_know} ->
 			From ! {list_to_know, get_elements(EventQueue), get_stats(StatDict)},
 			% io:format("character: get request_list_to_know. ~p~n", [EventQueue]),
 			loop(Cid, CData, queue:new(), StatDict, Token, UTimer, mk_idle_reset());
@@ -224,8 +224,9 @@ db_setter(Cid, Key, Value) ->
 
 
 db_setpos(Cid, Pos) ->
+	{pos, PosX, PosY} = Pos,
 	F = fun(X) ->
-		mnesia:write(X#location{pos = Pos})
+		mnesia:write(X#session{x = PosX, y = PosY})
 	end,
-	world:apply_location(Cid, F).
+	world:apply_session(Cid, F).
 

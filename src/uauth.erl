@@ -60,7 +60,7 @@ setup_player_character(Cid)->
 	StatDict = [],
 	db_location_online(Cid),
 	Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
-	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Child, type=pc, ipaddr=nil, token=Token}) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
 	setup_player_location(Cid),
@@ -72,24 +72,30 @@ setup_player_character(Cid)->
 setup_player_location(Cid) ->
 	%% copy location data from location table to cdata attribute.
 	Me = world:get_location(Cid),
-	{pos, X, Y} = Me#location.initpos,
 	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
 	mmoasp:setter(Cid, "map", Map),
 	mmoasp:setter(Cid, "x", X),
 	mmoasp:setter(Cid, "y", Y),
+	
+	mnesia:transaction(fun() ->
+		[Pc] = mnesia:read({session, Cid}),
+		mnesia:write(Pc#session{map = Map, x = X, y = Y}) end),
+	
 	{pos, X, Y}.
 
 db_login(_From, Id, Pw, Ipaddr)->
 	Loaded = load_character(Id,Pw),
 	case Loaded of 
-		{character, Cid, CData} ->
-			P = db:do(qlc:q([X#session.cid||X<-mnesia:table(session), X#session.cid == Cid])),
+		{character, Oid, CData} ->
+			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
 			case P of
 				[] ->
 					% Not found.. Instanciate requested character !
-					{ok, Pid, Token} = setup_player_character(Cid),
-					{ok, Cid, Token};
-				[Cid] ->
+					{ok, Pid, Token} = setup_player_character(Oid),
+					{ok, Oid, Token};
+				[Oid] ->
 					% found.
 					{ng, "character: account is in use"}
 			end;
@@ -125,23 +131,14 @@ stop_stream(_) -> void.
 db_location_online(Cid) ->
 	F = fun() ->
 		[CLoc] = mnesia:read({location, Cid}),
-		mnesia:write(CLoc#location{map = CLoc#location.initmap, pos = CLoc#location.initpos})
+		[CSess] = mnesia:read({session, Cid}),
+		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
 	end,
 	mnesia:transaction(F).
 
-db_location_offline(Cid) ->
-	F = fun() ->
-		[CLoc] = mnesia:read({location, Cid}),
-		mnesia:write(CLoc#location{map = offline, pos = offline})
-	end,
-	mnesia:transaction(F).
+db_location_offline(Cid) -> nop.
 
-db_location_offline(Cid, Map, {pos, X, Y}) ->
-	F = fun() ->
-		[CLoc] = mnesia:read({location, Cid}),
-		mnesia:write(CLoc#location{initmap = Map, initpos = {pos, X, Y}, map = offline, pos = offline})
-	end,
-	mnesia:transaction(F).
+db_location_offline(Cid, Map, {pos, X, Y}) -> nop.
 
 
 

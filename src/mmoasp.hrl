@@ -22,10 +22,11 @@
 %% Mnesia table structure
 
 %% under development:
+-record(cdata,	{cid, name, attr}).
 -record(npcdata, {npcid, name, basetype, attr}).
-%-record(online_object, {objid, pid}).
-%-record(object_location, {objid, map, pos}).
-
+%% oid is onigiri id. what's onigiri? onigiri points an element. (object or sprite, character...)
+-record(session, {oid, pid, type, name, map, x, y, z, attr, stream_pid}). 
+-record(location, {cid, initmap,initx, inity}).
 
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
@@ -38,17 +39,14 @@
 
 % ** Base **
 -record(private_kv,	{cid, attr}).	%% private (hidden from other player) information(last window position, shortcut...
--record(cdata,	{cid, name, attr}).
--record(session, {cid, pid, type, stream_pid, ipaddr, token}). 
-%-record(friends, {cid, list}).
--record(money,	{cid,  amount, offer}).
--record(supplies,	{id, cid, item_id, amount, offer}).
+
 %-record(level, {cid, lv, exp}).
 %-record(skill, {cid, list, rest_exp, used_exp}).
-
+%-record(friends, {cid, list}).
 
 % ** MMO style inventory: you can lookup them by character id **
--record(location, {cid, initmap,initpos, map,  pos}).
+-record(money,	{cid,  amount, offer}).
+-record(supplies,	{id, cid, item_id, amount, offer}).
 -record(estate,	{item_id, cid, is_offer}).
 -record(trade,	{id, confirm_l, confirm_r}).
 -record(u_trade, {cid, tid}).

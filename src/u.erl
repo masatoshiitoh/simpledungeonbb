@@ -20,6 +20,8 @@
 
 
 -module(u).
+
+-include_lib("mmoasp.hrl").
 -export([make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
 
 % use for Tid, Cid, ItemId...
@@ -29,6 +31,12 @@ make_new_id() ->
 list_to_hexstr(A) -> list_to_hexstr(A, []).
 list_to_hexstr([], Acc) -> lists:flatten(lists:reverse(Acc));
 list_to_hexstr([H|T], Acc) -> list_to_hexstr(T, io_lib:format("~.16b", [H]) ++ Acc).
+
+distance({session, S1}, {session, S2}) ->
+	distance(
+		{mapxy, S1#session.map, S1#session.x, S1#session.y},
+		{mapxy, S2#session.map, S2#session.x, S2#session.y}
+	);
 
 distance({mapxy, Map1, X1, Y1}, {mapxy, Map2, X2, Y2}) when Map1 =:= Map2 ->
 	distance({pos, X1,Y1}, {pos, X2, Y2});

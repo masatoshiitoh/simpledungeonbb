@@ -47,7 +47,7 @@ setup_npc(Npcid)->
 	Child = spawn(fun() ->npc:loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) end),
 	
 	%% store session
-	mnesia:transaction(fun() -> mnesia:write(#session{cid=Npcid, pid=Child, type=npc}) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{oid=Npcid, pid=Child, type=npc}) end),
 
 	Child.
 	
@@ -68,7 +68,7 @@ db_get_npcdata(Cid) ->
 	end.
 
 lookup_pid_by_npcid(Npcid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Npcid, X#session.type == npc])) of
+	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.oid == Npcid, X#session.type == "npc"])) of
 		[] -> void;
 		[X] -> X#session.pid
 	end.
