@@ -37,6 +37,7 @@ start_npc(Npcid) ->
 		FoundPid -> FoundPid
 	end.
 
+%% code set location in session is DUMMY. Update it later.
 setup_npc(Npcid)->
 	{npcdata, Npcid, Name, Type, Npcdata} = db_get_npcdata(Npcid),
 	
@@ -47,18 +48,25 @@ setup_npc(Npcid)->
 	Child = spawn(fun() ->npc:loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) end),
 	
 	%% store session
-	mnesia:transaction(fun() -> mnesia:write(#session{oid=Npcid, pid=Child, type=npc}) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{oid=Npcid, pid=Child, type="npc", map=1, x=3,y=3}) end),
 
 	Child.
 	
 
 loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
 	receive
+		{_From, talk, Talker, MessageBody, Mode} ->
+			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
+			%% mmoasp:talk(open, Npcid, "konnichiwa--", 100),
+			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
 		{From, stop_process} ->
 			io:format("npcloop: child process terminated by stop_process message.~n"),
 			morningcall:cancel_all(UTimer),
-			From ! {ok, Npcid};
-		_ -> 0
+			From ! {ok, Npcid},
+			bye;
+		_ ->
+			%% do nothing.
+			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer)
 	end.
 
 db_get_npcdata(Cid) ->
@@ -79,11 +87,14 @@ stop_npc(Npcid) ->
 		FoundPid ->
 			FoundPid ! {self(), stop_process},
 			case mnesia:transaction(fun() ->
-					mnesia:delete({location, Npcid}),
 					mnesia:delete({session, Npcid})
 					end) of
-				{atomic,ok}-> ok;
-				AbortedWithReason -> AbortedWithReason
+				{atomic,ok}->
+					io:format("npcloop: stop_npc session entry clear succeeded.~n"),
+					ok;
+				AbortedWithReason ->
+					io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
+					AbortedWithReason
 			end
 	end.
 
@@ -97,5 +108,5 @@ db_getter(Npcid, Key) ->
 			false -> undefined
 		end
 	end,
-	world:apply_cdata(Npcid, F).
+	world:apply_npcdata(Npcid, F).
 

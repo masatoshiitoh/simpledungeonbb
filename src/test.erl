@@ -60,8 +60,8 @@ run_tests() ->
 	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	%% talk check
-	mmoasp:talk(open,Cid2, "hello all from cid 1234!!! ", 5),
-	mmoasp:talk(open,Cid2, "will not appear this message!!! ", 1),
+	mmoasp:talk(open,Cid2, "hello all from cid 1234!!! ", 100),
+	mmoasp:talk(open,Cid2, "will not appear this message!!! ", 100),
 	mmoasp:talk(whisper,Cid2, Cid1, "hello cid 1 from cid 1234, with love :-)"),
 	mmoasp:talk(whisper,Cid2, Cid1, "talk, line 2"),
 
@@ -105,6 +105,9 @@ run_tests() ->
 	mmoasp:logout(self(), Cid2, Token2),
 
 	npc:stop_npc("npc0001"),
+	receive
+		after 1000 -> ok
+	end,
 	io:format("after stop npc ~p~n", [db:demo(session)]),
 
 	%% stop service

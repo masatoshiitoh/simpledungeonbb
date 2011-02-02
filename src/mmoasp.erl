@@ -123,6 +123,20 @@ talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageB
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {self(), init_move, CurrentPos, Path}.
 
+get_all_neighbor_sessions(Oid, R) ->
+	Me = world:get_session(Oid),
+	
+	F = fun() ->
+		%%	Sess#session.oid =/= Oid,
+		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
+			u:distance({session, Sess}, {session, Me}) < R
+			]))
+	end,
+	case mnesia:transaction(F) of
+		{atomic, Result} -> Result;
+		Other -> Other
+	end.
+
 get_neighbor_char_sessions(Oid, R) ->
 	Me = world:get_session(Oid),
 	
@@ -163,7 +177,7 @@ talk(whisper, SenderCid, ToCid, MessageBody) ->
 
 talk(open, SenderCid, MessageBody, Radius) ->
 	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+		|| X <- get_all_neighbor_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
 notice_login(SenderCid, {csummary, Cid, Name}, Radius) ->

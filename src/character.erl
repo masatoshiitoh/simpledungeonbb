@@ -42,7 +42,7 @@ setter(Cid, Key, Value) ->
 
 stop_child(Cid) ->
 	world:apply_session(Cid,
-		fun(X) -> X#session.pid ! {self(), force_stop_process} end).
+		fun(X) -> X#session.pid ! {self(), stop_process} end).
 
 % core loop -----------------------------------------------
 
@@ -61,15 +61,10 @@ loop(Cid, _CData, _EventQueue, _StatDict, Token, _UTimer, {idle, SinceLastOp, _L
 
 loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastOp}) ->
 	receive
-		{From, stop_process, Token} ->
+		{From, stop_process} ->
 			io:format("character: child process terminated by stop_process message.~n"),
 			morningcall:cancel_all(UTimer),
 			From ! {ok, Cid};
-
-		{From, force_stop_process} ->
-			io:format("character: child process terminated by force_stop_process message.~n"),
-			morningcall:cancel_all(UTimer),
-			From ! {ok, Cid};		
 
 		{From, request_list_to_know} ->
 			From ! {list_to_know, get_elements(EventQueue), get_stats(StatDict)},
