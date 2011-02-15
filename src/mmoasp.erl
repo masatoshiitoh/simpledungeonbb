@@ -190,6 +190,11 @@ notice_logout(SenderCid, {csummary, Cid}, Radius) ->
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
+notice_remove(SenderCid, {csummary, Cid}, Radius) ->
+	[X#session.pid ! {self(), notice_remove, SenderCid}
+		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
 notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 	[X#session.pid ! {self(), notice_move, SenderCid, From, To, Duration}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],

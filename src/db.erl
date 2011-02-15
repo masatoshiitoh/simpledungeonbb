@@ -40,7 +40,7 @@ do(Q) ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate, npcdata], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
 
 reset_tables() ->
 	mnesia:clear_table(service),
@@ -53,7 +53,6 @@ reset_tables() ->
 	mnesia:clear_table(estate),
 	mnesia:clear_table(session),
 	mnesia:clear_table(location),
-	mnesia:clear_table(npcdata),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -80,8 +79,6 @@ do_this_once() ->
 	mnesia:create_table(trade,		[{attributes, record_info(fields, trade)}]),
 	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
-	mnesia:create_table(npcdata,	[{attributes, record_info(fields, npcdata)}]),
-
 	mnesia:stop().
 
 %% *************************
@@ -96,9 +93,6 @@ demo(select_auth) ->
 
 demo(select_trade) ->
 	do(qlc:q([X || X <- mnesia:table(trade)])).
-
-demo(npcdata, Npcid) ->
-	do(qlc:q([X || X <- mnesia:table(npcdata), X#npcdata.npcid == Npcid]));
 
 demo(cdata, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
@@ -145,28 +139,31 @@ example_tables() ->
 	%% service
 	{service, "hibari", "s0001", "p0001", unlimited},
 
-
-
-	%% npcdata
-	{npcdata,"npc0001", "Slime", "Slime",	[{"x", 1}, {"y", 2}, {"map", 1}, {"hp", 2}]},
-	{npcdata,"npc0002", "Slime", "Slime",	[{"x", 3}, {"y", 3}, {"map", 1}, {"hp", 2}]},
-	{npcdata,"npc0003", "Slime", "Slime",	[{"x", 5}, {"y", 7}, {"map", 1}, {"hp", 2}]},
-	{npcdata,"npc0004", "Slime", "Slime",	[{"x", 8}, {"y", 8}, {"map", 1}, {"hp", 2}]},
+	%% npc data
+	{auth_basic,"npc0001", void,void},
+	{auth_basic,"npc0002", void,void},
+	{auth_basic,"npc0003", void,void},
+	{auth_basic,"npc0004", void,void},
+	{cdata,"npc0001", "Slime", [{"type", "npc"}, {"x", 1}, {"y", 2}, {"map", 1}, {"hp", 2}]},
+	{cdata,"npc0002", "Slime", [{"type", "npc"}, {"x", 3}, {"y", 3}, {"map", 1}, {"hp", 2}]},
+	{cdata,"npc0003", "Slime", [{"type", "npc"}, {"x", 5}, {"y", 7}, {"map", 1}, {"hp", 2}]},
+	{cdata,"npc0004", "Slime", [{"type", "npc"}, {"x", 8}, {"y", 8}, {"map", 1}, {"hp", 2}]},
 
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
 	{auth_basic,"cid0002","id0002",	"pw0002"},
 	{auth_basic,"cid0003","id0003",	"pw0003"},
-	{auth_basic,"cid0004","id0004",	"pw0004"} ,
+	{auth_basic,"cid0004","id0004",	"pw0004"},
 	%% cdata
-	{cdata,"cid0001", "alpha",	[{"align", "good"}]},
-	{cdata,"cid0002", "bravo",	[{"align", "evil"}]},
-	{cdata,"cid0003", "charlie",	[{"align", "good"}]},
-	{cdata,"cid0004", "delta",	[{"align", "good"}]},
+	{cdata,"cid0001", "alpha",		[{"type", "pc"}, {"align", "good"}, {"hp", 12}]},
+	{cdata,"cid0002", "bravo",		[{"type", "pc"}, {"align", "evil"}, {"hp", 16}]},
+	{cdata,"cid0003", "charlie",	[{"type", "pc"}, {"align", "good"}, {"hp", 10}]},
+	{cdata,"cid0004", "delta",		[{"type", "pc"}, {"align", "good"}, {"hp", 18}]},
 
+	%% initial location (= re-spawn point)
 	{location,"cid0001", 1, 1, 3},
 	{location,"cid0002", 1, 3, 3},
-	{location,"cid0003", 1, 2, 3},
+	{location,"cid0003", 1, 4, 3},
 	{location,"cid0004", 1, 3, 2},
 	
 	%% inventory ( key colomn is cid.)

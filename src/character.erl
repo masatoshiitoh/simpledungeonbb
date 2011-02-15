@@ -112,6 +112,14 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 					, EventQueue),
 				StatDict, Token, UTimer, mk_idle_update(LastOp));
 			
+		{_From, notice_remove, SenderCid} ->
+			%%io:format("character: get others removed. ~p~n", [{notice_remove, Cid} ]),
+			loop(Cid,CData,
+				add_element(
+					[{type, "remove"}, {cid, SenderCid}]
+					, EventQueue),
+				StatDict, Token, UTimer, mk_idle_update(LastOp));
+			
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
 			SelfPid = self(),
@@ -203,7 +211,7 @@ get_elements(Q) -> queue:to_list(Q).
 get_stats(L) -> L.
 
 gen_stat_from_cdata(X) -> 
-	[{"type", "pc"}, {"cid", X#cdata.cid}, {"name", X#cdata.name}] ++ X#cdata.attr.
+	[{"cid", X#cdata.cid}, {"name", X#cdata.name}] ++ X#cdata.attr.
 
 db_setter(Cid, Key, Value) ->
 	F = fun(X) ->

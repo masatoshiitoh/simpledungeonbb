@@ -74,20 +74,3 @@ apply_cid_indexed_table(Cond, F) ->
 	mnesia:transaction(L).
 
 
-
-
-
-apply_npcdata(Npcid, F) ->
-	apply_npcid_indexed_table(qlc:q([X || X <- mnesia:table(npcdata), X#npcdata.npcid == Npcid]), F).
-%% F requires 1 arg (cdata record).
-
-apply_npcid_indexed_table(Cond, F) ->
-	L = fun() ->
-		case qlc:e(Cond) of
-			[] -> {ng, "no such npc"};	% this style makes return value as {atomic, {ng,"no~"}}
-			[R] -> F(R)
-		end
-	end,
-	mnesia:transaction(L).
-
-

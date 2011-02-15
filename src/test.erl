@@ -31,7 +31,7 @@
 run_tests() ->
 	mmoasp:start(),
 	
-	_NpcPid1 = npc:start_npc("npc0001"),
+	NpcPid1 = npc:start_npc("npc0001"),
 	io:format("after start npc ~p~n", [db:demo(session)]),
 	
 	%% login
@@ -88,6 +88,20 @@ run_tests() ->
 		[mmoasp:get_neighbor_char_sessions(Cid1, 1)]),
 	io:format("get neighbor Cid1 (2) :~p~n",
 		[mmoasp:get_neighbor_char_sessions(Cid1, 2)]),
+	
+	
+	%% NPC moving !
+	io:format("npc move 1,2 to 7,7 ~p~n", [mmoasp:move("npc0001", {pos, 7,7})]),
+	receive
+		after 2500 -> ok
+	end,
+	io:format("RE-order move to 1,2 ~p~n", [mmoasp:move("npc0001", {pos, 6,2})]),
+	receive
+		after 5000 -> ok
+	end,
+	io:format("moved... :~n 1: ~p~n", [world:get_location(Cid1)]),
+	
+
 	
 	%% moving !
 	io:format("order move 1,3 to 3,3 ~p~n", [mmoasp:move(Cid1, {pos, 3,3})]),

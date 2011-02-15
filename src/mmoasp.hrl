@@ -23,8 +23,7 @@
 
 %% under development:
 -record(cdata,	{cid, name, attr}).
--record(npcdata, {npcid, name, basetype, attr}).
-%% oid is onigiri id. what's onigiri? onigiri points an element. (object or sprite, character...)
+%% oid is onigiri id. what's onigiri? onigiri is element. (object or sprite, character...)
 -record(session, {oid, pid, type, name, map, x, y, z, attr, stream_pid}). 
 -record(location, {cid, initmap,initx, inity}).
 

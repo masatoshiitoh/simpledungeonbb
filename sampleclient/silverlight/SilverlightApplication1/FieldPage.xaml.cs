@@ -49,10 +49,6 @@ namespace SilverlightApplication1
         SynchronizationContext syncContext;
         int framecount;
 
-        int deltax;
-        int deltay;
-        int posx; int posy;
-
         Boolean listenable = true; // this page is be instanciated after authentication.
 
         Dictionary<String, MmoChar> mmoChars = new Dictionary<String, MmoChar>();
@@ -67,12 +63,6 @@ namespace SilverlightApplication1
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
             
             framecount = 0;
-
-
-            deltax = 1;
-            deltay = 1;
-            posx = 100;
-            posy = 100;
         }
         void CompositionTarget_Rendering(object sender, EventArgs e)
         {
@@ -126,13 +116,26 @@ namespace SilverlightApplication1
 
             UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
             txtReceive.Text = e.Result;
+
+            
+            foreach (MmoChar c in mmoChars.Values)
+            {
+                try
+                {
+                    Field.Children.Remove(c.img);
+                    Field.Children.Remove(c.label);
+                }
+                catch (Exception ee)
+                {
+                    // do nothing.
+                }
+            }
             
             JsonValue v = JsonObject.Parse(e.Result); // Exception here! list_to_know call after logout cause it. fix!!
             foreach (JsonValue jv in v)
             {
                 try
                 {
-                    //txtLog.Text += jv["type"] + Environment.NewLine;
                     if (jv["type"] == "pc")
                     {
 
@@ -144,16 +147,15 @@ namespace SilverlightApplication1
 
                             c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
                             c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
-                            //Canvas ca = (Canvas)c.img;
-                            //ca.Height = 32;
-                            //ca.Width = 32;
-                            //ca.Background = new SolidColorBrush(Colors.Green);
-                            //c.img = ca;
+
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
 
                             Canvas.SetLeft(c.label, c.x * 32);
                             Canvas.SetTop(c.label, c.y * 32 - 24);
+
+                            Field.Children.Add(c.img);
+                            Field.Children.Add(c.label);
 
                         }
                         else
@@ -166,11 +168,67 @@ namespace SilverlightApplication1
                             c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
                             c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
 
-                            //Canvas ca = new Canvas();
-                            Sprite ca = new Sprite();
+                            Sprite ca = new Sprite("char.png");
                             ca.Height = 32;
                             ca.Width = 32;
-                            //ca.Background = new SolidColorBrush(Colors.Green);
+
+                            c.img = ca;
+                            Canvas.SetLeft(c.img, c.x * 32);
+                            Canvas.SetTop(c.img, c.y * 32);
+
+                            Label la = new Label();
+                            la.Height = 32;
+                            la.Width = 200;
+                            la.Content = c.name;
+                            la.FontFamily = new System.Windows.Media.FontFamily("Comic Sans MS, Verdana");
+                            la.Foreground = new SolidColorBrush(Colors.Black);
+                            c.label = la;
+                            Canvas.SetLeft(c.label, c.x * 32);
+                            Canvas.SetTop(c.label, c.y * 32 - 24);
+
+                            // fill attribute update in here.
+                            mmoChars.Add(c.cid, c);
+                            Field.Children.Add(c.img);
+                            Field.Children.Add(c.label);
+
+                        }
+                    }
+                    //txtLog.Text += jv["type"] + Environment.NewLine;
+                    else if (jv["type"] == "npc")
+                    {
+
+                        MmoChar c = null;
+                        mmoChars.TryGetValue(jv["cid"], out c);
+                        if (c != null)
+                        {
+                            // update information.
+
+                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
+                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
+
+                            Canvas.SetLeft(c.img, c.x * 32);
+                            Canvas.SetTop(c.img, c.y * 32);
+
+                            Canvas.SetLeft(c.label, c.x * 32);
+                            Canvas.SetTop(c.label, c.y * 32 - 24);
+
+                            Field.Children.Add(c.img);
+                            Field.Children.Add(c.label);
+                        }
+                        else
+                        {
+                            // add new character.
+
+                            c = new MmoChar();
+                            c.cid = jv["cid"];
+                            c.name = jv["name"];
+                            c.x = (jv.ContainsKey("x") ? jv["x"] : new JsonPrimitive(1));
+                            c.y = (jv.ContainsKey("y") ? jv["y"] : new JsonPrimitive(1));
+
+                            Sprite ca = new Sprite("slime.png");
+                            ca.Height = 32;
+                            ca.Width = 32;
+
                             c.img = ca;
                             Canvas.SetLeft(c.img, c.x * 32);
                             Canvas.SetTop(c.img, c.y * 32);
@@ -193,6 +251,7 @@ namespace SilverlightApplication1
 
                         }
                     }
+
                     else if (jv["type"] == "talk")
                     {
                         MmoChar talker = null;
@@ -235,6 +294,18 @@ namespace SilverlightApplication1
                             txtLog.Text = (exiter.name + " is logged out." + Environment.NewLine) + txtLog.Text;
                             Field.Children.Remove(exiter.img);
                             Field.Children.Remove(exiter.label);
+                            mmoChars.Remove(jv["cid"]);
+                        }
+                    }
+                    else if (jv["type"] == "remove")
+                    {
+                        MmoChar exiter = null;
+                        mmoChars.TryGetValue(jv["cid"], out exiter);
+                        if (exiter != null)
+                        {
+                            Field.Children.Remove(exiter.img);
+                            Field.Children.Remove(exiter.label);
+                            mmoChars.Remove(jv["cid"]);
                         }
                     }
                 }

@@ -39,7 +39,7 @@ start_npc(Npcid) ->
 
 %% code set location in session is DUMMY. Update it later.
 setup_npc(Npcid)->
-	{npcdata, Npcid, Name, Type, Npcdata} = db_get_npcdata(Npcid),
+	{cdata, Npcid, Name, Npcdata} = db_get_npcdata(Npcid),
 	
 	UTimer = morningcall:new(),
 	EventQueue = queue:new(),
@@ -59,6 +59,55 @@ loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
 			%% mmoasp:talk(open, Npcid, "konnichiwa--", 100),
 			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+
+		%% action him/herself.
+		{_From, init_move, CurrPos, WayPoints} ->
+			SelfPid = self(),
+			SelfPid ! {_From, cancel_timer},
+			SelfPid ! {_From, move, CurrPos, WayPoints},
+			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+
+		% interval-timer base character move:
+		{_From, move, CurrPos, WayPoints} ->
+			character:db_setpos(Npcid, CurrPos),
+			case WayPoints of
+				[] -> 
+					io:format("npc: ~p arrived at: ~p~n", [Npcid, CurrPos]),
+					{pos, X, Y} = CurrPos,
+					mmoasp:setter(Npcid, "x", X),
+					mmoasp:setter(Npcid, "y", Y),
+					loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+				[H | T] -> 			
+					io:format("npc: ~p start move: ~p to ~p ~n", [Npcid, CurrPos, H]),
+
+					{pos, X, Y} = CurrPos,
+					mmoasp:setter(Npcid, "x", X),
+					mmoasp:setter(Npcid, "y", Y),
+
+					Radius = 100,
+					mmoasp:notice_move(Npcid, {transition, CurrPos, H, 1000}, Radius),
+					SelfPid = self(),
+					F = fun() ->
+						SelfPid ! {SelfPid, move, H, T}
+					end,
+					loop(Npcid, Npcdata, EventQueue, StatDict, morningcall:add(1000,F, UTimer))
+			end;
+
+		{_From, notice_move, SenderCid, From, To, Duration} ->
+			io:format("npc: get others move. ~p~n", [{notice_move, SenderCid, From, To, Duration} ]),
+			{pos, FromX, FromY} = From,
+			{pos, ToX, ToY} = To,
+			loop(Npcid,Npcdata,
+				character:add_element(
+					[{type, "move"}, {cid, SenderCid},
+						{from_x, FromX}, {from_y, FromY},
+						{to_x, ToX}, {to_y, ToY},
+						{duration, Duration}]
+					, EventQueue),
+				StatDict, UTimer);
+			
+
+
 		{From, stop_process} ->
 			io:format("npcloop: child process terminated by stop_process message.~n"),
 			morningcall:cancel_all(UTimer),
@@ -70,7 +119,7 @@ loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
 	end.
 
 db_get_npcdata(Cid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(npcdata), X#npcdata.npcid == Cid])) of
+	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
 		[] -> void;
 		[CData] -> CData
 	end.
@@ -82,6 +131,8 @@ lookup_pid_by_npcid(Npcid) ->
 	end.
 
 stop_npc(Npcid) ->
+	Radius = 100,
+	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius),
 	case lookup_pid_by_npcid(Npcid) of
 		void -> void;
 		FoundPid ->
@@ -102,11 +153,11 @@ stop_npc(Npcid) ->
 
 db_getter(Npcid, Key) ->
 	F = fun(X) ->
-		Attr = X#npcdata.attr,
+		Attr = X#cdata.attr,
 		case lists:keysearch(Key, 1, Attr) of
 			{value, {Key,V}} -> V;
 			false -> undefined
 		end
 	end,
-	world:apply_npcdata(Npcid, F).
+	world:apply_cdata(Npcid, F).
 
