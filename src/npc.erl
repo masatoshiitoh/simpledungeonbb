@@ -48,7 +48,10 @@ setup_npc(Npcid)->
 	Child = spawn(fun() ->npc:loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) end),
 	
 	%% store session
-	mnesia:transaction(fun() -> mnesia:write(#session{oid=Npcid, pid=Child, type="npc", map=1, x=3,y=3}) end),
+	mnesia:transaction(
+		fun() -> mnesia:write(
+			#session{oid=Npcid, pid=Child, type="npc", map=1, x=1,y=3}
+		) end), %% TEMPORARY IMPLEMENTATION!!
 
 	Child.
 	
@@ -74,15 +77,15 @@ loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
 				[] -> 
 					io:format("npc: ~p arrived at: ~p~n", [Npcid, CurrPos]),
 					{pos, X, Y} = CurrPos,
-					mmoasp:setter(Npcid, "x", X),
-					mmoasp:setter(Npcid, "y", Y),
+					%%mmoasp:setter(Npcid, "x", X),
+					%%mmoasp:setter(Npcid, "y", Y),
 					loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
 				[H | T] -> 			
 					io:format("npc: ~p start move: ~p to ~p ~n", [Npcid, CurrPos, H]),
 
 					{pos, X, Y} = CurrPos,
-					mmoasp:setter(Npcid, "x", X),
-					mmoasp:setter(Npcid, "y", Y),
+					%%mmoasp:setter(Npcid, "x", X),
+					%%mmoasp:setter(Npcid, "y", Y),
 
 					Radius = 100,
 					mmoasp:notice_move(Npcid, {transition, CurrPos, H, 1000}, Radius),
@@ -107,12 +110,22 @@ loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
 				StatDict, UTimer);
 			
 
+		%% system messages.
+		%% TIMER
+		{goodmorning, Id} ->
+			{_FunResult, NewUTimer} = morningcall:dispatch(Id, UTimer),
+			loop(Npcid, Npcdata, EventQueue, StatDict, NewUTimer);
+
+		{_From, cancel_timer} ->
+			NewUTimer = morningcall:cancel_all(UTimer),
+			loop(Npcid, Npcdata, EventQueue, StatDict, NewUTimer);
 
 		{From, stop_process} ->
 			io:format("npcloop: child process terminated by stop_process message.~n"),
 			morningcall:cancel_all(UTimer),
 			From ! {ok, Npcid},
 			bye;
+
 		_ ->
 			%% do nothing.
 			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer)

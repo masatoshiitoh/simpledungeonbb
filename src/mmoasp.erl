@@ -154,11 +154,15 @@ get_neighbor_char_sessions(Oid, R) ->
 get_neighbor_char_cdata(Oid, R) ->
 	Me = world:get_session(Oid),
 	F = fun() ->
-		qlc:e(qlc:q([CData || Sess <- mnesia:table(session),
-		%%	Loc#location.cid =/= Cid,
-			u:distance({session, Sess}, {session, Me}) < R,
-			CData <- mnesia:table(cdata),	
-			CData#cdata.cid == Sess#session.oid]))
+		qlc:e(qlc:q(
+			[CData#cdata{ attr = CData#cdata.attr ++ [
+					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
+				]}
+				|| Sess <- mnesia:table(session),
+				%%	Loc#location.cid =/= Cid,
+				u:distance({session, Sess}, {session, Me}) < R,
+				CData <- mnesia:table(cdata),	
+				CData#cdata.cid == Sess#session.oid]))
 	end,
 	case mnesia:transaction(F) of
 		{atomic, Result} -> Result;

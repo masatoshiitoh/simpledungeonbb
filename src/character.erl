@@ -129,20 +129,16 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 
 		% interval-timer base character move:
 		{_From, move, CurrPos, WayPoints} ->
-			db_setpos(Cid, CurrPos),
 			case WayPoints of
 				[] -> 
 					io:format("character: ~p arrived at: ~p~n", [Cid, CurrPos]),
 					{pos, X, Y} = CurrPos,
-					mmoasp:setter(Cid, "x", X),
-					mmoasp:setter(Cid, "y", Y),
+					db_setpos(Cid, CurrPos),
 					loop(Cid, CData, EventQueue, StatDict, Token, UTimer, mk_idle_update(LastOp));
 				[H | T] -> 			
 					io:format("character: ~p start move: ~p to ~p ~n", [Cid, CurrPos, H]),
 
-					{pos, X, Y} = CurrPos,
-					mmoasp:setter(Cid, "x", X),
-					mmoasp:setter(Cid, "y", Y),
+					db_setpos(Cid, CurrPos),
 
 					Radius = 100,
 					mmoasp:notice_move(Cid, {transition, CurrPos, H, 1000}, Radius),
@@ -226,10 +222,15 @@ db_setter(Cid, Key, Value) ->
 	world:apply_cdata(Cid, F).
 
 
-db_setpos(Cid, Pos) ->
-	{pos, PosX, PosY} = Pos,
+db_setpos(Cid, {pos, PosX, PosY}) ->
 	F = fun(X) ->
 		mnesia:write(X#session{x = PosX, y = PosY})
+	end,
+	world:apply_session(Cid, F);
+
+db_setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
+	F = fun(X) ->
+		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
 	end,
 	world:apply_session(Cid, F).
 

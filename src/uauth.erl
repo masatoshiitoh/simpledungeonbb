@@ -63,11 +63,20 @@ setup_player_character(Cid)->
 	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
-	setup_player_location(Cid),
-	
+	%%setup_player_location(Cid),
+	setup_player_initial_location(Cid),
+
 	Radius = 100,
 	mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
 	{ok, Child, Token}.
+
+setup_player_initial_location(Cid) ->
+	Me = world:get_location(Cid),
+	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
+	Z = Me#location.initz,
+	character:db_setpos(Cid, {allpos, Map, X, Y, Z}).
 
 setup_player_location(Cid) ->
 	%% copy location data from location table to cdata attribute.

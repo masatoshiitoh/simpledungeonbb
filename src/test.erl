@@ -27,6 +27,53 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
+run_temp() ->
+	mmoasp:start(),
+	%% login
+	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
+	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
+	
+	
+
+			%
+	Me = world:get_session(Cid1),
+	F = fun() ->
+		qlc:e(qlc:q(
+			[NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
+					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
+				]}
+
+				|| Sess <- mnesia:table(session),
+				%%	Loc#location.cid =/= Cid,
+				u:distance({session, Sess}, {session, Me}) < 10,
+				CData <- mnesia:table(cdata),	
+				CData#cdata.cid == Sess#session.oid]))
+	end,
+	io:format("check internal, get_neighbor_char_cdata ~p~n", [case mnesia:transaction(F) of
+		{atomic, Result} -> Result;
+		Other -> Other
+	end]),
+
+
+
+	%% at this point, X cauase badrecord error on character:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
+	io:format("gen_stat_from_cdata of X: ~p~n", [[character:gen_stat_from_cdata(A) || A <- X]]),
+
+
+	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
+	
+	%% logging out.
+	mmoasp:logout(self(), Cid1, Token1),
+	mmoasp:logout(self(), Cid2, Token2),
+
+	%% stop service
+	path_finder:stop(),
+	
+	{end_of_run_tests}.
+
+
 
 run_tests() ->
 	mmoasp:start(),
@@ -70,6 +117,7 @@ run_tests() ->
 	X#session.pid ! {self(), update_neighbor_status, 10},
 	X2 = world:get_session(Cid2),
 	X2#session.pid ! {self(), update_neighbor_status, 10},
+	io:format("update request has sent.~n", []),
 	
 	{A1, S1} = mmoasp:get_list_to_know(self(), Cid1),
 	io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
@@ -93,13 +141,13 @@ run_tests() ->
 	%% NPC moving !
 	io:format("npc move 1,2 to 7,7 ~p~n", [mmoasp:move("npc0001", {pos, 7,7})]),
 	receive
-		after 2500 -> ok
+		after 6500 -> ok
 	end,
-	io:format("RE-order move to 1,2 ~p~n", [mmoasp:move("npc0001", {pos, 6,2})]),
+	io:format("RE-order move to 6,2 ~p~n", [mmoasp:move("npc0001", {pos, 6,2})]),
 	receive
 		after 5000 -> ok
 	end,
-	io:format("moved... :~n 1: ~p~n", [world:get_location(Cid1)]),
+	io:format("moved... :~n 1: ~p~n", [world:get_location("npc0001")]),
 	
 
 	

@@ -144,10 +144,10 @@ example_tables() ->
 	{auth_basic,"npc0002", void,void},
 	{auth_basic,"npc0003", void,void},
 	{auth_basic,"npc0004", void,void},
-	{cdata,"npc0001", "Slime", [{"type", "npc"}, {"x", 1}, {"y", 2}, {"map", 1}, {"hp", 2}]},
-	{cdata,"npc0002", "Slime", [{"type", "npc"}, {"x", 3}, {"y", 3}, {"map", 1}, {"hp", 2}]},
-	{cdata,"npc0003", "Slime", [{"type", "npc"}, {"x", 5}, {"y", 7}, {"map", 1}, {"hp", 2}]},
-	{cdata,"npc0004", "Slime", [{"type", "npc"}, {"x", 8}, {"y", 8}, {"map", 1}, {"hp", 2}]},
+	{cdata,"npc0001", "Slime", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0002", "Slime", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0003", "Slime", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0004", "Slime", [{"type", "npc"}, {"hp", 2}]},
 
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
@@ -161,10 +161,11 @@ example_tables() ->
 	{cdata,"cid0004", "delta",		[{"type", "pc"}, {"align", "good"}, {"hp", 18}]},
 
 	%% initial location (= re-spawn point)
-	{location,"cid0001", 1, 1, 3},
-	{location,"cid0002", 1, 3, 3},
-	{location,"cid0003", 1, 4, 3},
-	{location,"cid0004", 1, 3, 2},
+	{location,"cid0001", 1, 1, 3, 0},
+	{location,"cid0002", 1, 3, 3, 0},
+	{location,"cid0003", 1, 4, 3, 0},
+	{location,"cid0004", 1, 3, 2, 0},
+	{location,"npc0001", 1, 5, 2, 0},
 	
 	%% inventory ( key colomn is cid.)
 	{money, "cid0001", 1000, 15},

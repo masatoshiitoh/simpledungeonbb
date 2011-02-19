@@ -24,8 +24,8 @@
 %% under development:
 -record(cdata,	{cid, name, attr}).
 %% oid is onigiri id. what's onigiri? onigiri is element. (object or sprite, character...)
--record(session, {oid, pid, type, name, map, x, y, z, attr, stream_pid}). 
--record(location, {cid, initmap,initx, inity}).
+-record(session, {oid, pid, type, name, map, x, y, z, stream_pid}). 
+-record(location, {cid, initmap,initx, inity, initz}).
 
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
