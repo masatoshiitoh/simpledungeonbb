@@ -31,7 +31,7 @@ COPY = COPY
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
-ERLCFLAGS =
+ERLCFLAGS = -DTEST -pa "C:/Progra~2/erl5.7.4/lib/eunit-2.1.4/ebin"
 
 .SUFFIXES: .erl .beam
 
@@ -46,3 +46,6 @@ install : $(objs)
 .PHONY: clean
 clean:
 	$(RM) $(objs)
+
+test: $(objs)
+	erl -boot start_clean -noshell -eval 'u:test()' -s init stop

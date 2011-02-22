@@ -21,8 +21,18 @@
 
 -module(u).
 
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 -include_lib("mmoasp.hrl").
 -export([make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+
+-ifdef(TEST).
+reverse_nil_test() -> [] = lists:reverse([]).
+reverse_one_test() -> [1] = lists:reverse([1]).
+reverse_two_test() -> [2,1] = lists:reverse([1,2]).
+-endif.
 
 % use for Tid, Cid, ItemId...
 make_new_id() ->
@@ -30,7 +40,14 @@ make_new_id() ->
 
 list_to_hexstr(A) -> list_to_hexstr(A, []).
 list_to_hexstr([], Acc) -> lists:flatten(lists:reverse(Acc));
-list_to_hexstr([H|T], Acc) -> list_to_hexstr(T, io_lib:format("~.16b", [H]) ++ Acc).
+list_to_hexstr([H|T], Acc) -> list_to_hexstr(T, io_lib:format("~2.16.0b", [H]) ++ Acc).
+
+%% TEST list_to_hexstr
+-ifdef(TEST).
+list_to_hexstr_two_test() -> "ff01" = list_to_hexstr([255,1]).
+list_to_hexstr_one_test() -> "ff" = list_to_hexstr([255]).
+list_to_hexstr_nil_test() -> "" = list_to_hexstr([]).
+-endif.
 
 distance({session, S1}, {session, S2}) ->
 	distance(
@@ -49,9 +66,32 @@ distance(offline,_) ->
 distance({pos, X1, Y1}, {pos, X2, Y2}) ->
 	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2)).
 
+%% TEST distance
+-ifdef(TEST).
+distance_l_offline_test() -> infinity = distance(offline, {pos, 3, 3}).
+distance_r_offline_test() -> infinity = distance({pos, 3,3}, offline).
+distance_1_1_test() -> 1.0 = distance({pos, 3, 3}, {pos, 2, 3}).
+distance_1_2_test() -> 1.0 = distance({pos, 3, 3}, {pos, 3, 2}).
+distance_1_3_test() -> 1.0 = distance({mapxy, "edo", 3, 3}, {mapxy, "edo", 3, 2}).
+distance_1_4_test() -> infinity = distance({mapxy, "edo", 3, 3}, {mapxy, "kyoto", 3, 2}).
+distance_1_sess_test() ->
+	S1 = #session{map = "edo", x = 3, y = 3, z = 1},
+	S2 = #session{map = "edo", x = 3, y = 2, z = 1},
+	1.0 = distance({session, S1}, {session, S2}).
+-endif.
+
+
 
 cid_pair(Cid1, Cid2) when Cid1 < Cid2 -> {cid_pair, Cid1, Cid2};
 cid_pair(Cid1, Cid2) when Cid1 >= Cid2 -> {cid_pair, Cid2, Cid1}.
+
+%% TEST cid_pair
+-ifdef(TEST).
+cid_pair_lr_test() -> {cid_pair, "1", "2"} = cid_pair("1", "2").
+cid_pair_rl_test() -> {cid_pair, "1", "2"} = cid_pair("2", "1").
+cid_pair_eq_test() -> {cid_pair, "1", "1"} = cid_pair("1", "1").
+cid_pair_nil_test() -> {cid_pair, nil, "2"} = cid_pair(nil, "2").
+-endif.
 
 
 store_kvpairs([], Dict) -> Dict;
@@ -62,6 +102,23 @@ store_kvpairs(KVPairList, Dict) ->
 		[] -> dict:erase(K, V, Dict);
 		V -> dict:store(K, V, Dict)
 	end).
+
+
+-ifdef(TEST).
+	store_kvpairs_nil_test() ->
+		D = dict:new(),
+		D = store_kvpairs([], D).
+	store_kvpairs_one_test() ->
+		D = store_kvpairs([{"k1", "v1"}], dict:new()),
+		{ok, "v1"} = dict:find("k1", D).
+	store_kvpairs_two_test() ->
+		D = store_kvpairs([{"k1", "v1"}, {"k2", "v2"}], dict:new()),
+		{ok, "v2"} = dict:find("k2", D).
+	store_kvpairs_overwrite_test() ->
+		D = store_kvpairs([{"k1", "v1"}, {"k1", "vnew"}], dict:new()),
+		{ok, "vnew"} = dict:find("k1", D).
+-endif.
+
 
 % First implementation: its too simple...
 %store_kvpairs(KVPairList, Dict) ->
@@ -80,5 +137,18 @@ add_new_member(NewMember, List) ->
 		true -> List;
 		false -> [NewMember] ++ List
 		end.
+
+
+
+-ifdef(TEST).
+find_list_from_dict_empty_test() ->
+	[] = find_list_from_dict("k1", dict:new()).
+find_list_from_dict_notfound_test() ->
+	D = store_kvpairs([{"k1", "v1"}], dict:new()),
+	[] = find_list_from_dict("k2", D).
+find_list_from_dict_found_test() ->
+	D = store_kvpairs([{"k1", "v1"}], dict:new()),
+	"v1" = find_list_from_dict("k1", D).
+-endif.
 
 
