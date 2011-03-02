@@ -33,7 +33,6 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -ifdef(TEST).
-u_test() -> u:test().
 scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
 scenario_01_test()-> {end_of_run_tests} = check_session_data().
 scenario_02_test()-> {end_of_run_tests} = do_trades().
@@ -46,7 +45,7 @@ scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
 
-run_tests_with_log() ->	eunit:test([test], [{report,{eunit_surefire,[{dir,"."}]}}]).
+run_tests_with_log() ->	eunit:test([test,u], [{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
 	scenario_00_test(),
