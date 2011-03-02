@@ -33,6 +33,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -ifdef(TEST).
+u_test() -> u:test().
 scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
 scenario_01_test()-> {end_of_run_tests} = check_session_data().
 scenario_02_test()-> {end_of_run_tests} = do_trades().
