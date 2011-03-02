@@ -99,7 +99,7 @@ get_list_to_know(_From, Cid) ->
 	
 	% wait reply and receive.
 	receive
-		{list_to_know, Actions, Stats} -> {Actions, Stats}
+		{list_to_know, Actions, Stats} -> {actions_and_stats, Actions, Stats}
 		after 2000 -> {[], []}
 	end.
 
@@ -129,7 +129,7 @@ get_all_neighbor_sessions(Oid, R) ->
 	F = fun() ->
 		%%	Sess#session.oid =/= Oid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
-			u:distance({session, Sess}, {session, Me}) < R
+			u:distance({session, Sess}, {session, Me}) =< R
 			]))
 	end,
 	case mnesia:transaction(F) of
@@ -143,7 +143,7 @@ get_neighbor_char_sessions(Oid, R) ->
 	F = fun() ->
 		%%	Sess#session.oid =/= Oid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
-			u:distance({session, Sess}, {session,Me}) < R,
+			u:distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
 	end,
 	case mnesia:transaction(F) of
@@ -160,7 +160,7 @@ get_neighbor_char_cdata(Oid, R) ->
 				]}
 				|| Sess <- mnesia:table(session),
 				%%	Loc#location.cid =/= Cid,
-				u:distance({session, Sess}, {session, Me}) < R,
+				u:distance({session, Sess}, {session, Me}) =< R,
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.oid]))
 	end,

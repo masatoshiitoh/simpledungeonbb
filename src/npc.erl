@@ -49,8 +49,9 @@ setup_npc(Npcid)->
 	
 	%% store session
 	mnesia:transaction(
-		fun() -> mnesia:write(
-			#session{oid=Npcid, pid=Child, type="npc", map=1, x=1,y=3}
+		fun() ->
+			[Loc1] = mnesia:read({location, Npcid}),
+			mnesia:write(#session{oid=Npcid, pid=Child, type="npc", map=Loc1#location.initmap, x=Loc1#location.initx,y=Loc1#location.inity}
 		) end), %% TEMPORARY IMPLEMENTATION!!
 
 	Child.

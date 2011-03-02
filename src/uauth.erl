@@ -71,7 +71,7 @@ setup_player_character(Cid)->
 	{ok, Child, Token}.
 
 setup_player_initial_location(Cid) ->
-	Me = world:get_location(Cid),
+	Me = world:get_initial_location(Cid),
 	Map = Me#location.initmap,
 	X = Me#location.initx,
 	Y = Me#location.inity,

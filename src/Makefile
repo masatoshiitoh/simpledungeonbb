@@ -31,7 +31,7 @@ COPY = COPY
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
-ERLCFLAGS = -DTEST -pa "C:/Progra~2/erl5.7.4/lib/eunit-2.1.4/ebin"
+ERLCFLAGS = -DTEST -pa "C:/Progra~2/erl5.7.4/lib/eunit-2.1.4/ebin" -pa "C:/Opt/Yaws/ebin"
 
 .SUFFIXES: .erl .beam
 
@@ -48,4 +48,5 @@ clean:
 	$(RM) $(objs)
 
 test: $(objs)
-	erl -boot start_clean -noshell -eval 'u:test()' -s init stop
+	erl -pa .  -noshell -boot start_clean -s test run_tests_with_log -s init stop
+# erl -boot start_clean -noshell -eval 'eunit:test([test], [{report,{eunit_surefire,[{dir,"."}]}}])' -s init stop

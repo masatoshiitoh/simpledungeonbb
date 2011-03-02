@@ -126,7 +126,7 @@ out(A, 'POST', ["service", SVID, "listtoknow", CidX]) ->
 	X = world:get_session(CidX),
 	X#session.pid ! {self(), update_neighbor_status, 10},
 
-	{ListToKnow, NeighborStats} = mmoasp:get_list_to_know(self(), CidX),
+	{actions_and_stats, ListToKnow, NeighborStats} = mmoasp:get_list_to_know(self(), CidX),
 	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
 
 %% Talk (open talk)

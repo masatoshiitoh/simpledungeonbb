@@ -26,14 +26,6 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
-%stop_all_characters(_From) ->
-%	db:do(qlc:q([mmoasp:logout(self(), Cid, Token)
-%		|| {state, Cid, _Pid, _Ipaddr, Token} <- mnesia:table(state)])).
-
-%knock_all_characters(From) ->
-%	db:do(qlc:q([Pid ! {From, whoareyou}
-%		|| {state, _Cid, Pid, _Ipaddr, _Token} <- mnesia:table(state)])).
-
 get_session(Cid) ->
 	case apply_session(Cid, fun(X) -> X end) of
 		{ng, _} -> void;
@@ -46,6 +38,11 @@ get_location(Cid) ->
 		{atomic, Result} -> Result
 	end.
 
+get_initial_location(Cid) ->
+	case apply_initial_location(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
 
 %% F requires 1 arg (session record).
 apply_session(Cid, F) ->
@@ -62,6 +59,9 @@ apply_cdata(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]), F).
 %% F requires 1 arg (cdata record).
 apply_location(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]), F).
+
+apply_initial_location(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]), F).
 
 apply_cid_indexed_table(Cond, F) ->

@@ -207,7 +207,7 @@ get_elements(Q) -> queue:to_list(Q).
 get_stats(L) -> L.
 
 gen_stat_from_cdata(X) -> 
-	[{"cid", X#cdata.cid}, {"name", X#cdata.name}] ++ X#cdata.attr.
+	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
 
 db_setter(Cid, Key, Value) ->
 	F = fun(X) ->
