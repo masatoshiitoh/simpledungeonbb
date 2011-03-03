@@ -28,12 +28,6 @@
 -include_lib("mmoasp.hrl").
 -export([make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
 
--ifdef(TEST).
-reverse_nil_test() -> [] = lists:reverse([]).
-reverse_one_test() -> [1] = lists:reverse([1]).
-reverse_two_test() -> [2,1] = lists:reverse([1,2]).
--endif.
-
 % use for Tid, Cid, ItemId...
 make_new_id() ->
 	list_to_hexstr(erlang:binary_to_list(erlang:term_to_binary(erlang:make_ref()))).
