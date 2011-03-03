@@ -45,7 +45,7 @@ scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
 
-run_tests_with_log() ->	eunit:test([test,u,unarmed], [{report,{eunit_surefire,[{dir,"."}]}}]).
+run_tests_with_log() ->	eunit:test([unarmed,test,u], [{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
 	scenario_00_test(),
