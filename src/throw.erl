@@ -32,6 +32,37 @@
 
 -ifdef(TEST).
 
+result_funble_01_test() ->	{funble, 1} == result({dice, 10, 1}).
+result_funble_02_test() ->	{funble, 1} == result({dice, 2, 1}).
+result_critical_01_test() -> {critical, 10} == result({dice, 10, 10}).
+result_critical_02_test() -> {critical, 2} == result({dice, 2, 2}).
+result_ok_01_test() ->	{ok, 3} == result({dice, 10, 3}).
+result_ok_02_test() ->	{ok, 5} == result({dice, 10, 5}).
+
+single_dice_01_10000_test() ->
+	test:repeat(
+		fun() ->
+			{dice, 6, X} = dice(6),
+			?assert(X >= 1 andalso X =< 6)
+		end,
+		10000).
+
+multi_dice_01_10000_test() ->
+	test:repeat(
+		fun() ->
+			{dice, 12, X} = dice(6,2),
+			?assert(X >= 2 andalso X =< 12)
+		end,
+		10000).
+
+multi_dice_02_10000_test() ->
+	test:repeat(
+		fun() ->
+			{dice, 60, X} = dice(20,3),
+			?assert(X >= 3 andalso X =< 60)
+		end,
+		10000).
+
 -endif.
 
 

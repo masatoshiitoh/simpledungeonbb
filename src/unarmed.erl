@@ -46,26 +46,37 @@ fixed_calc_03_test() ->
 	To = #battle_param{ac = -10},
 	?assert({ok, 0} == fixed_calc(From, To)).
 
-
-calc_01_test() ->
-	From = #battle_param{str = 7},
-	To = #battle_param{ac = 10},
-	case (calc(From, To)) of
-		{ok, A}
-			-> ?assert(A >= 7 andalso A =< 14);
-		{fumble, B}
-			-> ?assert(B == 0);
-		{critical, C}
-			-> ?assert(C >= 15 andalso C =< 35)
-	end.
-
 calc_01_10000_test() ->
-	calc_01_single(10000).
+	test:repeat(
+		fun() ->
+			From = #battle_param{str = 7},
+			To = #battle_param{ac = 10},
+			case (calc(From, To)) of
+				{ok, A}
+					-> ?assert(A >= 7 andalso A =< 14);
+				{fumble, B}
+					-> ?assert(B == 0);
+				{critical, C}
+					-> ?assert(C >= 15 andalso C =< 35)
+			end
+		end,
+		10000).
 
-calc_01_single(0) -> {end_of_test};
-calc_01_single(X) ->
-	calc_01_test(),
-	calc_01_single(X - 1).
+calc_02_10000_test() ->
+	test:repeat(
+		fun() ->
+			From = #battle_param{str = 5},
+			To = #battle_param{ac = 0},
+			case (calc(From, To)) of
+				{ok, A}
+					-> ?assert(A == 0);
+				{fumble, B}
+					-> ?assert(B == 0);
+				{critical, C}
+					-> ?assert(C >= 11 andalso C =< 30)
+			end
+		end,
+		10000).
 
 
 -endif.
@@ -73,13 +84,7 @@ calc_01_single(X) ->
 fixed_calc(
 	#battle_param{str=Str1} = From,
 	#battle_param{ac=Ac2} = To)
-	when (Str1 + (Ac2 - 10)) < 0
-	-> {ok, 0};
-
-fixed_calc(
-	#battle_param{str=Str1} = From,
-	#battle_param{ac=Ac2} = To)
-	-> {ok, (Str1 + (Ac2 - 10))}.
+	-> {ok, trim_negative(Str1 + (Ac2 - 10))}.
 
 calc(
 	#battle_param{str=Str1} = From,
@@ -103,7 +108,7 @@ damage_critical(
 	Dice)
 	->
 		{dice, _Max, V} = throw:dice(20),
-		(Str1 *2 + V).
+		trim_negative(Str1 * 2 + V).
 
 %% normal damage.
 %% ATK: strength was decreased by armor
@@ -115,4 +120,8 @@ damage_normal(
 	Dice)
 	->
 		{dice, _Max, V} = throw:dice(Str1),
-		(Str1 + (Ac2 - 10) + V).
+		trim_negative(Str1 + (Ac2 - 10) + V).
+
+trim_negative(N) when N < 0 -> 0;
+trim_negative(N) -> N.
+
