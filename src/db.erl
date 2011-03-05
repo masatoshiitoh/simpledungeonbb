@@ -161,11 +161,11 @@ example_tables() ->
 	{cdata,"cid0004", "delta",		[{type, "pc"}, {align, "good"}, {hp, 18}]},
 
 	%% initial location (= re-spawn point)
-	{location,"cid0001", 1, 1, 3, 0},
-	{location,"cid0002", 1, 3, 3, 0},
-	{location,"cid0003", 1, 4, 3, 0},
-	{location,"cid0004", 1, 3, 2, 0},
-	{location,"npc0001", 1, 5, 2, 0},
+	{location,"cid0001", 1, 1, 1, 0},
+	{location,"cid0002", 1, 5, 1, 0},
+	{location,"cid0003", 1, 6, 1, 0},
+	{location,"cid0004", 1, 7, 1, 0},
+	{location,"npc0001", 1, 2, 1, 0},
 	
 	%% inventory ( key colomn is cid.)
 	{money, "cid0001", 1000, 15},

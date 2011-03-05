@@ -45,7 +45,10 @@ scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
 
-run_tests_with_log() ->	eunit:test([unarmed,test,u,throw], [{report,{eunit_surefire,[{dir,"."}]}}]).
+run_tests_with_log()
+	-> eunit:test(
+		[unarmed,test,u,throw],
+		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
 	scenario_00_test(),
@@ -74,9 +77,11 @@ repeat(F, X) ->
 % test codes
 %
 % working.
-do_look_around() ->
+
+do_battle_unarmed() ->
 	db:reset_tables(),
 	mmoasp:start(),
+	NpcPid1 = npc:start_npc("npc0001"),
 	
 	%% login
 	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
@@ -90,6 +95,37 @@ do_look_around() ->
 
 	?assert(sets:from_list(["cid0001", "cid0002"])
 		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 2)])),
+
+	%% logging out.
+	mmoasp:logout(self(), Cid1, Token1),
+	mmoasp:logout(self(), Cid2, Token2),
+
+	npc:stop_npc("npc0001"),
+
+	%% stop service
+	path_finder:stop(),
+	
+	{end_of_run_tests}.
+
+
+
+
+do_look_around() ->
+	db:reset_tables(),
+	mmoasp:start(),
+	
+	%% login
+	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+
+	%% look around test
+	?assert(4 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session(Cid2)})),
+
+	?assert(sets:from_list(["cid0001"])
+		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
+
+	?assert(sets:from_list(["cid0001", "cid0002"])
+		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
 
 	%% logging out.
 	mmoasp:logout(self(), Cid1, Token1),
@@ -168,7 +204,7 @@ do_pc_move() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	S0 = world:get_session(Cid1),
 	?assert(S0#session.x == 1),
-	?assert(S0#session.y == 3),
+	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
 	
 	%% moving !
@@ -208,10 +244,10 @@ do_npc_move() ->
 	mmoasp:start(),
 	
 	NpcPid1 = npc:start_npc("npc0001"),
-	io:format("after start npc ~p~n", [db:demo(session)]),
+	io:format("npc starts at ~p~n", [db:demo(session)]),
 	S0 = world:get_session("npc0001"),
-	?assert(S0#session.x == 5),
-	?assert(S0#session.y == 2),
+	?assert(S0#session.x == 2),
+	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
 	
 	%% login
@@ -221,15 +257,15 @@ do_npc_move() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
-	io:format("NPC move to 6,2 ~p~n", [mmoasp:move("npc0001", {pos, 6,2})]),
+	io:format("NPC move to 2,2 ~p~n", [mmoasp:move("npc0001", {pos, 3,1})]),
 	receive
-		after 2000 -> ok
+		after 1100 -> ok
 	end,
-	io:format("moved... :~n 1: ~p~n", [world:get_location("npc0001")]),
+	io:format("Latest session ~p~n", [world:get_session("npc0001")]),
 	
 	S1 = world:get_session("npc0001"),
-	?assert(S1#session.x == 6),
-	?assert(S1#session.y == 2),
+	?assert(S1#session.x == 3),
+	?assert(S1#session.y == 1),
 	?assert(S1#session.map == 1),
 	
 	%% logging out.

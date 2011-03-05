@@ -65,19 +65,12 @@ multi_dice_02_10000_test() ->
 
 -endif.
 
-
-
-
 dice(N,M) -> {dice, N*M, raw_dice(N, M)}.
 	raw_dice(N,0) -> 0;
 	raw_dice(N,M) -> random:uniform(N) + raw_dice(N, M-1).
-
 
 dice(N) -> {dice, N, random:uniform(N)}.
 
 result({dice, _Max, X}) when X == 1 -> {fumble, X};
 result({dice,  Max, X}) when Max == X -> {critical, X};
 result({dice, _Max, X}) -> {ok, X}. 
-
-
-

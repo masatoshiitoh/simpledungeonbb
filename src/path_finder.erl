@@ -110,8 +110,8 @@ make_edge(Map, G, VertexDict, S, D) ->
 			{ok, StartVertex} = dict:find(S, VertexDict),
 			{ok, DestVertex} = dict:find(D, VertexDict),
 			Result = digraph:add_edge(G, StartVertex, DestVertex),
-			io:format("make_edge ~p to ~p  ", [S, D]),
-			io:format("ok with ~p~n", [Result]),
+			%io:format("make_edge ~p to ~p  ", [S, D]),
+			%io:format("ok with ~p~n", [Result]),
 			Result ;
 		true ->
 			0
