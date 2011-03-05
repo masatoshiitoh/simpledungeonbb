@@ -44,10 +44,11 @@ scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 %scenario_06_test()-> {timeout, 60, fun() -> do_pc_move() end}.
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
+scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
 
 run_tests_with_log()
 	-> eunit:test(
-		[unarmed,test,u,throw],
+		[battle,unarmed,test,u,throw],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
@@ -88,13 +89,15 @@ do_battle_unarmed() ->
 	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
 
 	%% look around test
-	?assert(2 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session(Cid2)})),
+	?assert(1 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session("npc0001")})),
+	?assert(3 == u:distance({session, world:get_session(Cid2)}, {session, world:get_session("npc0001")})),
 
-	?assert(sets:from_list(["cid0001"])
-		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
-
-	?assert(sets:from_list(["cid0001", "cid0002"])
-		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 2)])),
+	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
+	
+	{R1, _} = battle:once(Cid1, "npc0001"),
+	{R2, _} = battle:once(Cid2, "npc0001"),
+	?assert(R1 == ok),
+	?assert(R2 == ng),
 
 	%% logging out.
 	mmoasp:logout(self(), Cid1, Token1),
