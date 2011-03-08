@@ -58,20 +58,37 @@ distance(_, offline) ->
 distance(offline,_) ->
 	infinity;
 distance({pos, X1, Y1}, {pos, X2, Y2}) ->
-	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2)).
+	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2));
+
+distance({oid,O1}, {oid,O2}) ->
+	distance(
+		{session, world:get_session(O1)},
+		{session, world:get_session(O2)}).
+
 
 %% TEST distance
 -ifdef(TEST).
+
 distance_l_offline_test() -> infinity = distance(offline, {pos, 3, 3}).
 distance_r_offline_test() -> infinity = distance({pos, 3,3}, offline).
 distance_1_1_test() -> 1.0 = distance({pos, 3, 3}, {pos, 2, 3}).
 distance_1_2_test() -> 1.0 = distance({pos, 3, 3}, {pos, 3, 2}).
 distance_1_3_test() -> 1.0 = distance({mapxy, "edo", 3, 3}, {mapxy, "edo", 3, 2}).
 distance_1_4_test() -> infinity = distance({mapxy, "edo", 3, 3}, {mapxy, "kyoto", 3, 2}).
+
 distance_1_sess_test() ->
 	S1 = #session{map = "edo", x = 3, y = 3, z = 1},
 	S2 = #session{map = "edo", x = 3, y = 2, z = 1},
-	1.0 = distance({session, S1}, {session, S2}).
+	?assert(1.0 == distance({session, S1}, {session, S2})).
+
+distance_by_oid_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	?assert(1.0 == distance({oid, Cid1}, {oid, Npcid1})),
+	?assert(3.0 == distance({oid, Cid2}, {oid, Npcid1})),
+	?assert(4.0 == distance({oid, Cid1}, {oid, Cid2})),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}).
 -endif.
 
 
@@ -133,8 +150,8 @@ add_new_member(NewMember, List) ->
 		end.
 
 
-
 -ifdef(TEST).
+
 find_list_from_dict_empty_test() ->
 	[] = find_list_from_dict("k1", dict:new()).
 find_list_from_dict_notfound_test() ->
@@ -143,6 +160,7 @@ find_list_from_dict_notfound_test() ->
 find_list_from_dict_found_test() ->
 	D = store_kvpairs([{"k1", "v1"}], dict:new()),
 	"v1" = find_list_from_dict("k1", D).
+
 -endif.
 
 

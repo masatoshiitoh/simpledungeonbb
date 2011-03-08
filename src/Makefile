@@ -37,6 +37,27 @@ ERLCFLAGS = -DTEST -pa "C:/Opt/Yaws/ebin"
 
 all : $(objs)
 
+unarmed.beam : unarmed.erl mmoasp.hrl
+battle.beam : battle.erl mmoasp.hrl
+throw.beam : throw.erl mmoasp.hrl
+admin.beam : admin.erl mmoasp.hrl
+character.beam : character.erl mmoasp.hrl
+character_stream.beam : character_stream.erl mmoasp.hrl
+db.beam : db.erl mmoasp.hrl
+mmoasp.beam : mmoasp.erl mmoasp.hrl
+morningcall.beam : morningcall.erl mmoasp.hrl
+mout.beam : mout.erl mmoasp.hrl
+move.beam : move.erl mmoasp.hrl
+npc.beam : npc.erl mmoasp.hrl
+path_finder.beam : path_finder.erl mmoasp.hrl
+test.beam : test.erl mmoasp.hrl
+trade.beam :trade.erl mmoasp.hrl
+u.beam : u.erl mmoasp.hrl
+uauth.beam :uauth.erl mmoasp.hrl
+world.beam :world.erl mmoasp.hrl
+yaws_if.beam :yaws_if.erl mmoasp.hrl
+
+
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)
 

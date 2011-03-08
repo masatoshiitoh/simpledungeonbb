@@ -64,6 +64,23 @@ run_tests() ->
 	{end_of_test}.
 
 
+up_scenarios() ->
+	db:reset_tables(),
+	mmoasp:start(),
+	NpcPid1 = npc:start_npc("npc0001"),
+	{ok, Cid1, Token1}
+		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+	{ok, Cid2, Token2}
+		= mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+
+	{scenarios, Cid1, Token1, Cid2, Token2, "npc0001"}.
+
+down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
+	mmoasp:logout(self(), Cid1, Token1),
+	mmoasp:logout(self(), Cid2, Token2),
+	npc:stop_npc(Npcid1),
+	path_finder:stop(),
+	ok.
 
 
 repeat(_F, 0) -> {end_of_test};
@@ -80,17 +97,16 @@ repeat(F, X) ->
 % working.
 
 do_battle_unarmed() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	NpcPid1 = npc:start_npc("npc0001"),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(1 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session("npc0001")})),
-	?assert(3 == u:distance({session, world:get_session(Cid2)}, {session, world:get_session("npc0001")})),
+	?assert(1 == u:distance(
+		{session, world:get_session(Cid1)},
+		{session, world:get_session("npc0001")})),
+	
+	?assert(3 == u:distance(
+		{session, world:get_session(Cid2)},
+		{session, world:get_session("npc0001")})),
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
@@ -99,27 +115,19 @@ do_battle_unarmed() ->
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
+	{R3, _} = battle:once(Cid1, "npc0001", "unarmed"),
+	{R4, _} = battle:once(Cid2, "npc0001", "unarmed"),
+	?assert(R3 == ok),
+	?assert(R4 == ng),
 
-	npc:stop_npc("npc0001"),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 
 
 
 do_look_around() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
 	?assert(4 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session(Cid2)})),
@@ -130,23 +138,12 @@ do_look_around() ->
 	?assert(sets:from_list(["cid0001", "cid0002"])
 		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
 
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 
 do_stat() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% update neighbor stat.
 	X1 = world:get_session(Cid1),
@@ -160,49 +157,54 @@ do_stat() ->
 		after 200 -> ok
 	end,
 
-	{actions_and_stats, Actions1, Stats1} = mmoasp:get_list_to_know(self(), Cid1),
-	{actions_and_stats, Actions2, Stats2} = mmoasp:get_list_to_know(self(), Cid2),
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	
+	{actions_and_stats, Actions2, Stats2}
+		= mmoasp:get_list_to_know(self(), Cid2),
 
-	io:format("list to know for ~p: ~p~n", [Cid1, {actions_and_stats, Actions1, Stats1}]),
-	io:format("list to know for ~p: ~p~n", [Cid2, {actions_and_stats, Actions2, Stats2}]),
+	io:format("list to know for ~p: ~p~n",
+		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+	io:format("list to know for ~p: ~p~n",
+		[Cid2, {actions_and_stats, Actions2, Stats2}]),
 
-	%% now, world has 2 characters. "cid0001" and "cid0002".
-	CidList1 = lists:flatten([[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
-	?assert(sets:from_list(CidList1) == sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
+	%% now, world has 2 characters "cid0001" and "cid0002",
+	%% and  1 npc (npc0001).
+	CidList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
+	?assert(sets:from_list(CidList1)
+		== sets:from_list(
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
 
-	CidList2 = lists:flatten([[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
-	?assert(sets:from_list(CidList2) == sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
+	CidList2 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
+	?assert(sets:from_list(CidList2)
+		== sets:from_list(
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
-	AList1 = lists:flatten([[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
-	?assert(sets:from_list(AList1) == sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
-	?assert(sets:from_list(lists:flatten([[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1])) == sets:from_list([{type, "login"}, {type, "login"}])),
+	AList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
+	?assert(sets:from_list(AList1)
+		== sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
+		== sets:from_list([{type, "login"}, {type, "login"}])),
 
 	%% "cid0002" knows only "cid0002" login.
-	AList2 = lists:flatten([[{K, V} || {K, V} <- ST, K == type] || ST <- Actions2]),
-	?assert(sets:from_list(AList2) == sets:from_list([{type, "login"}])),
+	AList2 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions2]),
+	?assert(sets:from_list(AList2)
+		== sets:from_list([{type, "login"}])),
 
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 
 
 do_pc_move() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	NpcPid1 = npc:start_npc("npc0001"),
-	io:format("after start npc ~p~n", [db:demo(session)]),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	S0 = world:get_session(Cid1),
@@ -226,78 +228,53 @@ do_pc_move() ->
 	?assert(S1#session.y == 2),
 	?assert(S1#session.map == 1),
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-	npc:stop_npc("npc0001"),
 	receive
 		after 1000 -> ok
 	end,
 	io:format("after stop npc ~p~n", [db:demo(session)]),
 
-	%% stop service
-	path_finder:stop(),
-	
 	{end_of_run_tests}.
 
 
 do_npc_move() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	NpcPid1 = npc:start_npc("npc0001"),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
 	io:format("npc starts at ~p~n", [db:demo(session)]),
-	S0 = world:get_session("npc0001"),
+	S0 = world:get_session(Npcid1),
 	?assert(S0#session.x == 2),
 	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
 	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
-	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
-	io:format("NPC move to 2,2 ~p~n", [mmoasp:move("npc0001", {pos, 3,1})]),
+	io:format("NPC move to 2,2 ~p~n", [mmoasp:move(Npcid1, {pos, 3,1})]),
 	receive
 		after 1100 -> ok
 	end,
-	io:format("Latest session ~p~n", [world:get_session("npc0001")]),
+	io:format("Latest session ~p~n", [world:get_session(Npcid1)]),
 	
-	S1 = world:get_session("npc0001"),
+	S1 = world:get_session(Npcid1),
 	?assert(S1#session.x == 3),
 	?assert(S1#session.y == 1),
 	?assert(S1#session.map == 1),
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-	npc:stop_npc("npc0001"),
 	receive
 		after 1000 -> ok
 	end,
 	io:format("after stop npc ~p~n", [db:demo(session)]),
-
-	%% stop service
-	path_finder:stop(),
-	
 	{end_of_run_tests}.
-
-
-
 
 
 
 % NOT working as test (just only work.).
 check_session_data() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
 	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
 	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
 	
@@ -326,25 +303,13 @@ check_session_data() ->
 
 	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 do_trades() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
-	
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-	
 
 	%% trade check.
 	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
@@ -360,23 +325,12 @@ do_trades() ->
 	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 
 do_talk() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	%% talk check
 	mmoasp:talk(open,Cid2, "hello all from cid 1234!!! ", 100),
@@ -391,25 +345,11 @@ do_talk() ->
 	%io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 do_setter() ->
-	db:reset_tables(),
-	mmoasp:start(),
-	
-	NpcPid1 = npc:start_npc("npc0001"),
-	io:format("after start npc ~p~n", [db:demo(session)]),
-	
-	%% login
-	{ok, Cid1, Token1} = mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
@@ -418,13 +358,7 @@ do_setter() ->
 	mmoasp:setter(self(), Cid2, Token2, "WindowSize", "99,160"),
 	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
-	%% logging out.
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
-
-	%% stop service
-	path_finder:stop(),
-	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 

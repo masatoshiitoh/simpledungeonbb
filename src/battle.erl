@@ -33,5 +33,43 @@
 -ifdef(TEST).
 -endif.
 
+%% full automatic battle
+once(OidFrom, OidTo) ->
+	Method = get_default_battle_method(OidFrom),
+	case Method of
+		"hth" -> {ok, 0};
+		"missile" -> {ok, 0};
+		"magic" -> {ok, 0};
+		_ ->
+			unarmed:calc(
+				get_battle_parameter(OidFrom, Method),
+				get_battle_parameter(OidTo, Method))
+	end.
 
-once(CidFrom, CidTo) -> {ok, 0}.
+%% player choose attack method
+%% hth: hand-to-hand. nuckle, katana...
+%% missile: arrow, gun, rocket launcher...
+%% magic: like tiltowait of wizardry,
+%%        and any other special resource consuming.
+once(OidFrom, OidTo, Method) ->
+	case Method of
+		"hth" -> {ok, 0};
+		"missile" -> {ok, 0};
+		"magic" -> {ok, 0};
+		_ ->
+			unarmed:calc(
+				get_battle_parameter(OidFrom, Method),
+				get_battle_parameter(OidTo, Method))
+	end.
+
+get_battle_parameter(Oid, Method) ->
+	case Method of
+		"unarmed" ->
+			#battle_param{oid = Oid, range=1.0, hp = 10, mp = 0, ac = 3, str = 5}
+	end.
+
+get_default_battle_method(Oid) ->
+	%% check equipment.
+	%% 
+	"unarmed".
+

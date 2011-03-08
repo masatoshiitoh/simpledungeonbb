@@ -30,77 +30,39 @@
 -include_lib("mmoasp.hrl").
 -compile(export_all).
 
--ifdef(TEST).
-fixed_calc_01_test() ->
-	From = #battle_param{str = 7},
-	To = #battle_param{ac = 10},
-	?assert({ok, 7} == fixed_calc(From, To)).
-
-fixed_calc_02_test() ->
-	From = #battle_param{str = 3},
-	To = #battle_param{ac = 6},
-	?assert({ok, 0} == fixed_calc(From, To)).
-
-fixed_calc_03_test() ->
-	From = #battle_param{str = 12},
-	To = #battle_param{ac = -10},
-	?assert({ok, 0} == fixed_calc(From, To)).
-
-calc_01_10000_test() ->
-	test:repeat(
-		fun() ->
-			From = #battle_param{str = 7},
-			To = #battle_param{ac = 10},
-			case (calc(From, To)) of
-				{ok, A}
-					-> ?assert(A >= 7 andalso A =< 14);
-				{fumble, B}
-					-> ?assert(B == 0);
-				{critical, C}
-					-> ?assert(C >= 15 andalso C =< 35)
-			end
-		end,
-		10000).
-
-calc_02_10000_test() ->
-	test:repeat(
-		fun() ->
-			From = #battle_param{str = 5},
-			To = #battle_param{ac = 0},
-			case (calc(From, To)) of
-				{ok, A}
-					-> ?assert(A == 0);
-				{fumble, B}
-					-> ?assert(B == 0);
-				{critical, C}
-					-> ?assert(C >= 11 andalso C =< 30)
-			end
-		end,
-		10000).
-
-
--endif.
-
+%% do not throw dice.
 fixed_calc(
-	#battle_param{str=Str1} = From,
-	#battle_param{ac=Ac2} = To)
-	-> {ok, trim_negative(Str1 + (Ac2 - 10))}.
-
-calc(
-	#battle_param{str=Str1} = From,
-	#battle_param{ac=Ac2} = To)
+	#battle_param{oid=OidFrom, range=Range, str=Str1} = From,
+	#battle_param{oid=OidTo, ac=Ac2} = To)
 	->
-	case throw:result(throw:dice(20)) of
-		{fumble, X}
-			-> {fumble, 0};
-		{critical, X}
-			-> {critical, damage_critical(From, To, X)};
-		{ok, X}
-			-> {ok, damage_normal(From, To, X)}
-	end.
+		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
+		if
+			(Distance > Range) -> {ng, 0};
+			true -> {ok, trim_negative(Str1 + (Ac2 - 10))}
+		end.
+
+%% throw dice to calc result.
+calc(
+	#battle_param{oid=OidFrom, range=Range, str=Str1} = From,
+	#battle_param{oid=OidTo, ac=Ac2} = To)
+	->
+		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
+		if
+			(Distance > Range) ->
+				{ng, 0};
+			true ->
+				case throw:result(throw:dice(20)) of
+					{fumble, X}
+						-> {fumble, 0};
+					{critical, X}
+						-> {critical, damage_critical(From, To, X)};
+					{ok, X}
+						-> {ok, damage_normal(From, To, X)}
+				end
+		end.
 
 %% critical damage!
-%% you got cancel enemys armor,
+%% you got cancel enemy's armor,
 %% ATK: double of Strength, + 20D1
 damage_critical(
 	#battle_param{str=Str1} = From,
@@ -124,4 +86,91 @@ damage_normal(
 
 trim_negative(N) when N < 0 -> 0;
 trim_negative(N) -> N.
+
+
+%%% TEST CODE ------------------------------------------ %%%
+-ifdef(TEST).
+fixed_000_test() ->
+	mmoasp:change_schema().
+
+fixed_calc_01_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+
+	From = #battle_param{oid=Cid1, str = 7, range=1.0},
+	To = #battle_param{oid=Npcid1, ac = 10},
+	?assert({ok, 7} == fixed_calc(From, To)),
+
+	From2 = #battle_param{oid=Cid2, str = 7, range=1.0},
+	To = #battle_param{oid=Npcid1, ac = 10},
+	?assert({ng, 0} == fixed_calc(From2, To)),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+fixed_calc_02_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	From = #battle_param{oid=Cid1, str = 3, range=1.0},
+	To = #battle_param{oid=Npcid1, ac = 6},
+	?assert({ok, 0} == fixed_calc(From, To)),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+fixed_calc_03_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	From = #battle_param{oid=Cid1, str = 12, range=1.0},
+	To = #battle_param{oid=Npcid1, ac = -10},
+	?assert({ok, 0} == fixed_calc(From, To)),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+calc_01_10000_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	test:repeat(
+		fun() ->
+			From = #battle_param{oid=Cid1, str = 7, range=1.0},
+			To = #battle_param{oid=Npcid1, ac = 10},
+			case (calc(From, To)) of
+				{ok, A}
+					-> ?assert(A >= 7 andalso A =< 14);
+				{fumble, B}
+					-> ?assert(B == 0);
+				{critical, C}
+					-> ?assert(C >= 15 andalso C =< 35)
+			end
+		end,
+		10000),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+calc_02_10000_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	test:repeat(
+		fun() ->
+			From = #battle_param{oid=Cid1, str = 5, range=1.0},
+			To = #battle_param{oid=Npcid1, ac = 0},
+			case (calc(From, To)) of
+				{ok, A}
+					-> ?assert(A == 0);
+				{fumble, B}
+					-> ?assert(B == 0);
+				{critical, C}
+					-> ?assert(C >= 11 andalso C =< 30)
+			end
+		end,
+		10000),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+-endif.
+
 

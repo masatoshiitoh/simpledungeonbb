@@ -27,7 +27,7 @@
 -record(session, {oid, pid, type, name, map, x, y, z, stream_pid}). 
 -record(location, {cid, initmap,initx, inity, initz}).
 
--record(battle_param, {oid, hp, mp, ac, str}).
+-record(battle_param, {oid, hp, mp, ac, str, range}).
 
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
