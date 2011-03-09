@@ -30,46 +30,56 @@
 -include_lib("mmoasp.hrl").
 -compile(export_all).
 
--ifdef(TEST).
--endif.
-
 %% full automatic battle
 once(OidFrom, OidTo) ->
 	Method = get_default_battle_method(OidFrom),
-	case Method of
-		"hth" -> {ok, 0};
-		"missile" -> {ok, 0};
-		"magic" -> {ok, 0};
-		_ ->
-			unarmed:calc(
-				get_battle_parameter(OidFrom, Method),
-				get_battle_parameter(OidTo, Method))
-	end.
+	once(OidFrom, OidTo, Method).
 
 %% player choose attack method
 %% hth: hand-to-hand. nuckle, katana...
 %% missile: arrow, gun, rocket launcher...
 %% magic: like tiltowait of wizardry,
 %%        and any other special resource consuming.
+once(_OidFrom, _OidTo, Method) when Method == "hth" -> {ok, 0};
+once(_OidFrom, _OidTo, Method) when Method == "missile" -> {ok, 0};
+once(_OidFrom, _OidTo, Method) when Method == "magic" -> {ok, 0};
 once(OidFrom, OidTo, Method) ->
-	case Method of
-		"hth" -> {ok, 0};
-		"missile" -> {ok, 0};
-		"magic" -> {ok, 0};
-		_ ->
-			unarmed:calc(
-				get_battle_parameter(OidFrom, Method),
-				get_battle_parameter(OidTo, Method))
-	end.
+	proc_battle(OidFrom, OidTo, Method,
+		fun(X,Y) -> unarmed:calc(X,Y) end).
+
+proc_battle(OidFrom, OidTo, Method, CalcFunc) ->
+	%% TODO: insert here equipment check.
+	_Damage = CalcFunc(get_battle_parameter(OidFrom, Method),
+		get_battle_parameter(OidTo, Method)).
+	%% TODO: insert here DB transaction start when Damage is non-zero.
+	%% TODO: decrease Damage from OidTo's hp.
+	%% TODO: insert here DB transaction commit.
+	%% TODO: insert here noticing code.
 
 get_battle_parameter(Oid, Method) ->
 	case Method of
 		"unarmed" ->
-			#battle_param{oid = Oid, range=1.0, hp = 10, mp = 0, ac = 3, str = 5}
+			#battle_param{oid = Oid, range=1.0,
+				hp = 10, mp = 0, ac = 3, str = 5}
 	end.
 
 get_default_battle_method(Oid) ->
 	%% check equipment.
-	%% 
 	"unarmed".
 
+
+%%% TEST CODE ------------------------------------------ %%%
+-ifdef(TEST).
+
+battle_01_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{X1, Y1} = once("cid0001", "npc0001"),
+	?assert(X1 /= ng),
+	{X2, Y2} = once("cid0002", "npc0001"),
+	?assert(X2 == ng),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
