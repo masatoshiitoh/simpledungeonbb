@@ -110,13 +110,13 @@ do_battle_unarmed() ->
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
-	{R1, _} = battle:once(Cid1, "npc0001"),
-	{R2, _} = battle:once(Cid2, "npc0001"),
+	{R1, _} = battle:single(Cid1, "npc0001"),
+	{R2, _} = battle:single(Cid2, "npc0001"),
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
-	{R3, _} = battle:once(Cid1, "npc0001", "unarmed"),
-	{R4, _} = battle:once(Cid2, "npc0001", "unarmed"),
+	{R3, _} = battle:single(Cid1, "npc0001", "unarmed"),
+	{R4, _} = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R3 == ok),
 	?assert(R4 == ng),
 

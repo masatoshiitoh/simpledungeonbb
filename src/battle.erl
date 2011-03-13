@@ -28,33 +28,63 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--compile(export_all).
+-export([single/3, single/2]).
+
+%% battle with method
+%% (if not applicable (ex. too far with melee),
+%% just only fails - get {ng,0}).
+single(OidFrom, OidTo, Method) ->
+	notice_result(
+		OidFrom,
+		OidTo,
+		store_result(
+			OidTo,
+			calc_single(OidFrom, OidTo, Method)),
+		_Radiuis = 100).
 
 %% full automatic battle
-once(OidFrom, OidTo) ->
-	Method = get_default_battle_method(OidFrom),
-	once(OidFrom, OidTo, Method).
+single(OidFrom, OidTo) ->
+	single(OidFrom, OidTo, get_default_battle_method(OidFrom)).
+
+%%% not exported ------------------------------------------ %%%
+
+calc_single(_OidFrom, _OidTo, Method) when Method == "hth" -> {ok, 0};
+calc_single(_OidFrom, _OidTo, Method) when Method == "missile" -> {ok, 0};
+calc_single(_OidFrom, _OidTo, Method) when Method == "magic" -> {ok, 0};
+calc_single(OidFrom, OidTo, Method) ->
+	proc_battle(
+		OidFrom, OidTo, Method,
+		fun(X,Y) -> unarmed:calc(X,Y) end).
+
+%% store_result series returns {Result, Damage} tapple.
+store_result(_OidTo, {ok, X}) ->
+	%% TODO: write code - update db
+	{ok, X};
+store_result(_OidTo, {ng, X}) ->
+	%% TODO: write code - update db
+	{ng, X};
+store_result(_OidTo, {critical, X}) ->
+	{critical, X};
+store_result(_OidTo, {fumble, X}) ->
+	{fumble, X}.
+
+notice_result(OidFrom, OidTo, DamTupple, Radius) ->
+	{Res, Dam} = DamTupple,
+	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, Res, Dam}
+		|| X <- Sessions],
+	DamTupple.
 
 %% player choose attack method
 %% hth: hand-to-hand. nuckle, katana...
 %% missile: arrow, gun, rocket launcher...
 %% magic: like tiltowait of wizardry,
 %%        and any other special resource consuming.
-once(_OidFrom, _OidTo, Method) when Method == "hth" -> {ok, 0};
-once(_OidFrom, _OidTo, Method) when Method == "missile" -> {ok, 0};
-once(_OidFrom, _OidTo, Method) when Method == "magic" -> {ok, 0};
-once(OidFrom, OidTo, Method) ->
-	proc_battle(OidFrom, OidTo, Method,
-		fun(X,Y) -> unarmed:calc(X,Y) end).
 
 proc_battle(OidFrom, OidTo, Method, CalcFunc) ->
-	%% TODO: insert here equipment check.
-	_Damage = CalcFunc(get_battle_parameter(OidFrom, Method),
+	CalcFunc(
+		get_battle_parameter(OidFrom, Method),
 		get_battle_parameter(OidTo, Method)).
-	%% TODO: insert here DB transaction start when Damage is non-zero.
-	%% TODO: decrease Damage from OidTo's hp.
-	%% TODO: insert here DB transaction commit.
-	%% TODO: insert here noticing code.
 
 get_battle_parameter(Oid, Method) ->
 	case Method of
@@ -63,7 +93,7 @@ get_battle_parameter(Oid, Method) ->
 				hp = 10, mp = 0, ac = 3, str = 5}
 	end.
 
-get_default_battle_method(Oid) ->
+get_default_battle_method(_Oid) ->
 	%% check equipment.
 	"unarmed".
 
@@ -74,11 +104,39 @@ get_default_battle_method(Oid) ->
 battle_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{X1, Y1} = once("cid0001", "npc0001"),
-	?assert(X1 /= ng),
-	{X2, Y2} = once("cid0002", "npc0001"),
-	?assert(X2 == ng),
+	{T1, _V1} = single(Cid1, Npcid1),
+	?assert(T1 /= ng),
+	{T2, _V2} = single(Cid2, Npcid1),
+	?assert(T2 == ng),
 	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+battle_02_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	mmoasp:get_list_to_know(self(), Cid1),	%% reset list_to_know queue.
+
+	%% 1: DO ATTACK
+	{T1, _V1} = single(Cid1, Npcid1),
+
+	%% 2: Check results.
+	?assert(T1 /= ng),
+	
+	%% 2-1: Get List to Know.
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	
+	%% 2-1-1: Attacked Cid check:
+	AList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == to_cid] || ST <- Actions1]),
+	io:format("battle_02_test:~p~n", [AList1]),
+	?assert(sets:from_list(AList1) == sets:from_list([{to_cid, Npcid1}])),
+
+	%% 2-1-2: Type:
+	AList2 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]),
+	?assert(sets:from_list(AList2) == sets:from_list([{type, "attack"}])),
+
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
