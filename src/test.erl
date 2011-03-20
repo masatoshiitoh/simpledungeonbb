@@ -46,6 +46,18 @@ scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
 
+check_record_test() ->
+	%% what is this test?
+	%% because, I wrote 'erlang:now()' in record 'idle' default value.
+	%% This code assumes every 'idle' initialization makes
+	%% different 'last_op' value.
+	N1 = #idle{},
+	receive
+		after 2000 -> ok
+	end,
+	N2 = #idle{},
+	?assert(N1#idle.last_op /= N2#idle.last_op).
+
 run_tests_with_log()
 	->
 		mmoasp:change_schema(),
@@ -97,6 +109,8 @@ repeat(F, X) ->
 % test codes
 %
 % working.
+
+
 
 do_battle_unarmed() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),

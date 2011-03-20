@@ -54,20 +54,20 @@ stop_child(Cid) ->
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
 
-system_call({From, stop_process}, R, {idle, SinceLastOp, LastOp}) ->
+system_call({From, stop_process}, R, I) ->
 	io:format("character: proc stop by stop_process message.~n"),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid}.
 
-loop(R, {idle, SinceLastOp, _LastOp})
-	when SinceLastOp > 300*1000*1000->
+loop(R, I)
+	when I#idle.since_last_op > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
 	uauth:db_logout(self(), R#task_env.cid, R#task_env.token);
 
-loop(R, {idle, _SinceLastOp, LastOp}) ->
+loop(R, I) ->
 	receive
-		{system, X} -> system_call(X, R, {idle, _SinceLastOp, LastOp});
+		{system, X} -> system_call(X, R, I});
 
 		{From, request_list_to_know} ->
 			From ! {list_to_know,
@@ -212,8 +212,8 @@ add_event(R, Event) ->
 		event_queue = add_element(Event, R#task_env.event_queue)
 	}.
 
-mk_idle_reset() -> {idle, 0, erlang:now()}.
-mk_idle_update(LastOp) -> {idle, timer:now_diff(erlang:now(), LastOp), LastOp}.
+mk_idle_reset() -> I#idle.
+mk_idle_update(I) -> I#idle{since_last_op = timer:now_diff(erlang:now(), LastOp)}.
 
 add_element(X, Q) -> queue:in([{id, u:make_new_id()}] ++ X,Q).
 get_elements(Q) -> queue:to_list(Q).
