@@ -54,7 +54,7 @@ stop_child(Cid) ->
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
 
-system_call({From, stop_process}, R, I) ->
+system_call({From, stop_process}, R, _I) ->
 	io:format("character: proc stop by stop_process message.~n"),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid}.
@@ -67,7 +67,7 @@ loop(R, I)
 
 loop(R, I) ->
 	receive
-		{system, X} -> system_call(X, R, I});
+		{system, X} -> system_call(X, R, I);
 
 		{From, request_list_to_know} ->
 			From ! {list_to_know,
@@ -80,7 +80,7 @@ loop(R, I) ->
 			NewStatDict =
 				[gen_stat_from_cdata(X)
 					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
-			loop(R#task_env{stat_dict = NewStatDict}, mk_idle_update(LastOp));
+			loop(R#task_env{stat_dict = NewStatDict}, mk_idle_update(I));
 		
 		{_From, talk, Talker, MessageBody, Mode} ->
 			%%io:format("character: get chat. ~p~n",
@@ -90,7 +90,7 @@ loop(R, I) ->
 						{cid, Talker},
 						{content, MessageBody},
 						{mode, Mode}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 
 		{_From, attack, OidFrom, OidTo, Res, Dam} ->
 			io:format("character: ~p hits ~p. (~p, ~p)~n",
@@ -101,7 +101,7 @@ loop(R, I) ->
 						{to_cid, OidTo},
 						{result, atom_to_list(Res)},
 						{damage, Dam}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 
 		{_From, notice_login, SenderCid, Name} ->
 			%%io:format("character: get others login. ~p~n",
@@ -110,21 +110,21 @@ loop(R, I) ->
 					[{type, "login"},
 						{cid, SenderCid},
 						{name, Name}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 			
 		{_From, notice_logout, SenderCid} ->
 			%%io:format("character: get others logout. ~p~n",
 			%%	[{notice_logout, Cid} ]),
 			loop(add_event(R,
 					[{type, "logout"}, {cid, SenderCid}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 			
 		{_From, notice_remove, SenderCid} ->
 			%%io:format("character: get others removed. ~p~n",
 			%%	[{notice_remove, Cid} ]),
 			loop(add_event(R,
 					[{type, "remove"}, {cid, SenderCid}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 			
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
@@ -140,7 +140,7 @@ loop(R, I) ->
 					io:format("character: ~p arrived at: ~p~n",
 						[R#task_env.cid, CurrPos]),
 					db_setpos(R#task_env.cid, CurrPos),
-					loop(R, mk_idle_update(LastOp));
+					loop(R, mk_idle_update(I));
 				[H | T] -> 			
 					io:format("character: ~p start move: ~p to ~p ~n",
 						[R#task_env.cid, CurrPos, H]),
@@ -156,7 +156,7 @@ loop(R, I) ->
 						utimer = morningcall:add(1000, fun() ->
 							SelfPid ! {SelfPid, move, H, T}
 							end, R#task_env.utimer)},
-						mk_idle_update(LastOp))
+						mk_idle_update(I))
 			end;
 
 		{_From, notice_move, SenderCid, From, To, Duration} ->
@@ -169,7 +169,7 @@ loop(R, I) ->
 						{from_x, FromX}, {from_y, FromY},
 						{to_x, ToX}, {to_y, ToY},
 						{duration, Duration}]),
-				mk_idle_update(LastOp));
+				mk_idle_update(I));
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
@@ -185,35 +185,38 @@ loop(R, I) ->
 		%% TIMER
 		{goodmorning, Id} ->
 			{_FunResult, NewUTimer} = morningcall:dispatch(Id, R#task_env.utimer),
-			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(LastOp));
+			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(I));
 
 		{_From, cancel_timer} ->
 			NewUTimer = morningcall:cancel_all(R#task_env.utimer),
-			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(LastOp));
+			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(I));
 
 		%% Just a test code.
 		{From, whoareyou} ->
 			From ! {iam, R#task_env.cid},
-			loop(R, mk_idle_update(LastOp));
+			loop(R, mk_idle_update(I));
 
 		Other ->
 			io:format("character: invalid message ~p~n", [Other]),
-			loop(R, mk_idle_update(LastOp))
+			loop(R, mk_idle_update(I))
 			
 	after 1000 ->
-		loop(R, mk_idle_update(LastOp))
+		loop(R, mk_idle_update(I))
 	end.
 
 
 % internal use -----------------------------------------------
 
-add_event(R, Event) ->
+add_event(R, Event) when is_record(R, task_env) ->
 	R#task_env{
 		event_queue = add_element(Event, R#task_env.event_queue)
 	}.
 
-mk_idle_reset() -> I#idle.
-mk_idle_update(I) -> I#idle{since_last_op = timer:now_diff(erlang:now(), LastOp)}.
+mk_idle_reset() -> #idle{}.
+mk_idle_update(I) when is_record(I, idle) ->
+	I#idle{
+		since_last_op = timer:now_diff(erlang:now(), I#idle.last_op)
+	}.
 
 add_element(X, Q) -> queue:in([{id, u:make_new_id()}] ++ X,Q).
 get_elements(Q) -> queue:to_list(Q).
