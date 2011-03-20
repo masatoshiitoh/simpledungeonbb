@@ -45,7 +45,14 @@ setup_npc(Npcid)->
 	EventQueue = queue:new(),
 	StatDict = [],
 	
-	Child = spawn(fun() ->npc:loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) end),
+	R = #task_env{
+	cid = Npcid,
+	cdata = Npcdata,
+	event_queue = EventQueue,
+	stat_dict = StatDict,
+	utimer = UTimer
+	},
+	Child = spawn(fun() ->npc:loop(R) end),
 	
 	%% store session
 	mnesia:transaction(
@@ -57,79 +64,76 @@ setup_npc(Npcid)->
 	Child.
 	
 
-loop(Npcid, Npcdata, EventQueue, StatDict, UTimer) ->
+loop(R) ->
 	receive
 		{_From, talk, Talker, MessageBody, Mode} ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
 			%% mmoasp:talk(open, Npcid, "konnichiwa--", 100),
-			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+			loop(R);
 
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
 			SelfPid = self(),
 			SelfPid ! {_From, cancel_timer},
 			SelfPid ! {_From, move, CurrPos, WayPoints},
-			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+			loop(R);
 
 		% interval-timer base character move:
 		{_From, move, CurrPos, WayPoints} ->
-			character:db_setpos(Npcid, CurrPos),
+			character:db_setpos(R#task_env.cid, CurrPos),
 			case WayPoints of
 				[] -> 
-					io:format("npc: ~p arrived at: ~p~n", [Npcid, CurrPos]),
+					io:format("npc: ~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
 					{pos, X, Y} = CurrPos,
 					%%mmoasp:setter(Npcid, "x", X),
 					%%mmoasp:setter(Npcid, "y", Y),
-					loop(Npcid, Npcdata, EventQueue, StatDict, UTimer);
+					loop(R);
 				[H | T] -> 			
-					io:format("npc: ~p start move: ~p to ~p ~n", [Npcid, CurrPos, H]),
+					io:format("npc: ~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 
 					{pos, X, Y} = CurrPos,
 					%%mmoasp:setter(Npcid, "x", X),
 					%%mmoasp:setter(Npcid, "y", Y),
 
 					Radius = 100,
-					mmoasp:notice_move(Npcid, {transition, CurrPos, H, 1000}, Radius),
+					mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, Radius),
 					SelfPid = self(),
 					F = fun() ->
 						SelfPid ! {SelfPid, move, H, T}
 					end,
-					loop(Npcid, Npcdata, EventQueue, StatDict, morningcall:add(1000,F, UTimer))
+					loop(R#task_env{utimer = morningcall:add(1000, F, R#task_env.utimer)})
 			end;
 
 		{_From, notice_move, SenderCid, From, To, Duration} ->
 			io:format("npc: get others move. ~p~n", [{notice_move, SenderCid, From, To, Duration} ]),
 			{pos, FromX, FromY} = From,
 			{pos, ToX, ToY} = To,
-			loop(Npcid,Npcdata,
-				character:add_element(
+			loop(character:add_event(R,
 					[{type, "move"}, {cid, SenderCid},
 						{from_x, FromX}, {from_y, FromY},
 						{to_x, ToX}, {to_y, ToY},
-						{duration, Duration}]
-					, EventQueue),
-				StatDict, UTimer);
+						{duration, Duration}]));
 			
 
 		%% system messages.
 		%% TIMER
 		{goodmorning, Id} ->
-			{_FunResult, NewUTimer} = morningcall:dispatch(Id, UTimer),
-			loop(Npcid, Npcdata, EventQueue, StatDict, NewUTimer);
+			{_FunResult, NewUTimer} = morningcall:dispatch(Id, R#task_env.utimer),
+			loop(R#task_env{utimer = NewUTimer});
 
 		{_From, cancel_timer} ->
-			NewUTimer = morningcall:cancel_all(UTimer),
-			loop(Npcid, Npcdata, EventQueue, StatDict, NewUTimer);
+			NewUTimer = morningcall:cancel_all(R#task_env.utimer),
+			loop(R#task_env{utimer = NewUTimer});
 
 		{From, stop_process} ->
 			io:format("npcloop: child process terminated by stop_process message.~n"),
-			morningcall:cancel_all(UTimer),
-			From ! {ok, Npcid},
+			morningcall:cancel_all(R#task_env.utimer),
+			From ! {ok, R#task_env.cid},
 			bye;
 
 		_ ->
 			%% do nothing.
-			loop(Npcid, Npcdata, EventQueue, StatDict, UTimer)
+			loop(R)
 	end.
 
 db_get_npcdata(Cid) ->

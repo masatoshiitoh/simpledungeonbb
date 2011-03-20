@@ -20,7 +20,7 @@
 
 
 -module(character).
--export([loop/2, mk_idle_reset/0]).
+-export([loop/2, add_event/2, mk_idle_update/1, mk_idle_reset/0]).
 -compile(export_all).
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
