@@ -54,12 +54,15 @@ basic_change_password(Cid, NewPw) ->
 
 setup_player_character(Cid)->
 	{character, Cid, CData} = db_get_cdata(Cid),
-	Token = uauth:gen_token("nil", Cid),
-	UTimer = morningcall:new(),
-	EventQueue = queue:new(),
-	StatDict = [],
 	db_location_online(Cid),
-	Child = spawn(fun() ->character:loop(Cid, CData, EventQueue, StatDict, Token, UTimer, character:mk_idle_reset()) end),
+	R = #task_env{
+		cid = Cid,
+		cdata = CData,
+		event_queue = queue:new(),
+		stat_dict = [],
+		token = uauth:gen_token("nil", Cid),
+		utimer =  morningcall:new()},
+	Child = spawn(fun() ->character:loop(R, character:mk_idle_reset()) end),
 	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
@@ -68,7 +71,7 @@ setup_player_character(Cid)->
 
 	Radius = 100,
 	mmoasp:notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
-	{ok, Child, Token}.
+	{ok, Child, R#task_env.token}.
 
 setup_player_initial_location(Cid) ->
 	Me = world:get_initial_location(Cid),

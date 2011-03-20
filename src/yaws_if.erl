@@ -163,8 +163,13 @@ out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	%% io:format("yaws_if. move requested. cid = ~p, x = ~p, y = ~p~n", [CidX, X, Y]),
 	_Result = mmoasp:move(CidX, {pos, X, Y}),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
-	%	mout:return_json(json:encode({struct, [Result]}));
 
+%% Attack
+out(A, 'POST', ["service", SVID, "attack", CidX, CidTo]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Token = param(Params, "token"),
+	_Result = battle:single(CidX, CidTo),
+	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Set attribute
 %% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"

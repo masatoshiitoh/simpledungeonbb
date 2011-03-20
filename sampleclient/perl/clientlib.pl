@@ -116,6 +116,8 @@ sub line_handler
 		$o = &talk($args);
 	}elsif ($cmd eq 'move') {
 		$o = &move($args);
+	}elsif ($cmd eq 'attack') {
+		$o = &attack($args);
 	}else {
 		$o = &get_list_to_know();
 		print Dumper($o);
@@ -189,6 +191,14 @@ sub move
 	($x, $y) = split(/ /, shift, 2);
 	my $target_url = "$base_url/service/$sv/move/$cid"; 
 	my %params = ('token' => $token, 'x' => $x, 'y' => $y);
+	return &call_api($target_url, %params);
+}
+
+sub attack
+{
+	$attack_to = shift;
+	my $target_url = "$base_url/service/$sv/attack/$cid/$attack_to"; 
+	my %params = ('token' => $token);
 	return &call_api($target_url, %params);
 }
 

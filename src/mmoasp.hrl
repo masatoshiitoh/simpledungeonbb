@@ -22,6 +22,9 @@
 %% Mnesia table structure
 
 %% under development:
+-record(task_env, {cid, cdata, event_queue, stat_dict, token, utimer}).
+-record(idle,  {since_last_op, last_op}).
+
 -record(cdata,	{cid, name, attr}).
 %% oid is onigiri id. what's onigiri? onigiri is element. (object or sprite, character...)
 -record(session, {oid, pid, type, name, map, x, y, z, stream_pid}). 

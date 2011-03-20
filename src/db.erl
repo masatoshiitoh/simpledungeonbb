@@ -20,6 +20,11 @@
 
 
 -module(db).
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 -export([start/0, reset_tables/0]).
 -compile(export_all).
 
@@ -27,6 +32,20 @@
 -import(lists, [foreach/2]).
 -include_lib("mmoasp.hrl").
 
+%=======================
+% KV access utilities
+%=======================
+
+access_cdata(Oid, Key) -> Value = 0.
+
+%%% TEST CODE ------------------------------------------ %%%
+-ifdef(TEST).
+
+access_cdata_01_test() ->
+	?assert(access_cdata("cid0001", "hp") == 12),
+	{end_of_run_tests}.
+
+-endif.
 
 
 %=======================

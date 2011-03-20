@@ -47,7 +47,9 @@ scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
 
 run_tests_with_log()
-	-> eunit:test(
+	->
+		mmoasp:change_schema(),
+		eunit:test(
 		[battle,unarmed,test,u,throw],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 

@@ -20,7 +20,7 @@
 
 
 -module(character).
--export([loop/7, mk_idle_reset/0]).
+-export([loop/2, mk_idle_reset/0]).
 -compile(export_all).
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
@@ -42,7 +42,7 @@ setter(Cid, Key, Value) ->
 
 stop_child(Cid) ->
 	world:apply_session(Cid,
-		fun(X) -> X#session.pid ! {self(), stop_process} end).
+		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
 
 % core loop -----------------------------------------------
 
@@ -53,138 +53,109 @@ stop_child(Cid) ->
 
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
-loop(Cid, _CData, _EventQueue, _StatDict, Token, _UTimer, {idle, SinceLastOp, _LastOp})
+
+system_call({From, stop_process}, R, {idle, SinceLastOp, LastOp}) ->
+	io:format("character: proc stop by stop_process message.~n"),
+	morningcall:cancel_all(R#task_env.utimer),
+	From ! {ok, R#task_env.cid}.
+
+loop(R, {idle, SinceLastOp, _LastOp})
 	when SinceLastOp > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
-	uauth:db_logout(self(), Cid, Token);
+	uauth:db_logout(self(), R#task_env.cid, R#task_env.token);
 
-loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastOp}) ->
+loop(R, {idle, _SinceLastOp, LastOp}) ->
 	receive
-		{From, stop_process} ->
-			io:format("character: proc stop by stop_process message.~n"),
-			morningcall:cancel_all(UTimer),
-			From ! {ok, Cid};
+		{system, X} -> system_call(X, R, {idle, _SinceLastOp, LastOp});
 
 		{From, request_list_to_know} ->
 			From ! {list_to_know,
-				get_elements(EventQueue),
-				get_stats(StatDict)},
-			%% io:format("character: get request_list_to_know. ~p~n",
-			%%	[EventQueue]),
-			loop(Cid, CData,
-				queue:new(),
-				StatDict,
-				Token, UTimer, mk_idle_reset());
+				get_elements(R#task_env.event_queue),
+				get_stats(R#task_env.stat_dict)},
+			loop(R#task_env{event_queue = queue:new()},mk_idle_reset());
 		
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
 			NewStatDict =
 				[gen_stat_from_cdata(X)
-					|| X <- mmoasp:get_neighbor_char_cdata(Cid, Radius)],
-			loop(Cid,CData,
-				EventQueue,
-				NewStatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
+			loop(R#task_env{stat_dict = NewStatDict}, mk_idle_update(LastOp));
 		
 		{_From, talk, Talker, MessageBody, Mode} ->
 			%%io:format("character: get chat. ~p~n",
 			%%	[{talk, Talker, MessageBody, Mode}]),
-			loop(Cid,CData,
-				add_element(
+			loop(add_event(R, 
 					[{type, "talk"},
 						{cid, Talker},
 						{content, MessageBody},
-						{mode, Mode}]
-					, EventQueue),
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+						{mode, Mode}]),
+				mk_idle_update(LastOp));
 
 		{_From, attack, OidFrom, OidTo, Res, Dam} ->
 			io:format("character: ~p hits ~p. (~p, ~p)~n",
 				[OidFrom, OidTo, Res, Dam]),
-			loop(Cid,CData,
-				add_element(
+			loop(add_event(R,
 					[{type, "attack"},
 						{from_cid, OidFrom},
 						{to_cid, OidTo},
-						{result, Res},
-						{damage, Dam}]
-					, EventQueue),
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+						{result, atom_to_list(Res)},
+						{damage, Dam}]),
+				mk_idle_update(LastOp));
 
 		{_From, notice_login, SenderCid, Name} ->
 			%%io:format("character: get others login. ~p~n",
 			%%	[{notice_login, Name} ]),
-			loop(Cid,CData,
-				add_element(
+			loop(add_event(R,
 					[{type, "login"},
 						{cid, SenderCid},
-						{name, Name}]
-					, EventQueue),
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+						{name, Name}]),
+				mk_idle_update(LastOp));
 			
 		{_From, notice_logout, SenderCid} ->
 			%%io:format("character: get others logout. ~p~n",
 			%%	[{notice_logout, Cid} ]),
-			loop(Cid,CData,
-				add_element(
-					[{type, "logout"}, {cid, SenderCid}]
-					, EventQueue),
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+			loop(add_event(R,
+					[{type, "logout"}, {cid, SenderCid}]),
+				mk_idle_update(LastOp));
 			
 		{_From, notice_remove, SenderCid} ->
 			%%io:format("character: get others removed. ~p~n",
 			%%	[{notice_remove, Cid} ]),
-			loop(Cid,CData,
-				add_element(
-					[{type, "remove"}, {cid, SenderCid}]
-					, EventQueue),
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+			loop(add_event(R,
+					[{type, "remove"}, {cid, SenderCid}]),
+				mk_idle_update(LastOp));
 			
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
 			SelfPid = self(),
 			SelfPid ! {_From, cancel_timer},
 			SelfPid ! {_From, move, CurrPos, WayPoints},
-			loop(Cid, CData,
-				EventQueue,
-				StatDict,
-				Token, UTimer, mk_idle_reset());
+			loop(R, mk_idle_reset());
 
 		% interval-timer base character move:
 		{_From, move, CurrPos, WayPoints} ->
 			case WayPoints of
 				[] -> 
 					io:format("character: ~p arrived at: ~p~n",
-						[Cid, CurrPos]),
-					db_setpos(Cid, CurrPos),
-					loop(Cid, CData,
-						EventQueue,
-						StatDict,
-						Token, UTimer, mk_idle_update(LastOp));
+						[R#task_env.cid, CurrPos]),
+					db_setpos(R#task_env.cid, CurrPos),
+					loop(R, mk_idle_update(LastOp));
 				[H | T] -> 			
 					io:format("character: ~p start move: ~p to ~p ~n",
-						[Cid, CurrPos, H]),
+						[R#task_env.cid, CurrPos, H]),
 
-					db_setpos(Cid, CurrPos),
+					db_setpos(R#task_env.cid, CurrPos),
 
 					Radius = 100,
-					mmoasp:notice_move(Cid,
+					mmoasp:notice_move(R#task_env.cid,
 						{transition, CurrPos, H, 1000},
 						Radius),
 					SelfPid = self(),
-					loop(Cid, CData,
-						EventQueue,
-						StatDict,
-						Token,
-						morningcall:add(1000, fun() ->
+					loop(R#task_env{
+						utimer = morningcall:add(1000, fun() ->
 							SelfPid ! {SelfPid, move, H, T}
-							end, UTimer),
+							end, R#task_env.utimer)},
 						mk_idle_update(LastOp))
 			end;
 
@@ -193,73 +164,53 @@ loop(Cid, CData, EventQueue, StatDict, Token, UTimer, {idle, _SinceLastOp, LastO
 			%%	[{notice_move, SenderCid, From, To, Duration} ]),
 			{pos, FromX, FromY} = From,
 			{pos, ToX, ToY} = To,
-			loop(Cid,CData,
-				add_element(
+			loop(add_event(R,
 					[{type, "move"}, {cid, SenderCid},
 						{from_x, FromX}, {from_y, FromY},
 						{to_x, ToX}, {to_y, ToY},
-						{duration, Duration}]
-					, EventQueue),
-				StatDict, Token, UTimer, mk_idle_update(LastOp));
-			
+						{duration, Duration}]),
+				mk_idle_update(LastOp));
 
 		%% Attribute setter
-		{_From, set, Token, Key, Value} ->
-			NewCData = db_setter(Cid, Key, Value),
-			loop(Cid, NewCData,
-				EventQueue,
-				StatDict,
-				Token, UTimer, mk_idle_reset());
+		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
+			NewCData = db_setter(R#task_env.cid, Key, Value),
+			loop(R#task_env{cdata = NewCData}, mk_idle_reset());
 
 		%% Attribute setter simple
 		{set, Key, Value} ->
-			NewCData = db_setter(Cid, Key, Value),
-			loop(Cid, NewCData,
-				EventQueue,
-				StatDict,
-				Token, UTimer, mk_idle_reset());
+			NewCData = db_setter(R#task_env.cid, Key, Value),
+			loop(R#task_env{cdata = NewCData}, mk_idle_reset());
 
 		%% system messages.
 		%% TIMER
 		{goodmorning, Id} ->
-			{_FunResult, NewUTimer} = morningcall:dispatch(Id, UTimer),
-			loop(Cid, CData,
-				EventQueue,
-				StatDict,
-				Token, NewUTimer, mk_idle_update(LastOp));
+			{_FunResult, NewUTimer} = morningcall:dispatch(Id, R#task_env.utimer),
+			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(LastOp));
 
 		{_From, cancel_timer} ->
-			NewUTimer = morningcall:cancel_all(UTimer),
-			loop(Cid, CData,
-				EventQueue,
-				StatDict,
-				Token, NewUTimer, mk_idle_update(LastOp));
+			NewUTimer = morningcall:cancel_all(R#task_env.utimer),
+			loop(R#task_env{utimer = NewUTimer}, mk_idle_update(LastOp));
 
+		%% Just a test code.
 		{From, whoareyou} ->
-			%%io:format("character: ~p receive whoareyou from ~p (~p)~n",
-			%%	[Cid, From, CData]),
-			From ! {iam, Cid},
-			loop(Cid, CData,
-				EventQueue,
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp));
+			From ! {iam, R#task_env.cid},
+			loop(R, mk_idle_update(LastOp));
 
 		Other ->
 			io:format("character: invalid message ~p~n", [Other]),
-			loop(Cid, CData,
-				EventQueue,
-				StatDict,
-				Token, UTimer, mk_idle_update(LastOp))
+			loop(R, mk_idle_update(LastOp))
 			
 	after 1000 ->
-		loop(Cid, CData,
-			EventQueue,
-			StatDict,
-			Token, UTimer, mk_idle_update(LastOp))
+		loop(R, mk_idle_update(LastOp))
 	end.
 
 
 % internal use -----------------------------------------------
+
+add_event(R, Event) ->
+	R#task_env{
+		event_queue = add_element(Event, R#task_env.event_queue)
+	}.
 
 mk_idle_reset() -> {idle, 0, erlang:now()}.
 mk_idle_update(LastOp) -> {idle, timer:now_diff(erlang:now(), LastOp), LastOp}.

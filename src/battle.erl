@@ -31,7 +31,7 @@
 -export([single/3, single/2]).
 
 %% battle with method
-%% (if not applicable (ex. too far with melee),
+%% (if not applicable (ex. too far to melee),
 %% just only fails - get {ng,0}).
 single(OidFrom, OidTo, Method) ->
 	notice_result(
@@ -52,26 +52,29 @@ calc_single(_OidFrom, _OidTo, Method) when Method == "hth" -> {ok, 0};
 calc_single(_OidFrom, _OidTo, Method) when Method == "missile" -> {ok, 0};
 calc_single(_OidFrom, _OidTo, Method) when Method == "magic" -> {ok, 0};
 calc_single(OidFrom, OidTo, Method) ->
+	%% any other method handler
 	proc_battle(
 		OidFrom, OidTo, Method,
-		fun(X,Y) -> unarmed:calc(X,Y) end).
+		fun(X,Y) ->
+			unarmed:calc(X,Y)
+		end).
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(_OidTo, {ok, X}) ->
 	%% TODO: write code - update db
 	{ok, X};
-store_result(_OidTo, {ng, X}) ->
-	%% TODO: write code - update db
-	{ng, X};
+store_result(_OidTo, {ng, 0}) ->
+	{ng, 0};
 store_result(_OidTo, {critical, X}) ->
+	%% TODO: write code - update db
 	{critical, X};
-store_result(_OidTo, {fumble, X}) ->
-	{fumble, X}.
+store_result(_OidTo, {fumble, 0}) ->
+	{fumble, 0}.
 
 notice_result(OidFrom, OidTo, DamTupple, Radius) ->
-	{Res, Dam} = DamTupple,
+	{Result, DamageVal} = DamTupple,
 	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, Res, Dam}
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, Result, DamageVal}
 		|| X <- Sessions],
 	DamTupple.
 
