@@ -62,7 +62,7 @@ new() ->
 
 add(After, Fun, DJobs) ->
 	Id = u:make_new_id(),
-	case timer:send_after(After, {goodmorning, Id}) of
+	case timer:send_after(After, {timer, {goodmorning, Id}}) of
 		{ok, TRef} ->
 			io:format("added with id ~p~n", [Id]),
 			dict:store(Id, {morningcall, Fun, TRef}, DJobs);

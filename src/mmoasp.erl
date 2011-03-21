@@ -76,12 +76,6 @@ logout(From, Cid, Token) ->
 		Other -> Other
 	end.
 
-%stop_all_characters(From) -> world:stop_all_characters(From).
-%
-%knock_all_characters(From) ->
-%	world:knock_all_characters(From).	% knock_all is send 'whoareyou' to all character processes.
-
-
 % caution !!
 % General purpose setter.(use this for configuration store, or other misc operation.
 % DO NOT USE for set gaming parameters(like hit point or money) from client.).
@@ -121,7 +115,7 @@ confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 %-----------------------------------------------------------
 talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
-init_move(Pid, CurrentPos, Path) -> Pid ! {self(), init_move, CurrentPos, Path}.
+init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
 
 get_all_neighbor_sessions(Oid, R) ->
 	Me = world:get_session(Oid),

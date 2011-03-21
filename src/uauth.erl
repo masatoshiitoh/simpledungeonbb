@@ -62,7 +62,7 @@ setup_player_character(Cid)->
 		stat_dict = [],
 		token = uauth:gen_token("nil", Cid),
 		utimer =  morningcall:new()},
-	Child = spawn(fun() ->character:loop(R, character:mk_idle_reset()) end),
+	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
 	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
