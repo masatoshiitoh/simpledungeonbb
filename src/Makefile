@@ -22,7 +22,7 @@
 # Makefile for nmake.exe
 
 program = simpledungeon
-objs = battle.beam throw.beam unarmed.beam admin.beam character.beam character_stream.beam db.beam mmoasp.beam morningcall.beam mout.beam move.beam npc.beam path_finder.beam test.beam trade.beam u.beam uauth.beam world.beam yaws_if.beam
+objs = task.beam battle.beam throw.beam unarmed.beam admin.beam character.beam character_stream.beam db.beam mmoasp.beam morningcall.beam mout.beam move.beam npc.beam path_finder.beam test.beam trade.beam u.beam uauth.beam world.beam yaws_if.beam
 
 DESTDIR = ..\ebin
 INSTALL = MOVE
@@ -50,6 +50,7 @@ mout.beam : mout.erl mmoasp.hrl
 move.beam : move.erl mmoasp.hrl
 npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl
+task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
 trade.beam :trade.erl mmoasp.hrl
 u.beam : u.erl mmoasp.hrl

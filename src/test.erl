@@ -62,7 +62,7 @@ run_tests_with_log()
 	->
 		mmoasp:change_schema(),
 		eunit:test(
-		[battle,unarmed,test,u,throw],
+		[task,battle,unarmed,test,u,throw],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->

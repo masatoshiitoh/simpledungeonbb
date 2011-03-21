@@ -54,11 +54,6 @@ stop_child(Cid) ->
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
 
-system_call({From, stop_process}, R, _I) ->
-	io:format("character: proc stop by stop_process message.~n"),
-	morningcall:cancel_all(R#task_env.utimer),
-	From ! {ok, R#task_env.cid}.
-
 loop(R, I)
 	when I#idle.since_last_op > 300*1000*1000->
 	
@@ -67,7 +62,7 @@ loop(R, I)
 
 loop(R, I) ->
 	receive
-		{system, X} -> system_call(X, R, I);
+		{system, X} -> task:system_call(X, R, I);
 
 		{From, request_list_to_know} ->
 			From ! {list_to_know,

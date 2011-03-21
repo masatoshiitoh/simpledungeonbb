@@ -37,22 +37,37 @@ start_npc(Npcid) ->
 		FoundPid -> FoundPid
 	end.
 
+stop_npc(Npcid) ->
+	Radius = 100,
+	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius),
+	case lookup_pid_by_npcid(Npcid) of
+		void -> void;
+		FoundPid ->
+			FoundPid ! {system, {self(), stop_process}},
+			case mnesia:transaction(fun() ->
+					mnesia:delete({session, Npcid})
+					end) of
+				{atomic,ok}->
+					io:format("npcloop: stop_npc session entry clear succeeded.~n"),
+					ok;
+				AbortedWithReason ->
+					io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
+					AbortedWithReason
+			end
+	end.
+
 %% code set location in session is DUMMY. Update it later.
 setup_npc(Npcid)->
 	{cdata, Npcid, Name, Npcdata} = db_get_npcdata(Npcid),
 	
-	UTimer = morningcall:new(),
-	EventQueue = queue:new(),
-	StatDict = [],
-	
 	R = #task_env{
-	cid = Npcid,
-	cdata = Npcdata,
-	event_queue = EventQueue,
-	stat_dict = StatDict,
-	utimer = UTimer
+		cid = Npcid,
+		cdata = Npcdata,
+		event_queue = queue:new(),
+		stat_dict = [],
+		utimer = morningcall:new()
 	},
-	Child = spawn(fun() ->npc:loop(R) end),
+	Child = spawn(fun() ->npc:loop(R, character:mk_idle_reset()) end),
 	
 	%% store session
 	mnesia:transaction(
@@ -64,19 +79,21 @@ setup_npc(Npcid)->
 	Child.
 	
 
-loop(R) ->
+loop(R, I) ->
 	receive
+		{system, X} -> task:system_call(X, R, I);
+
 		{_From, talk, Talker, MessageBody, Mode} ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
 			%% mmoasp:talk(open, Npcid, "konnichiwa--", 100),
-			loop(R);
+			loop(R,I);
 
 		%% action him/herself.
 		{_From, init_move, CurrPos, WayPoints} ->
 			SelfPid = self(),
 			SelfPid ! {_From, cancel_timer},
 			SelfPid ! {_From, move, CurrPos, WayPoints},
-			loop(R);
+			loop(R,I);
 
 		% interval-timer base character move:
 		{_From, move, CurrPos, WayPoints} ->
@@ -87,7 +104,7 @@ loop(R) ->
 					{pos, X, Y} = CurrPos,
 					%%mmoasp:setter(Npcid, "x", X),
 					%%mmoasp:setter(Npcid, "y", Y),
-					loop(R);
+					loop(R,I);
 				[H | T] -> 			
 					io:format("npc: ~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 
@@ -101,7 +118,7 @@ loop(R) ->
 					F = fun() ->
 						SelfPid ! {SelfPid, move, H, T}
 					end,
-					loop(R#task_env{utimer = morningcall:add(1000, F, R#task_env.utimer)})
+					loop(R#task_env{utimer = morningcall:add(1000, F, R#task_env.utimer)},I)
 			end;
 
 		{_From, notice_move, SenderCid, From, To, Duration} ->
@@ -112,28 +129,22 @@ loop(R) ->
 					[{type, "move"}, {cid, SenderCid},
 						{from_x, FromX}, {from_y, FromY},
 						{to_x, ToX}, {to_y, ToY},
-						{duration, Duration}]));
+						{duration, Duration}]),I);
 			
 
 		%% system messages.
 		%% TIMER
 		{goodmorning, Id} ->
 			{_FunResult, NewUTimer} = morningcall:dispatch(Id, R#task_env.utimer),
-			loop(R#task_env{utimer = NewUTimer});
+			loop(R#task_env{utimer = NewUTimer},I);
 
 		{_From, cancel_timer} ->
 			NewUTimer = morningcall:cancel_all(R#task_env.utimer),
-			loop(R#task_env{utimer = NewUTimer});
-
-		{From, stop_process} ->
-			io:format("npcloop: child process terminated by stop_process message.~n"),
-			morningcall:cancel_all(R#task_env.utimer),
-			From ! {ok, R#task_env.cid},
-			bye;
+			loop(R#task_env{utimer = NewUTimer},I);
 
 		_ ->
 			%% do nothing.
-			loop(R)
+			loop(R,I)
 	end.
 
 db_get_npcdata(Cid) ->
@@ -146,25 +157,6 @@ lookup_pid_by_npcid(Npcid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.oid == Npcid, X#session.type == "npc"])) of
 		[] -> void;
 		[X] -> X#session.pid
-	end.
-
-stop_npc(Npcid) ->
-	Radius = 100,
-	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius),
-	case lookup_pid_by_npcid(Npcid) of
-		void -> void;
-		FoundPid ->
-			FoundPid ! {self(), stop_process},
-			case mnesia:transaction(fun() ->
-					mnesia:delete({session, Npcid})
-					end) of
-				{atomic,ok}->
-					io:format("npcloop: stop_npc session entry clear succeeded.~n"),
-					ok;
-				AbortedWithReason ->
-					io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
-					AbortedWithReason
-			end
 	end.
 
 
