@@ -55,7 +55,6 @@ stop_npc(Npcid) ->
 			end
 	end.
 
-%% code set location in session is DUMMY. Update it later.
 setup_npc(Npcid)->
 	{cdata, Npcid, Name, Npcdata} = db_get_npcdata(Npcid),
 	
