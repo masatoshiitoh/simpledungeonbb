@@ -87,7 +87,7 @@ get_list_to_know(_From, Cid) ->
 	
 	% send message.
 	F = fun(X) ->
-		X#session.pid ! {self(), request_list_to_know}
+		X#session.pid ! {sensor, {self(), request_list_to_know}}
 	end,
 	world:apply_session(Cid, F),
 	
@@ -179,22 +179,22 @@ talk(open, SenderCid, MessageBody, Radius) ->
 	{result, "ok"}.
 
 notice_login(SenderCid, {csummary, Cid, Name}, Radius) ->
-	[X#session.pid ! {self(), notice_login, SenderCid, Name}
+	[X#session.pid ! {sensor, {self(), notice_login, SenderCid, Name}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
 notice_logout(SenderCid, {csummary, Cid}, Radius) ->
-	[X#session.pid ! {self(), notice_logout, SenderCid}
+	[X#session.pid ! {sensor, {self(), notice_logout, SenderCid}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
 notice_remove(SenderCid, {csummary, Cid}, Radius) ->
-	[X#session.pid ! {self(), notice_remove, SenderCid}
+	[X#session.pid ! {sensor, {self(), notice_remove, SenderCid}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
 notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
-	[X#session.pid ! {self(), notice_move, SenderCid, From, To, Duration}
+	[X#session.pid ! {mapmove, {self(), notice_move, SenderCid, From, To, Duration}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 

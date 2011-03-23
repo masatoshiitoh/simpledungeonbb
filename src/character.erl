@@ -66,12 +66,8 @@ loop(R, I) ->
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
 		{mapmove, X} -> task:mapmove_call(X,R,I);
+		{sensor, X} -> task:sensor_call(X,R,I);
 
-		{From, request_list_to_know} ->
-			From ! {list_to_know,
-				task:get_elements(R#task_env.event_queue),
-				get_stats(R#task_env.stat_dict)},
-			{R#task_env{event_queue = queue:new()}, task:mk_idle_reset()};
 		
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
@@ -101,29 +97,6 @@ loop(R, I) ->
 						{damage, Dam}]),
 				task:mk_idle_update(I)};
 
-		{_From, notice_login, SenderCid, Name} ->
-			%%io:format("character: get others login. ~p~n",
-			%%	[{notice_login, Name} ]),
-			{task:add_event(R,
-					[{type, "login"},
-						{cid, SenderCid},
-						{name, Name}]),
-				task:mk_idle_update(I)};
-			
-		{_From, notice_logout, SenderCid} ->
-			%%io:format("character: get others logout. ~p~n",
-			%%	[{notice_logout, Cid} ]),
-			{task:add_event(R,
-					[{type, "logout"}, {cid, SenderCid}]),
-				task:mk_idle_update(I)};
-			
-		{_From, notice_remove, SenderCid} ->
-			%%io:format("character: get others removed. ~p~n",
-			%%	[{notice_remove, Cid} ]),
-			{task:add_event(R,
-					[{type, "remove"}, {cid, SenderCid}]),
-				task:mk_idle_update(I)};
-
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
 			NewCData = db_setter(R#task_env.cid, Key, Value),
@@ -141,8 +114,6 @@ loop(R, I) ->
 
 % internal use -----------------------------------------------
 
-
-get_stats(L) -> L.
 
 gen_stat_from_cdata(X) -> 
 	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.

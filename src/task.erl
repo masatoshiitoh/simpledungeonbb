@@ -86,8 +86,40 @@ mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 				{duration, Duration}]),
 		task:mk_idle_update(I)}.
 
+sensor_call(
+		{From, request_list_to_know}, R, I) ->
+			From ! {list_to_know,
+				task:get_elements(R#task_env.event_queue),
+				get_stats(R#task_env.stat_dict)},
+			{R#task_env{event_queue = queue:new()}, task:mk_idle_reset()};
+
+sensor_call({_From, notice_login, SenderCid, Name}, R, I) ->
+			%%io:format("character: get others login. ~p~n",
+			%%	[{notice_login, Name} ]),
+			{task:add_event(R,
+					[{type, "login"},
+						{cid, SenderCid},
+						{name, Name}]),
+				task:mk_idle_update(I)};
+			
+sensor_call({_From, notice_logout, SenderCid}, R, I) ->
+			%%io:format("character: get others logout. ~p~n",
+			%%	[{notice_logout, Cid} ]),
+			{task:add_event(R,
+					[{type, "logout"}, {cid, SenderCid}]),
+				task:mk_idle_update(I)};
+			
+sensor_call({_From, notice_remove, SenderCid}, R, I) ->
+			%%io:format("character: get others removed. ~p~n",
+			%%	[{notice_remove, Cid} ]),
+			{task:add_event(R,
+					[{type, "remove"}, {cid, SenderCid}]),
+				task:mk_idle_update(I)}.
+
 
 %% utilities.
+
+get_stats(L) -> L.
 
 add_event(R, Event) when is_record(R, task_env) ->
 	R#task_env{
