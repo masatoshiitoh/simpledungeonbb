@@ -86,8 +86,7 @@ mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 				{duration, Duration}]),
 		task:mk_idle_update(I)}.
 
-sensor_call(
-		{From, request_list_to_know}, R, I) ->
+sensor_call({From, request_list_to_know}, R, I) ->
 			From ! {list_to_know,
 				task:get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict)},
