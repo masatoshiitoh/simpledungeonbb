@@ -2,9 +2,6 @@ CC = gcc -o
 CCO = gcc -c -o
 RC = #
 RM = rm -f
-include ComonMakefile.in
-include sname.mk
-include testmake.mk
 
 DESTDIR = ../ebin
 INSTALL = mv
