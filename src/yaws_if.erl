@@ -20,7 +20,7 @@
 
 
 -module(yaws_if).
--include("/opt/yaws/include/yaws_api.hrl").
+-include("yaws_api.hrl").
 -include("mmoasp.hrl").
 -compile(export_all).
 

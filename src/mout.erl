@@ -20,7 +20,7 @@
 
 
 -module(mout).
--include("/opt/yaws/include/yaws_api.hrl").
+-include("yaws_api.hrl").
 -export([encode_json_array_with_result/2, return_html/1, return_json/1, list_to_json/1, list_to_xml/2]).
 -compile(export_all).
 

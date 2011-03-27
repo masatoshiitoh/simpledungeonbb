@@ -29,7 +29,7 @@ COPY = COPY
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
-ERLCFLAGS = -DTEST -pa "C:/Opt/Yaws/ebin"
+ERLCFLAGS = -DTEST -pa "C:/Opt/Yaws/ebin" -I "C:/Opt/Yaws/include"
 
 
 !include CommonMakefile.in
