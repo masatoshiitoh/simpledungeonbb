@@ -47,13 +47,13 @@ scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
 
 check_record_test() ->
-	%% what is this test?
+	%% what is this test? why did I put a test for erlang module?
 	%% because, I wrote 'erlang:now()' in record 'idle' default value.
-	%% This code assumes every 'idle' initialization makes
-	%% different 'last_op' value.
+	%% This code assumes different 'last_op' values on 
+	%% every 'idle' initialization.
 	N1 = #idle{},
 	receive
-		after 2000 -> ok
+		after 500 -> ok
 	end,
 	N2 = #idle{},
 	?assert(N1#idle.last_op /= N2#idle.last_op).
