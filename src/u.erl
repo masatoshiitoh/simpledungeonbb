@@ -51,6 +51,18 @@ kv_set_0_test() ->
 	Result = kv_get(NewL, "k3"),
 	?assert(Result == "v3").
 
+db_get_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	V1 = db_getter(Cid1, hp),
+	?assert(V1 == 12),
+	
+	V2 = db_getter(Cid2, hp),
+	?assert(V2 == 16),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
 -endif.
 
 kv_get(L, K) ->
@@ -69,7 +81,9 @@ db_getter(Cid, Key) ->
 	F = fun(X) ->
 		kv_get(X#cdata.attr, Key)
 	end,
-	case world:apply_cdata(Cid, F) of
+	Result = world:apply_cdata(Cid, F),
+	io:format("db_getter ~p~n", [Result]),
+	case Result of
 		{atomic, undefined} -> undefined;
 		{atomic, [D|_T]} -> D
 	end.
