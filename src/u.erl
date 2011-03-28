@@ -26,7 +26,7 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--export([db_setter/3, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+-export([db_setter/3, db_getter/2, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
 
 -ifdef(TEST).
 kv_get_1_test() ->
@@ -65,12 +65,12 @@ kv_set(L, K, V) ->
 		false -> [{K,V}] ++ L
 	end.
 
-db_getter(Npcid, Key) ->
+db_getter(Cid, Key) ->
 	F = fun(X) ->
-		Attr = X#cdata.attr,
-		kv_get(Attr, Key)
+		X
 	end,
-	world:apply_cdata(Npcid, F).
+	{atomic, D} = world:apply_cdata(Cid, F),
+		kv_get(X#cdata.attr, Key)
 
 db_setter(Cid, Key, Value) ->
 	F = fun(X) ->

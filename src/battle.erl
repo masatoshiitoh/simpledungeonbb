@@ -28,7 +28,7 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--export([single/3, single/2]).
+-export([store_result/2, single/3, single/2]).
 
 %% battle with method
 %% (if not applicable (ex. too far to melee),
@@ -60,13 +60,15 @@ calc_single(OidFrom, OidTo, Method) ->
 		end).
 
 %% store_result series returns {Result, Damage} tapple.
-store_result(_OidTo, {ok, X}) ->
-	%% TODO: write code - update db
+store_result(OidTo, {ok, X}) ->
+	CurrHp = u:db_getter(OidTo, "hp"),
+	u:db_setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
-store_result(_OidTo, {critical, X}) ->
-	%% TODO: write code - update db
+store_result(OidTo, {critical, X}) ->
+	CurrHp = u:db_getter(OidTo, "hp"),
+	u:db_setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
 	{fumble, 0}.
