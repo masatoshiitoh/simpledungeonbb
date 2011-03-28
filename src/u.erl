@@ -62,7 +62,16 @@ db_get_1_test() ->
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
-
+	
+db_set_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	db_setter(Cid1, "hp", 2),
+	V1 = db_getter(Cid1, "hp"),
+	?assert(V1 == 2),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
 -endif.
 
 kv_get(L, K) ->
