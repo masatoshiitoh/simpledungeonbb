@@ -67,10 +67,12 @@ kv_set(L, K, V) ->
 
 db_getter(Cid, Key) ->
 	F = fun(X) ->
-		X
-	end,
-	{atomic, D} = world:apply_cdata(Cid, F),
 		kv_get(X#cdata.attr, Key)
+	end,
+	case world:apply_cdata(Cid, F) of
+		{atomic, undefined} -> undefined;
+		{atomic, [D|_T]} -> D
+	end.
 
 db_setter(Cid, Key, Value) ->
 	F = fun(X) ->
