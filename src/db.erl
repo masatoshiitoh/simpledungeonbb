@@ -163,10 +163,10 @@ example_tables() ->
 	{auth_basic,"npc0002", void,void},
 	{auth_basic,"npc0003", void,void},
 	{auth_basic,"npc0004", void,void},
-	{cdata,"npc0001", "Slime", [{type, "npc"}, {hp, 2}]},
-	{cdata,"npc0002", "Slime", [{type, "npc"}, {hp, 2}]},
-	{cdata,"npc0003", "Slime", [{type, "npc"}, {hp, 2}]},
-	{cdata,"npc0004", "Slime", [{type, "npc"}, {hp, 2}]},
+	{cdata,"npc0001", "Slime", [{type, "npc"}, {"hp", 2}]},
+	{cdata,"npc0002", "Slime", [{type, "npc"}, {"hp", 2}]},
+	{cdata,"npc0003", "Slime", [{type, "npc"}, {"hp", 2}]},
+	{cdata,"npc0004", "Slime", [{type, "npc"}, {"hp", 2}]},
 
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
@@ -174,10 +174,10 @@ example_tables() ->
 	{auth_basic,"cid0003","id0003",	"pw0003"},
 	{auth_basic,"cid0004","id0004",	"pw0004"},
 	%% cdata
-	{cdata,"cid0001", "alpha",		[{type, "pc"}, {align, "good"}, {hp, 12}]},
-	{cdata,"cid0002", "bravo",		[{type, "pc"}, {align, "evil"}, {hp, 16}]},
-	{cdata,"cid0003", "charlie",	[{type, "pc"}, {align, "good"}, {hp, 10}]},
-	{cdata,"cid0004", "delta",		[{type, "pc"}, {align, "good"}, {hp, 18}]},
+	{cdata,"cid0001", "alpha",		[{type, "pc"}, {align, "good"}, {"hp", 12}]},
+	{cdata,"cid0002", "bravo",		[{type, "pc"}, {align, "evil"}, {"hp", 16}]},
+	{cdata,"cid0003", "charlie",	[{type, "pc"}, {align, "good"}, {"hp", 10}]},
+	{cdata,"cid0004", "delta",		[{type, "pc"}, {align, "good"}, {"hp", 18}]},
 
 	%% initial location (= re-spawn point)
 	{location,"cid0001", 1, 1, 1, 0},

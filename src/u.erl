@@ -54,10 +54,10 @@ kv_set_0_test() ->
 db_get_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	V1 = db_getter(Cid1, hp),
+	V1 = db_getter(Cid1, "hp"),
 	?assert(V1 == 12),
 	
-	V2 = db_getter(Cid2, hp),
+	V2 = db_getter(Cid2, "hp"),
 	?assert(V2 == 16),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -85,7 +85,8 @@ db_getter(Cid, Key) ->
 	io:format("db_getter ~p~n", [Result]),
 	case Result of
 		{atomic, undefined} -> undefined;
-		{atomic, [D|_T]} -> D
+		{atomic, [D|_T]} -> D;
+		{atomic, V} -> V
 	end.
 
 db_setter(Cid, Key, Value) ->
