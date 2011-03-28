@@ -85,7 +85,6 @@ db_getter(Cid, Key) ->
 	io:format("db_getter ~p~n", [Result]),
 	case Result of
 		{atomic, undefined} -> undefined;
-		{atomic, [D|_T]} -> D;
 		{atomic, V} -> V
 	end.
 
