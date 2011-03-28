@@ -26,7 +26,59 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--export([make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+-export([db_setter/3, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+
+-ifdef(TEST).
+kv_get_1_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	Result = kv_get(L, "k1"),
+	?assert(Result == "v1").
+
+kv_get_0_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	Result = kv_get(L, "k3"),
+	?assert(Result == undefined).
+
+kv_set_1_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	NewL = kv_set(L, "k1", "vnew"),
+	Result = kv_get(NewL, "k1"),
+	?assert(Result == "vnew").
+
+kv_set_0_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	NewL = kv_set(L, "k3", "v3"),
+	Result = kv_get(NewL, "k3"),
+	?assert(Result == "v3").
+
+-endif.
+
+kv_get(L, K) ->
+	case lists:keysearch(K, 1, L) of
+		{value, {K,V}} -> V;
+		false -> undefined
+	end.
+
+kv_set(L, K, V) ->
+	case lists:keymember(K, 1, L) of
+		true -> lists:keyreplace(K,1,L, {K, V});
+		false -> [{K,V}] ++ L
+	end.
+
+db_getter(Npcid, Key) ->
+	F = fun(X) ->
+		Attr = X#cdata.attr,
+		kv_get(Attr, Key)
+	end,
+	world:apply_cdata(Npcid, F).
+
+db_setter(Cid, Key, Value) ->
+	F = fun(X) ->
+		mnesia:write(
+			X#cdata{attr = kv_set(X#cdata.attr, Key, Value)}
+		)
+	end,
+	world:apply_cdata(Cid, F).
 
 % use for Tid, Cid, ItemId...
 make_new_id() ->

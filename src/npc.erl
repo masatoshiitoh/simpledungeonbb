@@ -101,14 +101,3 @@ lookup_pid_by_npcid(Npcid) ->
 		[] -> void;
 		[X] -> X#session.pid
 	end.
-
-db_getter(Npcid, Key) ->
-	F = fun(X) ->
-		Attr = X#cdata.attr,
-		case lists:keysearch(Key, 1, Attr) of
-			{value, {Key,V}} -> V;
-			false -> undefined
-		end
-	end,
-	world:apply_cdata(Npcid, F).
-

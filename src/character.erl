@@ -99,12 +99,12 @@ loop(R, I) ->
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
-			NewCData = db_setter(R#task_env.cid, Key, Value),
+			NewCData = u:db_setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()};
 
 		%% Attribute setter simple
 		{set, Key, Value} ->
-			NewCData = db_setter(R#task_env.cid, Key, Value),
+			NewCData = u:db_setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()}
 
 	after 1000 ->
@@ -117,18 +117,6 @@ loop(R, I) ->
 
 gen_stat_from_cdata(X) -> 
 	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-db_setter(Cid, Key, Value) ->
-	F = fun(X) ->
-		Attr = X#cdata.attr,
-		NewAttr = case lists:keymember(Key, 1, Attr) of
-			true -> lists:keyreplace(Key,1,Attr, {Key, Value});
-			false -> [{Key,Value}] ++ Attr
-		end,
-		NewCData = X#cdata{attr = NewAttr},
-		mnesia:write(NewCData)
-	end,
-	world:apply_cdata(Cid, F).
 
 
 db_setpos(Cid, {pos, PosX, PosY}) ->
