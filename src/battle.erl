@@ -34,12 +34,14 @@
 %% (if not applicable (ex. too far to melee),
 %% just only fails - get {ng,0}).
 single(OidFrom, OidTo, Method) ->
+	BattleResult = calc_single(OidFrom, OidTo, Method),
+	io:format("single BattleResult ~p ~n", [BattleResult]),
+	Result = store_result(OidTo, BattleResult),
+	io:format("single Result ~p ~n", [Result]),
 	notice_result(
 		OidFrom,
 		OidTo,
-		store_result(
-			OidTo,
-			calc_single(OidFrom, OidTo, Method)),
+		Result,
 		_Radiuis = 100).
 
 %% full automatic battle
