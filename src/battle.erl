@@ -28,7 +28,7 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--export([store_result/2, single/3, single/2]).
+-export([single/3, single/2]).
 
 %% battle with method
 %% (if not applicable (ex. too far to melee),
@@ -36,13 +36,9 @@
 single(OidFrom, OidTo, Method) ->
 	BattleResult = calc_single(OidFrom, OidTo, Method),
 	io:format("single BattleResult ~p ~n", [BattleResult]),
-	Result = store_result(OidTo, BattleResult),
-	io:format("single Result ~p ~n", [Result]),
-	notice_result(
-		OidFrom,
-		OidTo,
-		Result,
-		_Radiuis = 100).
+	battle_observer:set_one(OidFrom, OidTo, BattleResult).
+
+
 
 %% full automatic battle
 single(OidFrom, OidTo) ->
@@ -61,26 +57,6 @@ calc_single(OidFrom, OidTo, Method) ->
 			unarmed:calc(X,Y)
 		end).
 
-%% store_result series returns {Result, Damage} tapple.
-store_result(OidTo, {ok, X}) ->
-	CurrHp = u:db_getter(OidTo, "hp"),
-	u:db_setter(OidTo, "hp", (CurrHp - X)),
-	{ok, X};
-store_result(_OidTo, {ng, 0}) ->
-	{ng, 0};
-store_result(OidTo, {critical, X}) ->
-	CurrHp = u:db_getter(OidTo, "hp"),
-	u:db_setter(OidTo, "hp", (CurrHp - X)),
-	{critical, X};
-store_result(_OidTo, {fumble, 0}) ->
-	{fumble, 0}.
-
-notice_result(OidFrom, OidTo, DamTupple, Radius) ->
-	{Result, DamageVal} = DamTupple,
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, Result, DamageVal}
-		|| X <- Sessions],
-	DamTupple.
 
 %% player choose attack method
 %% hth: hand-to-hand. nuckle, katana...

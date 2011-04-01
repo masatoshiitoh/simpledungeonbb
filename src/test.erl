@@ -62,7 +62,7 @@ run_tests_with_log()
 	->
 		mmoasp:change_schema(),
 		eunit:test(
-		[task,battle,unarmed,test,u,throw],
+		[battle_observer,task,battle,unarmed,test,u,throw],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
@@ -81,6 +81,7 @@ run_tests() ->
 up_scenarios() ->
 	db:reset_tables(),
 	mmoasp:start(),
+	battle_observer:start_link(),
 	NpcPid1 = npc:start_npc("npc0001"),
 	{ok, Cid1, Token1}
 		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
@@ -93,6 +94,7 @@ down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
 	mmoasp:logout(self(), Cid1, Token1),
 	mmoasp:logout(self(), Cid2, Token2),
 	npc:stop_npc(Npcid1),
+	battle_observer:stop(),
 	path_finder:stop(),
 	ok.
 
