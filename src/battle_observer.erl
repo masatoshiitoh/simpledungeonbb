@@ -1,4 +1,4 @@
--module(battle_recorder).
+-module(battle_observer).
 -behaviour(gen_server).
 
 -export([set_one/3, start_link/0]).
