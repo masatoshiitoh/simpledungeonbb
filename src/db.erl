@@ -61,6 +61,10 @@ start() ->
 	mnesia:start(),
 	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
 
+stop() ->
+	%% mnesia:stop(),
+	ok.
+
 reset_tables() ->
 	mnesia:clear_table(service),
 	mnesia:clear_table(auth_basic),

@@ -35,10 +35,15 @@
 
 
 start() ->
-	db:start(),
 	db:reset_tables(),
-	path_finder:start().
+	db:start(),
+	path_finder:start(),
+	battle_observer:start_link().
 
+stop() ->
+	battle_observer:stop(),
+	path_finder:stop(),
+	db:stop().
 	
 change_schema() ->
 	db:drop_all(),
