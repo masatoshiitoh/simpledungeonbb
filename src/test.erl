@@ -379,3 +379,9 @@ do_setter() ->
 	{end_of_run_tests}.
 
 
+sets_by_list(L) ->
+	sets:from_list(L).
+
+sets_by_actions(L, Type) ->
+	sets:from_list(lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == Type] || ST <- L])).
