@@ -62,6 +62,39 @@ battle_observer_01_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
+battle_observer_pc_knockouted_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+
+	V1 = u:db_getter(Cid1, "hp"),
+	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
+	V2 = u:db_getter(Cid1, "hp"),
+
+	?assert(V1 - V2 == 9999),
+
+	receive
+		after 20 -> ok
+	end,
+
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+
+	?assert(
+		test:sets_by_actions(Actions1, from_cid)
+		== test:sets_by_list([{from_cid, "npc0001"}])),
+
+	?assert(
+		test:sets_by_actions(Actions1, cid)
+		== test:sets_by_list([{cid, "cid0001"}])),
+
+	?assert(
+		test:sets_by_actions(Actions1, type)
+		== test:sets_by_list([{type, "attack"}, {type, "killed"}])),
+
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
 -endif.
 
 
