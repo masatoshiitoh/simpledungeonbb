@@ -79,6 +79,7 @@ run_tests() ->
 
 
 up_scenarios() ->
+	db:start(),
 	db:reset_tables(),
 	mmoasp:start(),
 	NpcPid1 = npc:start_npc("npc0001"),

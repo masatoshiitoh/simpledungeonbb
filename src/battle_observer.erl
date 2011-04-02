@@ -36,17 +36,34 @@
 
 battle_observer_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
-	V1 = u:db_getter(Npcid1, "hp"),
-	battle_observer:set_one(Cid1, Npcid1, {ok, 2}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V1 = u:db_getter(Cid1, "hp"),
+	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
+	V2 = u:db_getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 2),
+
+	receive
+		after 200 -> ok
+	end,
+
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == from_cid] || ST <- Actions1]))
+		== sets:from_list([{from_cid, "npc0001"}])),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
+		== sets:from_list([{type, "attack"}])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 -endif.
+
 
 %%===============================
 
@@ -67,6 +84,9 @@ do_report(CidFrom, CidTo, DamTupple) ->
 		CidTo,
 		store_result(CidTo, DamTupple),
 		_Radiuis = 30).
+
+notice_results(OidFrom, OidTo, L, Radius) ->
+	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
 
 notice_result(OidFrom, OidTo, DamTupple, Radius) ->
 	{Result, DamageVal} = DamTupple,
@@ -111,3 +131,186 @@ terminate(_Reason, _N) ->
 code_change(_OldVsn, N, _Extra) -> {ok, N}.
 
 
+%%===== TEST CODES ==========================
+
+-ifdef(TEST).
+store_result_ok_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {ok, 1}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 1),
+	?assert(R1 == {ok, 1}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_ok_999_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {ok, 999}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 999),
+	?assert(R1 == {ok, 999}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_ng_0_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {ng, 0}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 0),
+	?assert(R1 == {ng, 0}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_fumble_0_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {fumble, 0}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 0),
+	?assert(R1 == {fumble, 0}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_critical_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {critical, 1}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 1),
+	?assert(R1 == {critical, 1}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_critical_999_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {critical, 999}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 999),
+	?assert(R1 == {critical, 999}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+store_result_twice_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	V1 = u:db_getter(Npcid1, "hp"),
+	R1 = store_result(Npcid1, {critical, 999}),
+	V2 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V1 - V2 == 999),
+	?assert(R1 == {critical, 999}),
+
+
+	R2 = store_result(Npcid1, {ok, 1}),
+	V3 = u:db_getter(Npcid1, "hp"),
+
+	?assert(V2 - V3 == 1),
+	?assert(R2 == {ok, 1}),
+
+	?assert(V1 - V3 == 1000),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+notice_results_nil_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+
+	L2 = notice_results(Npcid1, Cid1, [], 30),
+	?assert(L2 == []),
+
+	receive
+		after 200 -> ok
+	end,
+
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	io:format("list to know for ~p: ~p~n",
+		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+	AList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == from_cid] || ST <- Actions1]),
+	?assert(sets:from_list(AList1)
+		== sets:from_list([])),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
+		== sets:from_list([])),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+notice_results_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+
+	L2 = notice_results(Npcid1, Cid1, [{ok, 999}], 30),
+	?assert(L2 == [{ok, 999}]),
+
+	receive
+		after 200 -> ok
+	end,
+
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	io:format("list to know for ~p: ~p~n",
+		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+	AList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == from_cid] || ST <- Actions1]),
+	?assert(sets:from_list(AList1)
+		== sets:from_list([{from_cid, "npc0001"}])),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
+		== sets:from_list([{type, "attack"}])),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+notice_results_2_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+
+	L2 = notice_results(Npcid1, Cid1, [{ok, 7}, {ok, 13}], 30),
+	?assert(L2 == [{ok, 7}, {ok, 13}]),
+
+	receive
+		after 200 -> ok
+	end,
+
+	{actions_and_stats, Actions1, Stats1}
+		= mmoasp:get_list_to_know(self(), Cid1),
+	io:format("list to know for ~p: ~p~n",
+		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+	AList1 = lists:flatten(
+		[[{K, V} || {K, V} <- ST, K == from_cid] || ST <- Actions1]),
+	?assert(sets:from_list(AList1)
+		== sets:from_list([{from_cid, "npc0001"}, {from_cid, "npc0001"}])),
+	?assert(
+		sets:from_list(lists:flatten(
+			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
+		== sets:from_list([{type, "attack"}, {type, "attack"}])),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
