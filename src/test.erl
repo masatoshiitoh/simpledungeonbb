@@ -170,9 +170,7 @@ do_stat() ->
 
 	% io:format("update request has sent.~n", []),
 
-	receive
-		after 200 -> ok
-	end,
+	u:wait(200),
 
 	{actions_and_stats, Actions1, Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),

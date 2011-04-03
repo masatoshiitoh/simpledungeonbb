@@ -26,7 +26,7 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--export([db_setter/3, db_getter/2, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+-export([wait/1, db_setter/3, db_getter/2, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
 
 -ifdef(TEST).
 kv_get_1_test() ->
@@ -73,6 +73,11 @@ db_set_1_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 -endif.
+
+wait(W) ->
+	receive
+		after W -> ok
+	end.
 
 kv_get(L, K) ->
 	case lists:keysearch(K, 1, L) of

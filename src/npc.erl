@@ -82,7 +82,7 @@ loop(R, I) ->
 	{NewR, NewI} = receive
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} -> task:mapmove_call(X,R,I);
+		{mapmove, X} -> move:mapmove_call(X,R,I);
 
 		{_From, talk, Talker, MessageBody, Mode} ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),

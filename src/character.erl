@@ -65,7 +65,7 @@ loop(R, I) ->
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} -> task:mapmove_call(X,R,I);
+		{mapmove, X} -> move:mapmove_call(X,R,I);
 		{sensor, X} -> task:sensor_call(X,R,I);
 
 		
