@@ -97,6 +97,16 @@ loop(R, I) ->
 						{damage, Dam}]),
 				task:mk_idle_update(I)};
 
+		{_From, event, OidFrom, OidTo, Event, EventOwner} ->
+			io:format("character: ~p had event ~p~n",
+				[EventOwner, Event]),
+			{task:add_event(R,
+					[{type, erlang:atom_to_list(Event)},
+						{cid, EventOwner},
+						{from_cid, OidFrom},
+						{to_cid, OidTo}]),
+				task:mk_idle_update(I)};
+
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
 			NewCData = u:db_setter(R#task_env.cid, Key, Value),

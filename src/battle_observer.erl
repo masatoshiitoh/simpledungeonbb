@@ -45,6 +45,7 @@ stop() ->
 %%===============================
 
 do_report(CidFrom, CidTo, DamTupple) ->
+	io:format("do_report called ~p, ~p, ~p~n", [CidFrom, CidTo, DamTupple]),
 	store_result(CidTo, DamTupple),
 	notice_results(
 		CidFrom,
@@ -62,12 +63,35 @@ make_reports(_OidFrom, OidTo, DamTupple) ->
 notice_results(OidFrom, OidTo, L, Radius) ->
 	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
 
-notice_result(OidFrom, OidTo, DamTupple, Radius) ->
-	{Result, DamageVal} = DamTupple,
+notice_result(OidFrom, OidTo, {killed, KilledOid}, Radius) ->
 	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, Result, DamageVal}
+	[X#session.pid ! {self(), event, OidFrom, OidTo, killed, KilledOid}
 		|| X <- Sessions],
-	DamTupple.
+	{killed, KilledOid};
+
+notice_result(OidFrom, OidTo, {ok, Dam}, Radius) ->
+	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, ok, Dam}
+		|| X <- Sessions],
+	{ok, Dam};
+
+notice_result(OidFrom, OidTo, {ng, Dam}, Radius) ->
+	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, ng, Dam}
+		|| X <- Sessions],
+	{ng, Dam};
+
+notice_result(OidFrom, OidTo, {critical, Dam}, Radius) ->
+	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, critical, Dam}
+		|| X <- Sessions],
+	{critical, Dam};
+
+notice_result(OidFrom, OidTo, {fumble, Dam}, Radius) ->
+	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	[X#session.pid ! {self(), attack, OidFrom, OidTo, fumble, Dam}
+		|| X <- Sessions],
+	{fumble, Dam}.
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(OidTo, {ok, X}) ->
