@@ -61,11 +61,9 @@ check_record_test() ->
 run_tests_with_log()
 	->
 		mmoasp:change_schema(),
-		battle_observer:start_link(),
 		eunit:test(
 		[battle_observer,task,battle,unarmed,test,u,throw],
-		[{report,{eunit_surefire,[{dir,"."}]}}]),
-		battle_observer:stop().
+		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
 	scenario_00_test(),

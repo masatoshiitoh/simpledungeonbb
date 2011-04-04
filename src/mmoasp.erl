@@ -35,11 +35,13 @@
 
 
 start() ->
+	battle_observer:start_link(),
 	db:reset_tables(),
 	db:start(),
 	path_finder:start().
 
 stop() ->
+	battle_observer:stop(),
 	path_finder:stop(),
 	db:stop().
 	
