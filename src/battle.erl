@@ -87,6 +87,7 @@ get_default_battle_method(_Oid) ->
 battle_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
+	%% check list head only.
 	L1 = single(Cid1, Npcid1),
 	[H1|T1] = L1,
 	{R1, _V1} = H1,
@@ -116,7 +117,7 @@ battle_02_test() ->
 	{actions_and_stats, Actions1, Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 	
-	%% 2-1-1: Attacked Cid check:
+	%% 2-1-1: Attacked Cid check: (check list head only.)
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == to_cid] || ST <- Actions1]),
 	io:format("battle_02_test:~p~n", [AList1]),
