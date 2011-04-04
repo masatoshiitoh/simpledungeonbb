@@ -120,12 +120,14 @@ battle_02_test() ->
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == to_cid] || ST <- Actions1]),
 	io:format("battle_02_test:~p~n", [AList1]),
-	?assert(sets:from_list(AList1) == sets:from_list([{to_cid, Npcid1}])),
+	[LH1 | LT1] = AList1,
+	?assert(sets:from_list([LH1]) == sets:from_list([{to_cid, Npcid1}])),
 
 	%% 2-1-2: Type:
 	AList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]),
-	?assert(sets:from_list(AList2) == sets:from_list([{type, "attack"}])),
+	[LH2 | LT2] = AList2,
+	?assert(sets:from_list([LH2]) == sets:from_list([{type, "attack"}])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
