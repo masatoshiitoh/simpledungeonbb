@@ -87,10 +87,15 @@ get_default_battle_method(_Oid) ->
 battle_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{T1, _V1} = single(Cid1, Npcid1),
-	?assert(T1 /= ng),
-	{T2, _V2} = single(Cid2, Npcid1),
-	?assert(T2 == ng),
+	L1 = single(Cid1, Npcid1),
+	[H1|T1] = L1,
+	{R1, _V1} = H1,
+	?assert(R1 /= ng),
+
+	L2 = single(Cid2, Npcid1),
+	[H2|T2] = L2,
+	{R2, _V2} = H2,
+	?assert(R2 == ng),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -100,10 +105,12 @@ battle_02_test() ->
 	mmoasp:get_list_to_know(self(), Cid1),	%% reset list_to_know queue.
 
 	%% 1: DO ATTACK
-	{T1, _V1} = single(Cid1, Npcid1),
+	L1 = single(Cid1, Npcid1),
+	[H1|T1] = L1,
+	{R1, _V1} = H1,
 
 	%% 2: Check results.
-	?assert(T1 /= ng),
+	?assert(R1 /= ng),
 	
 	%% 2-1: Get List to Know.
 	{actions_and_stats, Actions1, Stats1}
