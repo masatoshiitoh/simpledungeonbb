@@ -65,7 +65,7 @@ notice_results(OidFrom, OidTo, L, Radius) ->
 
 notice_result(OidFrom, OidTo, {killed, KilledOid}, Radius) ->
 	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), event, OidFrom, OidTo, killed, KilledOid}
+	[X#session.pid ! {event, {self(), event, OidFrom, OidTo, killed, KilledOid}}
 		|| X <- Sessions],
 	{killed, KilledOid};
 

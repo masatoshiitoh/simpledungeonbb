@@ -67,7 +67,7 @@ loop(R, I) ->
 		{timer, X} -> task:timer_call(X, R, I);
 		{mapmove, X} -> move:mapmove_call(X,R,I);
 		{sensor, X} -> task:sensor_call(X,R,I);
-
+		{event, X} -> task:event_call(X,R,I);
 		
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
@@ -95,16 +95,6 @@ loop(R, I) ->
 						{to_cid, OidTo},
 						{result, atom_to_list(Res)},
 						{damage, Dam}]),
-				task:mk_idle_update(I)};
-
-		{_From, event, OidFrom, OidTo, Event, EventOwner} ->
-			io:format("character: ~p had event ~p~n",
-				[EventOwner, Event]),
-			{task:add_event(R,
-					[{type, erlang:atom_to_list(Event)},
-						{cid, EventOwner},
-						{from_cid, OidFrom},
-						{to_cid, OidTo}]),
 				task:mk_idle_update(I)};
 
 		%% Attribute setter

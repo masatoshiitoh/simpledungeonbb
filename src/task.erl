@@ -30,6 +30,23 @@
 
 -include_lib("mmoasp.hrl").
 
+
+%%% TEST CODE ------------------------------------------ %%%
+-ifdef(TEST).
+
+system_call_01_test() ->
+	R = #task_env{},
+	I = mk_idle_reset(),
+
+	{NewR, NewI} = system_call({self(), stop_process}, R, I),
+	
+	?assert(NewR == undefined),
+	?assert(NewI == undefined),
+
+	{end_of_run_tests}.
+
+-endif.
+
 %% for task utilities for PC/NPC
 
 system_call({From, stop_process}, R, I) ->
@@ -40,7 +57,17 @@ system_call({From, stop_process}, R, I) ->
 
 test_call({From, whoareyou}, R, I) ->
 	From ! {iam, R#task_env.cid},
-	{R, character:mk_idle_update(I)}.
+	{R, mk_idle_update(I)}.
+
+%% EVENT
+event_call({_From, event, OidFrom, OidTo, Event, EventOwner}, R, I) ->
+	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
+	{add_event(R,
+		[{type, erlang:atom_to_list(Event)},
+			{cid, EventOwner},
+			{from_cid, OidFrom},
+			{to_cid, OidTo}]),
+		mk_idle_update(I)}.
 
 %% TIMER
 timer_call({goodmorning, Id}, R, I) ->
@@ -98,13 +125,4 @@ mk_idle_update(I) when is_record(I, idle) ->
 	I#idle{
 		since_last_op = timer:now_diff(erlang:now(), I#idle.last_op)
 	}.
-
-%%% TEST CODE ------------------------------------------ %%%
--ifdef(TEST).
-
-task_01_test() ->
-	{end_of_run_tests}.
-
--endif.
-
 
