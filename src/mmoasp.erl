@@ -36,9 +36,9 @@
 
 start() ->
 	battle_observer:start_link(),
-	db:reset_tables(),
 	db:start(),
-	path_finder:start().
+	path_finder:start(),
+	db:reset_tables().
 
 stop() ->
 	battle_observer:stop(),
