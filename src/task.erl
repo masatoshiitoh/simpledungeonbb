@@ -63,6 +63,14 @@ test_call({From, whoareyou}, R, I) ->
 	{R, mk_idle_update(I)}.
 
 %% EVENT
+event_call({_From, event, OidFrom, OidTo, killed, EventOwner}, R, I) ->
+	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
+	{add_event(R,
+		[{type, erlang:atom_to_list(Event)},
+			{cid, EventOwner},
+			{from_cid, OidFrom},
+			{to_cid, OidTo}]),
+		mk_idle_update(I)};
 event_call({_From, event, OidFrom, OidTo, Event, EventOwner}, R, I) ->
 	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
 	{add_event(R,

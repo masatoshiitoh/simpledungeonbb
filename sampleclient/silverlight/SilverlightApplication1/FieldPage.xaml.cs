@@ -252,6 +252,37 @@ namespace SilverlightApplication1
                         }
                     }
 
+                    else if (jv["type"] == "attack")
+                    {
+                        MmoChar attacked = null;
+                        mmoChars.TryGetValue(jv["to_cid"], out attacked);  // find character from known list
+                        Int32 i = jv["damage"];
+                        
+                        if (attacked != null)
+                        {
+                            txtLog.Text = (attacked.name + " got damage : " + i + Environment.NewLine) + txtLog.Text;
+                        }
+                        else
+                        {
+                            txtLog.Text = (jv["to_cid"] + " got damage : " + i + Environment.NewLine) + txtLog.Text;
+                        }
+                    }
+
+                    else if (jv["type"] == "killed")
+                    {
+                        MmoChar attacked = null;
+                        mmoChars.TryGetValue(jv["cid"], out attacked);  // find character from known list
+
+                        if (attacked != null)
+                        {
+                            txtLog.Text = (attacked.name + " was killed." + Environment.NewLine) + txtLog.Text;
+                        }
+                        else
+                        {
+                            txtLog.Text = (jv["cid"] + " was killed." + Environment.NewLine) + txtLog.Text;
+                        }
+                    }
+
                     else if (jv["type"] == "talk")
                     {
                         MmoChar talker = null;
