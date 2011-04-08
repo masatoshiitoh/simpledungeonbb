@@ -91,8 +91,8 @@ loop(R, I) ->
 				[OidFrom, OidTo, Res, Dam]),
 			{task:add_event(R,
 					[{type, "attack"},
-						{from_cid, OidFrom},
-						{to_cid, OidTo},
+						{cid, OidTo},
+						{attacker, OidFrom},
 						{result, atom_to_list(Res)},
 						{damage, Dam}]),
 				task:mk_idle_update(I)};

@@ -45,20 +45,32 @@ stop() ->
 %%===============================
 
 do_report(CidFrom, CidTo, DamTupple) ->
-	io:format("do_report called ~p, ~p, ~p~n", [CidFrom, CidTo, DamTupple]),
+	%%io:format("do_report called ~p, ~p, ~p~n", [CidFrom, CidTo, DamTupple]),
 	store_result(CidTo, DamTupple),
+	%%io:format("do_report: got report : ~p~n", [make_reports(CidFrom, CidTo, DamTupple)]),
 	notice_results(
 		CidFrom,
 		CidTo,
 		make_reports(CidFrom, CidTo, DamTupple),
 		_Radiuis = 30).
 
-make_reports(_OidFrom, OidTo, DamTupple) ->
-	X = u:db_getter(OidTo, "hp"),
-	if
-		X =< 0 -> [DamTupple, {killed, OidTo}];
-		true -> [DamTupple]
-	end.
+
+make_reports(OidFrom, OidTo, DamTupple) ->
+	NewHp = u:db_getter(OidTo, "hp"),
+	Typ = u:db_getter(OidTo, "type"),
+	%%io:format("make_reports: calls proc_damage(~p, ~p, ~p,~p, ~p)~n", [OidFrom, OidTo, DamTupple, Typ, NewHp]),
+	proc_damage(OidFrom, OidTo, DamTupple, Typ, NewHp).
+
+proc_damage(_OidFrom, OidTo, DamTupple, "npc", NewHp) when NewHp =< 0 ->
+	[DamTupple, {killed, OidTo}];
+
+proc_damage(_OidFrom, OidTo, DamTupple, "pc", NewHp) when NewHp =< 0->
+	[DamTupple, {killed, OidTo}];
+
+proc_damage(_OidFrom, OidTo, DamTupple, _CharType, NewHp) ->
+	[DamTupple].
+
+
 
 notice_results(OidFrom, OidTo, L, Radius) ->
 	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
@@ -148,8 +160,8 @@ battle_observer_01_test() ->
 		= mmoasp:get_list_to_know(self(), Cid1),
 
 	?assert(
-		test:sets_by_actions(Actions1, from_cid)
-		== test:sets_by_list([{from_cid, "npc0001"}])),
+		test:sets_by_actions(Actions1, attacker)
+		== test:sets_by_list([{attacker, "npc0001"}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, type)
@@ -176,13 +188,14 @@ battle_observer_pc_knockouted_test() ->
 	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
 
 	?assert(
-		test:sets_by_actions(Actions1, from_cid)
-		== test:sets_by_list([{from_cid, "npc0001"}])),
+		test:sets_by_actions(Actions1, attacker)
+		== test:sets_by_list([{attacker, Npcid1}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, cid)
-		== test:sets_by_list([{cid, "cid0001"}])),
+		== test:sets_by_list([{cid, Cid1}])),
 
+	io:format("battle_observer_pc_knockouted_test: sets_by_actions(type) ~p~n", [test:sets_by_actions(Actions1, type)]),
 	?assert(
 		test:sets_by_actions(Actions1, type)
 		== test:sets_by_list([{type, "attack"}, {type, "killed"}])),
