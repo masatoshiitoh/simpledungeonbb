@@ -174,6 +174,9 @@ battle_observer_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
+	?assert(u:db_getter(Cid1, "type") == "pc"),
+	?assert(u:db_getter(Npcid1, "type") == "npc"),
+
 	V1 = u:db_getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
 	V2 = u:db_getter(Cid1, "hp"),
@@ -341,8 +344,8 @@ notice_results_1_test() ->
 %%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
 
 	?assert(
-		test:sets_by_actions(Actions1, from_cid)
-		== test:sets_by_list([{from_cid, "npc0001"}])),
+		test:sets_by_actions(Actions1, attacker)
+		== test:sets_by_list([{attacker, "npc0001"}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, type)
@@ -367,8 +370,8 @@ notice_results_2_test() ->
 %%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
 
 	?assert(
-		test:sets_by_actions(Actions1, from_cid)
-		== test:sets_by_list([{from_cid, "npc0001"}, {from_cid, "npc0001"}])),
+		test:sets_by_actions(Actions1, attacker)
+		== test:sets_by_list([{attacker, "npc0001"}, {attacker, "npc0001"}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, type)
