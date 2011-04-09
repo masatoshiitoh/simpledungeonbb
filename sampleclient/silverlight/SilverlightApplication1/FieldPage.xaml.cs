@@ -74,6 +74,17 @@ namespace SilverlightApplication1
 
 
         }
+        private MmoChar LookupByPos(int x, int y)
+        {
+            foreach (MmoChar c in mmoChars.Values)
+            {
+                if (c.x == x && c.y == y)
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
         public void OutputWrite()
         {
             txtInput.Text = cid;
@@ -461,14 +472,28 @@ namespace SilverlightApplication1
             Point p = e.GetPosition(Field);
             int x = ((int)p.X) / 32;
             int y = ((int)p.Y) / 32;
-            txtLog.Text = ("Clicked " + x.ToString() + " " + y.ToString() + Environment.NewLine) + txtLog.Text;
+            MmoChar mc = LookupByPos(x, y);
+            if (mc == null)
+            {
+                txtLog.Text = ("Clicked " + x.ToString() + " " + y.ToString() + Environment.NewLine) + txtLog.Text;
 
-            Dictionary<String, String> dict = new Dictionary<string, string>();
-            dict.Add("token", token);
-            dict.Add("x", x.ToString());
-            dict.Add("y", y.ToString());
 
-            service.Call("/move/" + cid, dict, move_callback);
+                Dictionary<String, String> dict = new Dictionary<string, string>();
+                dict.Add("token", token);
+                dict.Add("x", x.ToString());
+                dict.Add("y", y.ToString());
+
+                service.Call("/move/" + cid, dict, move_callback);
+            }
+            else
+            {
+                txtLog.Text = ("Clicked " + mc.name + Environment.NewLine) + txtLog.Text;
+                
+                Dictionary<String, String> dict = new Dictionary<string, string>();
+                dict.Add("token", token);
+
+                service.Call("/attack/" + cid + "/" + mc.cid, dict, attack_callback);
+            }
         }
 
         void move_callback(object sender, UploadStringCompletedEventArgs e)
@@ -477,6 +502,37 @@ namespace SilverlightApplication1
         }
 
         void move_receiver(object arg)
+        {
+            JsonValue entry;
+            UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
+
+            JsonValue v = JsonObject.Parse(e.Result);
+
+            switch (v.JsonType)
+            {
+                case JsonType.Array:
+                    entry = v[0];
+                    break;
+                case JsonType.Object:
+                    entry = v;
+                    break;
+                default:
+                    return;
+            }
+
+            // just only return.
+            if (entry["result"] == "ok")
+            {
+                return;
+            }
+        }
+
+        void attack_callback(object sender, UploadStringCompletedEventArgs e)
+        {
+            syncContext.Post(attack_receiver, e);
+        }
+
+        void attack_receiver(object arg)
         {
             JsonValue entry;
             UploadStringCompletedEventArgs e = arg as UploadStringCompletedEventArgs;
