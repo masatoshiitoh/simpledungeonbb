@@ -96,7 +96,7 @@ db_getter(Cid, Key) ->
 		kv_get(X#cdata.attr, Key)
 	end,
 	Result = world:apply_cdata(Cid, F),
-	io:format("db_getter(~p,~p) ~p~n", [Cid, Key, Result]),
+%%	io:format("db_getter(~p,~p) ~p~n", [Cid, Key, Result]),
 	case Result of
 		{atomic, undefined} -> undefined;
 		{atomic, V} -> V

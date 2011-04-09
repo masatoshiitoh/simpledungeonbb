@@ -40,8 +40,6 @@ scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
 scenario_05_test()-> {end_of_run_tests} = do_npc_move().
 scenario_06_test()-> {end_of_run_tests} = do_pc_move().
-%scenario_05_test()-> {timeout, 60, fun() -> do_npc_move() end}.
-%scenario_06_test()-> {timeout, 60, fun() -> do_pc_move() end}.
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
@@ -291,7 +289,7 @@ check_session_data() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
-	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
+%%	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
 	
 	Me = world:get_session(Cid1),
 	F = fun() ->
@@ -329,10 +327,10 @@ do_trades() ->
 	%% trade check.
 	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 	mmoasp:start_trade(Cid1, Cid2),
-	io:format("trade started... ~p~n1: ~p~n2: ~p~n", [
-		db:demo(select_trade),
-		db:demo(u_trade, Cid1),
-		db:demo(u_trade, Cid2)]),
+%%	io:format("trade started... ~p~n1: ~p~n2: ~p~n", [
+%%		db:demo(select_trade),
+%%		db:demo(u_trade, Cid1),
+%%		db:demo(u_trade, Cid2)]),
 	mmoasp:set_offer(Cid1, 112, [],[]),
 	mmoasp:set_offer(Cid2, 0, [{item_herb, 2}],[item_shield01]),
 	mmoasp:confirm_trade(Cid1),

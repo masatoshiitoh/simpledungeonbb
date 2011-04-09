@@ -255,7 +255,7 @@ namespace SilverlightApplication1
                     else if (jv["type"] == "attack")
                     {
                         MmoChar attacked = null;
-                        mmoChars.TryGetValue(jv["to_cid"], out attacked);  // find character from known list
+                        mmoChars.TryGetValue(jv["cid"], out attacked);  // find character from known list
                         Int32 i = jv["damage"];
                         
                         if (attacked != null)
@@ -264,7 +264,7 @@ namespace SilverlightApplication1
                         }
                         else
                         {
-                            txtLog.Text = (jv["to_cid"] + " got damage : " + i + Environment.NewLine) + txtLog.Text;
+                            txtLog.Text = (jv["cid"] + " got damage : " + i + Environment.NewLine) + txtLog.Text;
                         }
                     }
 

@@ -188,7 +188,7 @@ battle_observer_pc_knockouted_test() ->
 	{actions_and_stats, Actions1, Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 
-	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
+%%	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
@@ -198,7 +198,7 @@ battle_observer_pc_knockouted_test() ->
 		test:sets_by_actions(Actions1, cid)
 		== test:sets_by_list([{cid, Cid1}])),
 
-	io:format("battle_observer_pc_knockouted_test: sets_by_actions(type) ~p~n", [test:sets_by_actions(Actions1, type)]),
+%%	io:format("battle_observer_pc_knockouted_test: sets_by_actions(type) ~p~n", [test:sets_by_actions(Actions1, type)]),
 	?assert(
 		test:sets_by_actions(Actions1, type)
 		== test:sets_by_list([{type, "attack"}, {type, "killed"}])),
