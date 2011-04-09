@@ -28,7 +28,7 @@
 -include_lib("mmoasp.hrl").
 -export([set_one/3, start_link/0, stop/0]).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([init/1, handle_call/3, handle_cast/2, %%handle_info/2,
 	terminate/2, code_change/3]).
 
 %%===============================
@@ -40,7 +40,7 @@ set_one(CidFrom, CidTo, DamTupple) ->
 	gen_server:call(?MODULE, {report, CidFrom, CidTo, DamTupple}, 20000).
 
 stop() ->
-	gen_server:call(?MODULE, stop).
+	gen_server:cast(?MODULE, stop).
 
 %%===============================
 
@@ -123,20 +123,21 @@ store_result(_OidTo, {fumble, 0}) ->
 
 init([]) ->
 	process_flag(trap_exit, true),
-	io:format("~p starting~n", [?MODULE]),
+%%	io:format("~p starting~n", [?MODULE]),
 	{ok, 0}.
 
 handle_call({report, CidFrom, CidTo, Result}, _From, N) ->
-	{reply, do_report(CidFrom, CidTo, Result), N+1};
+	{reply, do_report(CidFrom, CidTo, Result), N+1}.
 
-handle_call(stop, _From, N) ->
+handle_cast(stop, _From, N) ->
 	{stop, normal, stopped, N}.
 
 handle_cast(_Msg, N) -> {noreply, N}.
-handle_info(_Info, N) -> {noreply, N}.
+
+%%handle_info(_Info, N) -> {noreply, N}.
 
 terminate(_Reason, _N) ->
-	io:format("~p stoppig~n", [?MODULE]).
+	io:format("~p stopping~n", [?MODULE]).
 
 code_change(_OldVsn, N, _Extra) -> {ok, N}.
 
