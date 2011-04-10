@@ -77,9 +77,7 @@ run_tests() ->
 
 
 up_scenarios() ->
-	db:start(),
-	db:reset_tables(),
-	mmoasp:start(),
+	mmoasp:start(reset_tables),
 	NpcPid1 = npc:start_npc("npc0001"),
 	{ok, Cid1, Token1}
 		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),

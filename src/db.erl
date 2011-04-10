@@ -25,7 +25,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--export([start/0, reset_tables/0]).
+-export([start/0, start/1, reset_tables/0]).
 -compile(export_all).
 
 -include_lib("stdlib/include/qlc.hrl").
@@ -52,30 +52,41 @@ access_cdata_01_test() ->
 % DB access layer.
 %=======================
 
-do(Q) ->
-	F = fun() -> qlc:e(Q) end,
-	{atomic, Val} = mnesia:transaction(F),
-	Val.
-
 start() ->
 	mnesia:start(),
 	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
+
+start(reset_tables) ->
+	mnesia:start(),
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000),
+	reset_tables().
+
+%start() ->
+%	mnesia:start(),
+%	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
 
 stop() ->
 	%% mnesia:stop(),
 	ok.
 
+do(Q) ->
+	F = fun() -> qlc:e(Q) end,
+	{atomic, Val} = mnesia:transaction(F),
+	Val.
+
 reset_tables() ->
 	mnesia:clear_table(service),
+	mnesia:clear_table(admin_session),
 	mnesia:clear_table(auth_basic),
 	mnesia:clear_table(id_next),
 	mnesia:clear_table(cdata),
-	mnesia:clear_table(trade),
+	mnesia:clear_table(session),
 	mnesia:clear_table(money),
 	mnesia:clear_table(supplies),
 	mnesia:clear_table(estate),
-	mnesia:clear_table(session),
 	mnesia:clear_table(location),
+	mnesia:clear_table(trade),
+	mnesia:clear_table(u_trade),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).

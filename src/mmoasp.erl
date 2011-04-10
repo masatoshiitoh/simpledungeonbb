@@ -28,7 +28,6 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 
-
 %-----------------------------------------------------------
 %% implement simple api for yaws_if.erl
 %-----------------------------------------------------------
@@ -37,8 +36,12 @@
 start() ->
 	battle_observer:start_link(),
 	db:start(),
-	path_finder:start(),
-	db:reset_tables().
+	path_finder:start().
+
+start(reset_tables) ->
+	battle_observer:start_link(),
+	db:start(reset_tables),
+	path_finder:start().
 
 stop() ->
 	battle_observer:stop(),
@@ -48,10 +51,7 @@ stop() ->
 change_schema() ->
 	db:drop_all(),
 	db:do_this_once(),
-	db:start(),
-	db:reset_tables().
-
-
+	db:start(reset_tables).
 
 %% account registration.
 subscribe(From, Svid, Id, Pw, Ipaddr) -> uauth:db_subscribe(From,Svid, Id, Pw, Ipaddr).
