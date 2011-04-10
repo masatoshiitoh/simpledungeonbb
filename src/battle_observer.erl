@@ -28,7 +28,7 @@
 -include_lib("mmoasp.hrl").
 -export([set_one/3, start_link/0, stop/0]).
 
--export([init/1, handle_call/3, handle_cast/2, %%handle_info/2,
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	terminate/2, code_change/3]).
 
 %%===============================
@@ -123,7 +123,7 @@ store_result(_OidTo, {fumble, 0}) ->
 
 init([]) ->
 	process_flag(trap_exit, true),
-%%	io:format("~p starting~n", [?MODULE]),
+	% io:format("~p starting~n", [?MODULE]),
 	{ok, 0}.
 
 handle_call({report, CidFrom, CidTo, Result}, _From, N) ->
@@ -132,12 +132,16 @@ handle_call({report, CidFrom, CidTo, Result}, _From, N) ->
 handle_cast(stop, _From, N) ->
 	{stop, normal, stopped, N}.
 
-handle_cast(_Msg, N) -> {noreply, N}.
+handle_cast(_Msg, N) ->
+	% io:format("~p handle_cast unknown=~p~n", [?MODULE,_Msg]), 
+	{noreply, N}.
 
-%%handle_info(_Info, N) -> {noreply, N}.
+handle_info(_Info, N) ->
+	% io:format("~p handle_info unknown=~p~n", [?MODULE,_Info]), 
+	{noreply, N}.
 
 terminate(_Reason, _N) ->
-	io:format("~p stopping~n", [?MODULE]).
+	io:format("~p stopping reason=~p~n", [?MODULE, _Reason]).
 
 code_change(_OldVsn, N, _Extra) -> {ok, N}.
 
