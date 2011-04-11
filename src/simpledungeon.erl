@@ -24,8 +24,12 @@
 
 %%-----------------------------------
 
--export([start/0]).
+-export([start/1, start/0]).
 -export([init/1]).
+
+start(_) ->
+	db:start(reset_tables),
+    supervisor:start_link({local,?MODULE},?MODULE,[]).
 
 start() ->
 	db:start(reset_tables),
