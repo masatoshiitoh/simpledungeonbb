@@ -26,6 +26,7 @@ DESTDIR = ..\ebin
 INSTALL = MOVE
 RM = DEL
 COPY = COPY
+YAWS_EBINDIR = C:\opt\yaws\ebin
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
