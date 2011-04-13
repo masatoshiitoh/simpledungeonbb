@@ -22,21 +22,22 @@
 -module(simpledungeon).
 -behavior(supervisor).
 
+-include("yaws.hrl").
+-include("yaws_api.hrl").
+
 %%-----------------------------------
 
 -export([start/1, start/0]).
 -export([init/1]).
 
 start_yaws() ->
-	Gconf = yaws_config:make_default_gconf(false, 'simpledungeon'),
-	Sconf = yaws_config:make_default_sconf(),
-	yaws:start(),
-	yaws_api:setconf(Gconf, [Sconf]).
+	yaws:start_embedded("../docroot").
+%%	yaws_api:setconf(Gconf, [Sconf]).
 	
 start(_) -> start().
 
 start() ->
-%%	start_yaws(),
+	start_yaws(),
 	db:start(reset_tables),
     supervisor:start_link({local,?MODULE},?MODULE,[]).
 
