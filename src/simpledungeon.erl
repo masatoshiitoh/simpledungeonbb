@@ -39,8 +39,8 @@ start(_Type, Args) -> start(Args).
 start(_) -> start().
 
 start() ->
-%%	start_yaws(),
-%%	db:start(reset_tables),
+	start_yaws(),
+	db:start(reset_tables),
     supervisor:start_link({local,?MODULE},?MODULE,[]).
 
 path_finder() ->
