@@ -27,12 +27,14 @@
 
 %%-----------------------------------
 
--export([start/1, start/0]).
+-export([start/2, start/1, start/0]).
 -export([init/1]).
 
 start_yaws() ->
 	yaws:start_embedded("../docroot").
 %%	yaws_api:setconf(Gconf, [Sconf]).
+
+start(_Type, Args) -> start(Args).
 
 start(_) -> start().
 
@@ -64,7 +66,7 @@ init(_Args) ->
     MaxR = 10,
     MaxT = 60,
     ChildSpec = [path_finder()
-	%%, battle_observer()
+	, battle_observer()
 	],
     {ok, {{RestartStrategy, MaxR, MaxT},ChildSpec}}.
 
