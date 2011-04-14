@@ -27,8 +27,12 @@
 
 %%-----------------------------------
 
--export([start/2, start/1, start/0]).
+-export([start_app/0, start/2, start/1, start/0]).
 -export([init/1]).
+
+start_app() ->
+	application:start(?MODULE).
+
 
 start_yaws() ->
 	yaws:start_embedded("../docroot").
