@@ -33,12 +33,12 @@
 start_yaws() ->
 	yaws:start_embedded("../docroot").
 %%	yaws_api:setconf(Gconf, [Sconf]).
-	
+
 start(_) -> start().
 
 start() ->
-	start_yaws(),
-	db:start(reset_tables),
+%%	start_yaws(),
+%%	db:start(reset_tables),
     supervisor:start_link({local,?MODULE},?MODULE,[]).
 
 path_finder() ->
@@ -63,7 +63,9 @@ init(_Args) ->
     RestartStrategy = one_for_one,
     MaxR = 10,
     MaxT = 60,
-    ChildSpec = [path_finder(), battle_observer()],
+    ChildSpec = [path_finder()
+	%%, battle_observer()
+	],
     {ok, {{RestartStrategy, MaxR, MaxT},ChildSpec}}.
 
 

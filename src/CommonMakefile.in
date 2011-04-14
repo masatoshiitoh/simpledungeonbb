@@ -51,6 +51,7 @@ yaws_if.beam :yaws_if.erl mmoasp.hrl
 
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)
+	$(COPY) *.app $(DESTDIR)
 
 .erl.beam:
 	$(ERLC) $(ERLCFLAGS) $<
