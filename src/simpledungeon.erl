@@ -37,16 +37,16 @@ start_app() ->
 start_yaws() ->
 	yaws:start_embedded(
 		"../docroot",
-		_Gconf = [
-			{ebin_dir, "../ebin"}
-			,{id, "simpledungeon"}
-			],
-		_Sconf = [
+		_Sconfs = [
 			{port, 8002}
 			,{listen, {0,0,0,0}}
-			,{docroot, "../docroot"}
+			%%,{docroot, "../docroot"}
 			,{appmods, [{"/service", yaws_if}]}
 			
+			],
+		_Gconf = [
+			%%{ebin_dir, "../ebin"},
+			{id, "simpledungeon"}
 			],
 		"simpledungeon").
 
