@@ -36,10 +36,12 @@
 start() ->
 	%% start supervisor, local registerd (name is ?MODULE),
 	%% callback is on ?MODULE
-	{ok, _PidSp} = supervisor:start_link({local,?MODULE},?MODULE,[]),
+	{ok, Pid} = supervisor:start_link({local,?MODULE},?MODULE,[]),
+	unlink(Pid),
 	%% start database.
 	db:start(reset_tables),
-	start_yaws().
+	start_yaws(),
+	Pid.
 
 start(_) -> start().
 start(_Type, Args) -> start(Args).
