@@ -26,7 +26,7 @@ RM = rm -f
 DESTDIR = ../ebin
 INSTALL = mv
 COPY = cp -p
-YAWS_EBINDIR = /opt/yaws/ebin
+YAWS_EBINDIR = /opt/yaws/lib/yaws/ebin
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
