@@ -41,12 +41,8 @@ start() ->
 	db:start(reset_tables),
 	start_yaws().
 
-%%start(_) ->
-%%	start_yaws(),
-%%	db:start(reset_tables),
-%%	supervisor:start_link({local,?MODULE},?MODULE,[]).
-%%
-%%start(_Type, Args) -> start(Args).
+start(_) -> start().
+start(_Type, Args) -> start(Args).
 
 init(_Args) ->
     ChildSpec = [path_finder(), battle_observer()],
