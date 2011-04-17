@@ -27,36 +27,52 @@
 
 %%-----------------------------------
 
--export([start/2, start/1, start/0]).
+-export([start/0]).
+%%-export([start/1]).
+%%-export([start/2]).
 -export([init/1]).
+-export([start_yaws/0]).
 
 start() ->
-	application:start(?MODULE).
+	%% start supervisor, local registerd (name is ?MODULE),
+	%% callback is on ?MODULE
+	{ok, _PidSp} = supervisor:start_link({local,?MODULE},?MODULE,[]),
+	%% start database.
+	db:start(reset_tables),
+	start_yaws().
+
+%%start(_) ->
+%%	start_yaws(),
+%%	db:start(reset_tables),
+%%	supervisor:start_link({local,?MODULE},?MODULE,[]).
+%%
+%%start(_Type, Args) -> start(Args).
+
+init(_Args) ->
+    ChildSpec = [path_finder(), battle_observer()],
+    {ok, {{one_for_one, 10, 60},ChildSpec}}.
 
 start_yaws() ->
-	yaws:start_embedded(
-		"../docroot",
-		_Sconfs = [
-			{port, 8002}
-			,{listen, {0,0,0,0}}
-			%%,{docroot, "../docroot"}
-			,{appmods, [{"/service", yaws_if}]}
-			
-			],
-		_Gconf = [
-			%%{ebin_dir, "../ebin"},
-			{id, "simpledungeon"}
-			],
-		"simpledungeon").
+	Id = "simpledungeon",
+	GconfList = [
+		{logdir, "./test/log"},
+		{ebin_dir, [".","../ebin"]},
+		{id, Id}],
+	Docroot = "../docroot",
+	SconfList = [
+		{port, 8002},
+		{listen, {0,0,0,0}},
+		{docroot, Docroot},
+		{appmods, [{"/service", yaws_if}]}
+	],
 
-start(_Type, Args) -> start(Args).
+	{ok, SCList, GC, ChildSpecs} =
+	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
 
-start(_) ->
-	start_yaws(),
-	db:start(reset_tables),
-    supervisor:start_link({local,?MODULE},?MODULE,[]).
-
-
+%%	[supervisor:start_child({local,?MODULE}, Ch) || Ch <- ChildSpecs], %% this code causes crash.
+	[supervisor:start_child(?MODULE, Ch) || Ch <- ChildSpecs],
+	%% now configure Yaws
+	yaws_api:setconf(GC, SCList).
 
 path_finder() ->
     ID = path_finder,
@@ -75,14 +91,4 @@ battle_observer() ->
     Type = worker,
     Modules = [battle_observer],
     _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
-
-init(_Args) ->
-    RestartStrategy = one_for_one,
-    MaxR = 10,
-    MaxT = 60,
-    ChildSpec = [path_finder()
-	, battle_observer()
-	],
-    {ok, {{RestartStrategy, MaxR, MaxT},ChildSpec}}.
-
 
