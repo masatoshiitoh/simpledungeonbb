@@ -62,6 +62,7 @@ make_reports(OidFrom, OidTo, DamTupple) ->
 	proc_damage(OidFrom, OidTo, DamTupple, Typ, NewHp).
 
 proc_damage(_OidFrom, OidTo, DamTupple, "npc", NewHp) when NewHp =< 0 ->
+	npc:stop_npc(OidTo),
 	[DamTupple, {killed, OidTo}];
 
 proc_damage(_OidFrom, OidTo, DamTupple, "pc", NewHp) when NewHp =< 0->
