@@ -38,21 +38,24 @@ start_npc(Npcid) ->
 	end.
 
 stop_npc(Npcid) ->
-	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius = 100),
 	case lookup_pid_by_npcid(Npcid) of
 		void -> void;
 		FoundPid ->
-			FoundPid ! {system, {self(), stop_process}},
-			case mnesia:transaction(fun() ->
-					mnesia:delete({session, Npcid})
-					end) of
-				{atomic,ok}->
-					io:format("npcloop: stop_npc session entry clear succeeded.~n"),
-					ok;
-				AbortedWithReason ->
-					io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
-					AbortedWithReason
-			end
+			remove_npc_from_db(Npcid),
+			FoundPid ! {system, {self(), stop_process}}
+	end.
+
+remove_npc_from_db(Npcid) ->
+	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius = 100),
+	case mnesia:transaction(fun() ->
+			mnesia:delete({session, Npcid})
+			end) of
+		{atomic,ok}->
+			io:format("npcloop: stop_npc session entry clear succeeded.~n"),
+			ok;
+		AbortedWithReason ->
+			io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
+			AbortedWithReason
 	end.
 
 setup_npc(Npcid)->
@@ -65,8 +68,7 @@ setup_npc(Npcid)->
 		stat_dict = [],
 		utimer = morningcall:new()
 	},
-	Child = spawn(fun() ->npc:loop(R, task:mk_idle_reset()) end),
-	
+	Child = spawn(fun() -> npc:loop(R, task:mk_idle_reset()) end),
 	%% store session
 	mnesia:transaction(
 		fun() ->
@@ -83,12 +85,22 @@ loop(R, I) ->
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
 		{mapmove, X} -> move:mapmove_call(X,R,I);
+		{event, X} -> check_killed(X, R, I);
 
 		{_From, talk, Talker, MessageBody, Mode} ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
 			{R,I}
 	end,
 	loop(NewR, NewI).
+
+%% NPC is killed !
+check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, I)
+	when KilledOid == R#task_env.cid ->
+	remove_npc_from_db(KilledOid),
+	loop(undefined, undefined);
+
+check_killed(_, R, I) -> 
+	loop(R, I).
 
 db_get_npcdata(Cid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
