@@ -118,6 +118,8 @@ sub line_handler
 		$o = &move($args);
 	}elsif ($cmd eq 'attack') {
 		$o = &attack($args);
+	}elsif ($cmd eq 'startnpc') {
+		$o = &startnpc($args);
 	}else {
 		$o = &get_list_to_know();
 		print Dumper($o);
@@ -198,6 +200,14 @@ sub attack
 {
 	$attack_to = shift;
 	my $target_url = "$base_url/service/$sv/attack/$cid/$attack_to"; 
+	my %params = ('token' => $token);
+	return &call_api($target_url, %params);
+}
+
+sub startnpc
+{
+	$npcid = shift;
+	my $target_url = "$base_url/service/$sv/startnpc/$npcid"; 
 	my %params = ('token' => $token);
 	return &call_api($target_url, %params);
 }

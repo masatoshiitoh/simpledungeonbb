@@ -60,7 +60,9 @@ remove_npc_from_db(Npcid) ->
 
 setup_npc(Npcid)->
 	{cdata, Npcid, Name, Npcdata} = db_get_npcdata(Npcid),
-	
+
+	io:format("setup_npc(~p) gets ~p, ~p~n", [Npcid, Name, Npcdata]),
+
 	R = #task_env{
 		cid = Npcid,
 		cdata = Npcdata,
@@ -101,6 +103,8 @@ check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, I)
 
 check_killed(_, R, I) -> 
 	loop(R, I).
+
+dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 
 db_get_npcdata(Cid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of

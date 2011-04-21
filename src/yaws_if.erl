@@ -224,6 +224,12 @@ out(_A, 'GET', ["service", SVID, "json"]) ->
 	mout:return_json(json:encode({struct, [{"field1", "foo"}, {field2, "gova"}]}));
 
 
+% Add New Non Player Character.
+out(A, 'POST', ["service", SVID, "startnpc", NpcidX]) ->
+	npc:start_npc(NpcidX),
+	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
+
+
 %% sample for "catch all" handler.
 out(A, _Method, _Params) ->
 	io:format("yaws_if. catchall. ~n", []),

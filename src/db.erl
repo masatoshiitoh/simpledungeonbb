@@ -178,10 +178,10 @@ example_tables() ->
 	{auth_basic,"npc0002", void,void},
 	{auth_basic,"npc0003", void,void},
 	{auth_basic,"npc0004", void,void},
-	{cdata,"npc0001", "Slime", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0002", "Slime", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0003", "Slime", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0004", "Slime", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0001", "Slime1", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0002", "Slime2", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0003", "Slime3", [{"type", "npc"}, {"hp", 2}]},
+	{cdata,"npc0004", "Slime4", [{"type", "npc"}, {"hp", 2}]},
 
 	%% login
 	{auth_basic,"cid0001","id0001",	"pw0001"},
@@ -200,6 +200,9 @@ example_tables() ->
 	{location,"cid0003", 1, 6, 1, 0},
 	{location,"cid0004", 1, 7, 1, 0},
 	{location,"npc0001", 1, 2, 1, 0},
+	{location,"npc0002", 1, 4, 1, 0},
+	{location,"npc0003", 1, 4, 4, 0},
+	{location,"npc0004", 1, 5, 5, 0},
 	
 	%% inventory ( key colomn is cid.)
 	{money, "cid0001", 1000, 15},
