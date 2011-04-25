@@ -183,17 +183,17 @@ talk(open, SenderCid, MessageBody, Radius) ->
 		|| X <- get_all_neighbor_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
-notice_login(SenderCid, {csummary, Cid, Name}, Radius) ->
+notice_login(SenderCid, {csummary, _Cid, Name}, Radius) ->
 	[X#session.pid ! {sensor, {self(), notice_login, SenderCid, Name}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
-notice_logout(SenderCid, {csummary, Cid}, Radius) ->
+notice_logout(SenderCid, {csummary, _Cid}, Radius) ->
 	[X#session.pid ! {sensor, {self(), notice_logout, SenderCid}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
-notice_remove(SenderCid, {csummary, Cid}, Radius) ->
+notice_remove(SenderCid, {csummary, _Cid}, Radius) ->
 	[X#session.pid ! {sensor, {self(), notice_remove, SenderCid}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.

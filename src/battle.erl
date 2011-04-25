@@ -89,12 +89,12 @@ battle_01_test() ->
 	
 	%% check list head only.
 	L1 = single(Cid1, Npcid1),
-	[H1|T1] = L1,
+	[H1|_T1] = L1,
 	{R1, _V1} = H1,
 	?assert(R1 /= ng),
 
 	L2 = single(Cid2, Npcid1),
-	[H2|T2] = L2,
+	[H2|_T2] = L2,
 	{R2, _V2} = H2,
 	?assert(R2 == ng),
 	
@@ -107,27 +107,27 @@ battle_02_test() ->
 
 	%% 1: DO ATTACK
 	L1 = single(Cid1, Npcid1),
-	[H1|T1] = L1,
+	[H1|_T1] = L1,
 	{R1, _V1} = H1,
 
 	%% 2: Check results.
 	?assert(R1 /= ng),
 	
 	%% 2-1: Get List to Know.
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 	
 	%% 2-1-1: Attacked Cid check: (check list head only.)
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == to_cid] || ST <- Actions1]),
 	io:format("battle_02_test:~p~n", [AList1]),
-	[LH1 | LT1] = AList1,
+	[LH1 | _LT1] = AList1,
 	?assert(sets:from_list([LH1]) == sets:from_list([{to_cid, Npcid1}])),
 
 	%% 2-1-2: Type:
 	AList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]),
-	[LH2 | LT2] = AList2,
+	[LH2 | _LT2] = AList2,
 	?assert(sets:from_list([LH2]) == sets:from_list([{type, "attack"}])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

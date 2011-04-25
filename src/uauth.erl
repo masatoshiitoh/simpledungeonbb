@@ -26,14 +26,14 @@
 
 
 
-db_subscribe(_From, Svid, Id, Pw, Ipaddr)->
+db_subscribe(_From, Svid, Id, Pw, _Ipaddr)->
 	create_account(Svid, Id, Pw).
 
-create_account(Svid, Id, Pw) ->
+create_account(_Svid, Id, Pw) ->
 	db:add_single(Id, Pw).
 
 
-db_change_password(_From, Svid, Id, Pw, NewPw, Ipaddr)->
+db_change_password(_From, _Svid, Id, Pw, NewPw, _Ipaddr)->
 	case get_cid({basic, Id, Pw}) of
 		void -> {ng, check_id_and_password};
 		Cid -> basic_change_password(Cid,NewPw)
@@ -97,15 +97,15 @@ setup_player_location(Cid) ->
 	
 	{pos, X, Y}.
 
-db_login(_From, Id, Pw, Ipaddr)->
+db_login(_From, Id, Pw, _Ipaddr)->
 	Loaded = load_character(Id,Pw),
 	case Loaded of 
-		{character, Oid, CData} ->
+		{character, Oid, _CData} ->
 			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
 			case P of
 				[] ->
 					% Not found.. Instanciate requested character !
-					{ok, Pid, Token} = setup_player_character(Oid),
+					{ok, _Pid, Token} = setup_player_character(Oid),
 					{ok, Oid, Token};
 				[Oid] ->
 					% found.
@@ -119,7 +119,7 @@ db_login(_From, Id, Pw, Ipaddr)->
 db_get_cid(Id, Pw) ->
 	Loaded = load_character(Id,Pw),
 	case Loaded of 
-		{character, Cid, CData} -> {character, Cid};
+		{character, Cid, _CData} -> {character, Cid};
 		void -> {ng, "character: authentication failed"}
 		end.
 
@@ -148,9 +148,9 @@ db_location_online(Cid) ->
 	end,
 	mnesia:transaction(F).
 
-db_location_offline(Cid) -> nop.
+db_location_offline(_Cid) -> nop.
 
-db_location_offline(Cid, Map, {pos, X, Y}) -> nop.
+db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
 
 
 

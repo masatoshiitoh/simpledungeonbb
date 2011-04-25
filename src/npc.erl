@@ -33,7 +33,7 @@
 start_npc(Npcid) ->
 	case lookup_pid_by_npcid(Npcid) of
 		void ->
-			Pid = setup_npc(Npcid);
+			_Pid = setup_npc(Npcid);
 		FoundPid -> FoundPid
 	end.
 
@@ -46,7 +46,7 @@ stop_npc(Npcid) ->
 	end.
 
 remove_npc_from_db(Npcid) ->
-	mmoasp:notice_remove(Npcid, {csummary, Npcid}, Radius = 100),
+	mmoasp:notice_remove(Npcid, {csummary, Npcid}, _Radius = 100),
 	case mnesia:transaction(fun() ->
 			mnesia:delete({session, Npcid})
 			end) of
@@ -96,7 +96,7 @@ loop(R, I) ->
 	loop(NewR, NewI).
 
 %% NPC is killed !
-check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, I)
+check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, _I)
 	when KilledOid == R#task_env.cid ->
 	remove_npc_from_db(KilledOid),
 	loop(undefined, undefined);

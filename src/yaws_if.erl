@@ -29,7 +29,7 @@
 
 %% GET version of login. This is only for test with web browser.
 %% This will be disabled soon.
-out(A, 'GET', ["service", SVID, "login"]) ->
+out(A, 'GET', ["service", _SVID, "login"]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
@@ -45,7 +45,7 @@ out(A, 'GET', ["service", SVID, "login"]) ->
 
 
 %% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
-out(A, 'GET', ["service", SVID, "stream", "listtoknow", CID]) ->
+out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
 	spawn(character_stream, start, [CID,A#arg.pid]),
 	{streamcontent, "text/html", ""};
 
@@ -86,7 +86,7 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 
 %% Login
 %% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
-out(A, 'POST', ["service", SVID, "login"]) ->
+out(A, 'POST', ["service", _SVID, "login"]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
@@ -105,7 +105,7 @@ out(A, 'POST', ["service", SVID, "login"]) ->
 
 %% Logout
 %% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
-out(A, 'POST', ["service", SVID, "logout", CidX]) ->
+out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
 	Token = param(Params, "token"),
 	%% io:format("yaws_if. logout requested. ~p~n", [CidX]),
@@ -119,9 +119,9 @@ out(A, 'POST', ["service", SVID, "logout", CidX]) ->
 
 %% Get list to know (Your client calls this every xx sec.)
 %% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
-out(A, 'POST', ["service", SVID, "listtoknow", CidX]) ->
+out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
-	Token = param(Params, "token"),
+	_Token = param(Params, "token"),
 	%% io:format("yaws_if. listtoknow requested. ~p~n", [CidX]),
 	X = world:get_session(CidX),
 	X#session.pid ! {self(), update_neighbor_status, 10},
@@ -131,9 +131,9 @@ out(A, 'POST', ["service", SVID, "listtoknow", CidX]) ->
 
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
-out(A, 'POST', ["service", SVID, "talk", CidX]) ->
+out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
-	Token = param(Params, "token"),
+	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
 	%% io:format("yaws_if. talk requested. ~p~n", [CidX]),
 	Result = mmoasp:talk(open, CidX, Talked, 100),
@@ -141,7 +141,7 @@ out(A, 'POST', ["service", SVID, "talk", CidX]) ->
 
 %% Whisper (person to person talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
-out(_A, 'GET', ["service", SVID, "whisper", CidX, TalkTo, Talked]) ->
+out(_A, 'GET', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
 	[{character, Cid, Pid}] = world_server:lookup(CidX),
 	Clist = world_server:test_getdump(),	%% NOT IMPLEMENTED.
 	lists:map(fun({character, _CidN, PidN}) ->
@@ -155,9 +155,9 @@ out(_A, 'GET', ["service", SVID, "whisper", CidX, TalkTo, Talked]) ->
 
 %% Move
 %% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
-out(A, 'POST', ["service", SVID, "move", CidX]) ->
+out(A, 'POST', ["service", _SVID, "move", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
-	Token = param(Params, "token"),
+	_Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
 	%% io:format("yaws_if. move requested. cid = ~p, x = ~p, y = ~p~n", [CidX, X, Y]),
@@ -165,15 +165,15 @@ out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Attack
-out(A, 'POST', ["service", SVID, "attack", CidX, CidTo]) ->
+out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
-	Token = param(Params, "token"),
+	_Token = param(Params, "token"),
 	_Result = battle:single(CidX, CidTo),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Set attribute
 %% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
-out(A, 'GET', ["service", SVID, "set", Cid, Key]) ->
+out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Value = param(Params, "value"),
 	Token = param(Params, "token"),
@@ -186,7 +186,7 @@ out(A, 'GET', ["service", SVID, "set", Cid, Key]) ->
 	end;
 
 %% sample for "GET http://localhost:8001/service/hibari/set/cid0001/KEY?value=VALUE"
-out(A, 'GET', ["service", SVID, "settest", Cid, Key]) ->
+out(A, 'GET', ["service", _SVID, "settest", Cid, Key]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Value = param(Params, "value"),
 	Token = param(Params, "token"),
@@ -200,7 +200,7 @@ out(A, 'GET', ["service", SVID, "settest", Cid, Key]) ->
 
 
 %% sample for "GET http://localhost:8001/service/hibari/setevil/cid0001"
-out(A, 'GET', ["service", SVID, "setevil", CidX]) ->
+out(A, 'GET', ["service", _SVID, "setevil", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Token = param(Params, "token"),
 	[{character, _Cid, Pid}] = world_server:lookup(CidX),
@@ -209,7 +209,7 @@ out(A, 'GET', ["service", SVID, "setevil", CidX]) ->
 
 
 %% sample for "GET http://localhost:8001/service/hibari/setgood/cid0001"
-out(A, 'GET', ["service", SVID, "setgood", CidX]) ->
+out(A, 'GET', ["service", _SVID, "setgood", CidX]) ->
 	Params = dict:from_list(yaws_api:parse_query(A)),
 	Token = param(Params, "token"),
 	[{character, _Cid, Pid}] = world_server:lookup(CidX),
@@ -220,12 +220,12 @@ out(A, 'GET', ["service", SVID, "setgood", CidX]) ->
 %% Json sending test code.
 %% sample for "GET http://localhost:8002/service/hibari/json"
 %% Thanks to http://d.hatena.ne.jp/takkkun/20080626/1214468050
-out(_A, 'GET', ["service", SVID, "json"]) ->
+out(_A, 'GET', ["service", _SVID, "json"]) ->
 	mout:return_json(json:encode({struct, [{"field1", "foo"}, {field2, "gova"}]}));
 
 
 % Add New Non Player Character.
-out(A, 'POST', ["service", SVID, "startnpc", NpcidX]) ->
+out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
 	npc:start_npc(NpcidX),
 	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
 

@@ -28,7 +28,7 @@
 %%-include_lib("stdlib/include/qlc.hrl").
 
 
-mapmove_call({_From, init_move, CurrPos, WayPoints}, R, I) ->
+mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 	SelfPid = self(),
 	SelfPid ! {timer, {_From, cancel_timer}},
 	SelfPid ! {mapmove, {_From, move, CurrPos, WayPoints}},
@@ -39,13 +39,13 @@ mapmove_call({_From, move, CurrPos, WayPoints}, R, I) ->
 	case WayPoints of
 		[] -> 
 			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
-			{pos, X, Y} = CurrPos,
+			{pos, _X, _Y} = CurrPos,
 			{R, task:mk_idle_update(I)};
 
 		[H | T] -> 			
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
-			{pos, X, Y} = CurrPos,
-			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, Radius = 100),
+			{pos, _X, _Y} = CurrPos,
+			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, _Radius = 100),
 			SelfPid = self(),
 			F = fun() ->
 				SelfPid ! {mapmove, {SelfPid, move, H, T}}

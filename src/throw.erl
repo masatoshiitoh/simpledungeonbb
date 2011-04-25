@@ -66,7 +66,7 @@ multi_dice_02_10000_test() ->
 -endif.
 
 dice(N,M) -> {dice, N*M, raw_dice(N, M)}.
-	raw_dice(N,0) -> 0;
+	raw_dice(_N,0) -> 0;
 	raw_dice(N,M) -> random:uniform(N) + raw_dice(N, M-1).
 
 dice(N) -> {dice, N, random:uniform(N)}.

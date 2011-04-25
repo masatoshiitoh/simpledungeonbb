@@ -52,7 +52,7 @@
 
 %% for task utilities for PC/NPC
 
-system_call({From, stop_process}, R, I) ->
+system_call({From, stop_process}, R, _I) ->
 	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid},
@@ -82,7 +82,7 @@ timer_call({_From, cancel_timer}, R, I) ->
 	NewUTimer = morningcall:cancel_all(R#task_env.utimer),
 	{R#task_env{utimer = NewUTimer}, mk_idle_update(I)}.
 
-sensor_call({From, request_list_to_know}, R, I) ->
+sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
 				task:get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict)},

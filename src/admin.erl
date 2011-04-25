@@ -43,7 +43,7 @@ get_service_entry(Svid, AdminId, AdminPw) ->
 	end.
 
 
-admin_login(From, Svid, AdminId, AdminPw, Ipaddr) ->
+admin_login(_From, Svid, AdminId, AdminPw, Ipaddr) ->
 	Loaded = get_service_entry(Svid, AdminId, AdminPw),
 	case Loaded of 
 		{service, Svid, AdminId, AdminPw, _Expire} ->
@@ -65,7 +65,7 @@ is_ok_admin_session(AdminId, Token) ->
 			AdmSess#admin_session.token =:= Token
 			])),
 	case Result of
-		[X] -> true;
+		[_X] -> true;
 		[] -> false
 	end.
 
@@ -77,11 +77,11 @@ admin_delete_old_sessions(TimeoutSec) ->
 		timer:now_diff(Now, AdmSess#admin_session.last_op_time) > TimeoutSec * 1000000])).
 
 
-admin_logout(From, Svid, AdminId, Token, Ipaddr) ->
+admin_logout(_From, _Svid, _AdminId, Token, _Ipaddr) ->
 	mnesia:transaction(fun() -> mnesia:delete({admin_session, Token}) end).
 
 
-admin_list_users(From, Svid, AdminId, AdminToken, Ipaddr) ->
+admin_list_users(_From, _Svid, AdminId, AdminToken, _Ipaddr) ->
 	case is_ok_admin_session(AdminId, AdminToken) of
 		true -> 0;
 		false -> {ng, session_timed_out}

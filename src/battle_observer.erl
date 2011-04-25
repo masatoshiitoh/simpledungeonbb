@@ -68,7 +68,7 @@ proc_damage(_OidFrom, OidTo, DamTupple, "npc", NewHp) when NewHp =< 0 ->
 proc_damage(_OidFrom, OidTo, DamTupple, "pc", NewHp) when NewHp =< 0->
 	[DamTupple, {killed, OidTo}];
 
-proc_damage(_OidFrom, OidTo, DamTupple, _CharType, NewHp) ->
+proc_damage(_OidFrom, _OidTo, DamTupple, _CharType, _NewHp) ->
 	[DamTupple].
 
 
@@ -130,8 +130,8 @@ init([]) ->
 handle_call({report, CidFrom, CidTo, Result}, _From, N) ->
 	{reply, do_report(CidFrom, CidTo, Result), N+1}.
 
-handle_cast(stop, _From, N) ->
-	{stop, normal, stopped, N}.
+%% handle_call(stop, _From, N) ->
+%%	{stop, normal, stopped, N}.
 
 handle_cast(_Msg, N) ->
 	% io:format("~p handle_cast unknown=~p~n", [?MODULE,_Msg]), 
@@ -162,7 +162,7 @@ battle_observer_01_test() ->
 
 	u:wait(20),
 
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 
 	?assert(
@@ -191,7 +191,7 @@ battle_observer_pc_knockouted_test() ->
 
 	u:wait(20),
 
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 
 %%	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
@@ -318,7 +318,7 @@ notice_results_nil_test() ->
 
 	u:wait(20),
 
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
@@ -344,7 +344,7 @@ notice_results_1_test() ->
 
 	u:wait(20),
 
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
@@ -370,7 +370,7 @@ notice_results_2_test() ->
 
 	u:wait(20),
 
-	{actions_and_stats, Actions1, Stats1}
+	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {actions_and_stats, Actions1, Stats1}]),

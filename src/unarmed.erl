@@ -32,8 +32,8 @@
 
 %% do not throw dice.
 fixed_calc(
-	#battle_param{oid=OidFrom, range=Range, str=Str1} = From,
-	#battle_param{oid=OidTo, ac=Ac2} = To)
+	#battle_param{oid=OidFrom, range=Range, str=Str1} = _From,
+	#battle_param{oid=OidTo, ac=Ac2} = _To)
 	->
 		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
 		if
@@ -43,8 +43,8 @@ fixed_calc(
 
 %% throw dice to calc result.
 calc(
-	#battle_param{oid=OidFrom, range=Range, str=Str1} = From,
-	#battle_param{oid=OidTo, ac=Ac2} = To)
+	#battle_param{oid=OidFrom, range=Range, str=_Str1} = From,
+	#battle_param{oid=OidTo, ac=_Ac2} = To)
 	->
 		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
 		if
@@ -52,7 +52,7 @@ calc(
 				{ng, 0};
 			true ->
 				case throw:result(throw:dice(20)) of
-					{fumble, X}
+					{fumble, _X}
 						-> {fumble, 0};
 					{critical, X}
 						-> {critical, damage_critical(From, To, X)};
@@ -65,9 +65,9 @@ calc(
 %% you got cancel enemy's armor,
 %% ATK: double of Strength, + 20D1
 damage_critical(
-	#battle_param{str=Str1} = From,
-	#battle_param{ac=Ac2} = To,
-	Dice)
+	#battle_param{str=Str1} = _From,
+	#battle_param{ac=_Ac2} = _To,
+	_Dice)
 	->
 		{dice, _Max, V} = throw:dice(20),
 		trim_negative(Str1 * 2 + V).
@@ -77,9 +77,9 @@ damage_critical(
 %% (AC 10 : decrease 0, AC 0 : decrease 10...).
 %% every ATK get random bonus (max: strength of attacker).
 damage_normal(
-	#battle_param{str=Str1} = From,
-	#battle_param{ac=Ac2} = To,
-	Dice)
+	#battle_param{str=Str1} = _From,
+	#battle_param{ac=Ac2} = _To,
+	_Dice)
 	->
 		{dice, _Max, V} = throw:dice(Str1),
 		trim_negative(Str1 + (Ac2 - 10) + V).

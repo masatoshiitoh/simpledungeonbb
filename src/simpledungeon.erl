@@ -43,8 +43,8 @@ start() ->
 	start_yaws(),
 	Pid.
 
-start(_) -> start().
-start(_Type, Args) -> start(Args).
+%%start(_) -> start().
+%%start(_Type, Args) -> start(Args).
 
 init(_Args) ->
     ChildSpec = [path_finder(), battle_observer()],

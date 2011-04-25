@@ -36,7 +36,7 @@
 % KV access utilities
 %=======================
 
-access_cdata(Oid, Key) -> Value = 0.
+access_cdata(_Oid, _Key) -> _Value = 0.
 
 %%% TEST CODE ------------------------------------------ %%%
 -ifdef(TEST).

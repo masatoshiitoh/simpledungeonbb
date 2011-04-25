@@ -78,7 +78,7 @@ run_tests() ->
 
 up_scenarios() ->
 	mmoasp:start(reset_tables),
-	NpcPid1 = npc:start_npc("npc0001"),
+	_NpcPid1 = npc:start_npc("npc0001"),
 	{ok, Cid1, Token1}
 		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
 	{ok, Cid2, Token2}
@@ -123,13 +123,13 @@ do_battle_unarmed() ->
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
-	[{R1, _}|T1] = battle:single(Cid1, "npc0001"),
-	[{R2, _}|T2] = battle:single(Cid2, "npc0001"),
+	[{R1, _}|_T1] = battle:single(Cid1, "npc0001"),
+	[{R2, _}|_T2] = battle:single(Cid2, "npc0001"),
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
-	[{R3, _}|T3] = battle:single(Cid1, "npc0001", "unarmed"),
-	[{R4, _}|T4] = battle:single(Cid2, "npc0001", "unarmed"),
+	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
+	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R3 == ok),
 	?assert(R4 == ng),
 
@@ -292,7 +292,7 @@ check_session_data() ->
 	Me = world:get_session(Cid1),
 	F = fun() ->
 		qlc:e(qlc:q(
-			[NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
+			[_NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
 					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
 				]}
 				|| Sess <- mnesia:table(session),
@@ -350,9 +350,9 @@ do_talk() ->
 	mmoasp:talk(whisper,Cid2, Cid1, "talk, line 2"),
 
 	
-	{actions_and_stats, A1, S1} = mmoasp:get_list_to_know(self(), Cid1),
+	{actions_and_stats, _A1, _S1} = mmoasp:get_list_to_know(self(), Cid1),
 	%io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
-	{actions_and_stats, A2, S2} = mmoasp:get_list_to_know(self(), Cid2),
+	{actions_and_stats, _A2, _S2} = mmoasp:get_list_to_know(self(), Cid2),
 	%io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	
