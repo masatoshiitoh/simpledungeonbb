@@ -27,32 +27,78 @@
 -include_lib("mmoasp.hrl").
 %%-include_lib("stdlib/include/qlc.hrl").
 
+%%
+%% 'map based move' main api
+%%
+move(Cid, DestPos) ->
+	F = fun(X) ->
+		NowPos = {pos, X#session.x, X#session.y},
+		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
+		Result
+	end,
+	{atomic, WayPoints} = world:apply_session(Cid, F),
+	case WayPoints of
+		[] -> io:format("path unavailable.  no waypoints found.~n", []),
+			[];
+		[Start| Path] ->
+			FS = fun(X) ->
+				init_move(X#session.pid, Start, Path)
+			end,
+			world:apply_session(Cid, FS)
+	end.
 
+init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
+
+%%
+%% initialize move. send move message to itself.
+%%
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 	SelfPid = self(),
 	SelfPid ! {timer, {_From, cancel_timer}},
-	SelfPid ! {mapmove, {_From, move, CurrPos, WayPoints}},
-	{R, task:mk_idle_reset()};
 
-mapmove_call({_From, move, CurrPos, WayPoints}, R, I) ->
+	%% write currpos and waypoint into R record.
+	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
+
+	%% order first 'move'
+	SelfPid ! {mapmove, {_From, move}},
+
+	{NewR, task:mk_idle_reset()};
+
+%%
+%% position updater.
+%% proc 'move' message:
+%% update currpos, and set new timer to send new move message.
+%%
+mapmove_call({_From, move}, R, I) ->
+
+	CurrPos = R#task_env.currpos,
+	WayPoints = R#task_env.waypoints,
+
 	character:db_setpos(R#task_env.cid, CurrPos),
 	case WayPoints of
-		[] -> 
+		[] ->
 			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
 			{pos, _X, _Y} = CurrPos,
 			{R, task:mk_idle_update(I)};
 
-		[H | T] -> 			
+		[H | T] ->
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 			{pos, _X, _Y} = CurrPos,
 			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, _Radius = 100),
 			SelfPid = self(),
 			F = fun() ->
-				SelfPid ! {mapmove, {SelfPid, move, H, T}}
+				SelfPid ! {mapmove, {SelfPid, move}}
 			end,
-			{R#task_env{utimer = morningcall:add(1000, F, R#task_env.utimer)},task:mk_idle_update(I)}
+
+			%% update currpos and waypoints with H and T.
+			NewR = R#task_env{currpos = H, waypoints = T, utimer = morningcall:add(1000, F, R#task_env.utimer)},
+			
+			{NewR,task:mk_idle_update(I)}
 	end;
 
+%%
+%% receive others move.
+%%
 mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 	{pos, FromX, FromY} = From,
 	{pos, ToX, ToY} = To,

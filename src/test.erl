@@ -224,11 +224,11 @@ do_pc_move() ->
 	?assert(S0#session.map == 1),
 	
 	%% moving !
-	io:format("order move 1,3 to 3,3 ~p~n", [mmoasp:move(Cid1, {pos, 3,3})]),
+	io:format("order move 1,3 to 3,3 ~p~n", [move:move(Cid1, {pos, 3,3})]),
 	receive
 		after 500 -> ok
 	end,
-	io:format("RE-order move to 1,2 ~p~n", [mmoasp:move(Cid1, {pos, 1,2})]),
+	io:format("RE-order move to 1,2 ~p~n", [move:move(Cid1, {pos, 1,2})]),
 	receive
 		after 3000 -> ok
 	end,
@@ -261,7 +261,7 @@ do_npc_move() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
-	io:format("NPC move to 2,2 ~p~n", [mmoasp:move(Npcid1, {pos, 3,1})]),
+	io:format("NPC move to 2,2 ~p~n", [move:move(Npcid1, {pos, 3,1})]),
 	receive
 		after 1100 -> ok
 	end,

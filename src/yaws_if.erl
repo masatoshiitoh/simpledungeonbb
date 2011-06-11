@@ -161,7 +161,7 @@ out(A, 'POST', ["service", _SVID, "move", CidX]) ->
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
 	%% io:format("yaws_if. move requested. cid = ~p, x = ~p, y = ~p~n", [CidX, X, Y]),
-	_Result = mmoasp:move(CidX, {pos, X, Y}),
+	_Result = move:move(CidX, {pos, X, Y}),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Attack

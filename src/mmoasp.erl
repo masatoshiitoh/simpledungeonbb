@@ -120,8 +120,6 @@ confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 %-----------------------------------------------------------
 talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
-init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
-
 get_all_neighbor_sessions(Oid, R) ->
 	Me = world:get_session(Oid),
 	
@@ -202,23 +200,6 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 	[X#session.pid ! {mapmove, {self(), notice_move, SenderCid, From, To, Duration}}
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
-
-move(Cid, DestPos) ->
-	F = fun(X) ->
-		NowPos = {pos, X#session.x, X#session.y},
-		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
-		Result
-	end,
-	{atomic, WayPoints} = world:apply_session(Cid, F),
-	case WayPoints of
-		[] -> io:format("path unavailable.  no waypoints found.~n", []),
-			[];
-		[Start| Path] ->
-			FS = fun(X) ->
-				init_move(X#session.pid, Start, Path)
-			end,
-			world:apply_session(Cid, FS)
-	end.
 
 %% Following codes are under developing...
 
