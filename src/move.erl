@@ -49,20 +49,28 @@ move(Cid, DestPos) ->
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
 
+
+set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) ->
+	%% write currpos and waypoint into R record.
+	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
+	{NewR, task:mk_idle_reset()}.
+
+set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->
+	SelfPid = self(),
+	SelfPid ! {timer, {_From, cancel_timer}},
+	SelfPid ! {mapmove, {_From, move}},
+	set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I).	
+
 %%
 %% initialize move. send move message to itself.
 %%
+
+mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.waypoints == [] ->
+	set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I);
+
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
-	SelfPid = self(),
-	SelfPid ! {timer, {_From, cancel_timer}},
+	set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I);
 
-	%% write currpos and waypoint into R record.
-	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
-
-	%% order first 'move'
-	SelfPid ! {mapmove, {_From, move}},
-
-	{NewR, task:mk_idle_reset()};
 
 %%
 %% position updater.
