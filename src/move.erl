@@ -50,10 +50,15 @@ move(Cid, DestPos) ->
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
 
 
-set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) ->
-	io:format("set_new_route:OldCurr = ~p, NewWP = ~p~n", [CurrPos, R#task_env.waypoints]),
+set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.currpos == undefined ->
 	%% write currpos and waypoint into R record.
 	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
+	{NewR, task:mk_idle_reset()};
+
+set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) ->
+	io:format("set_new_route: update only waypoints.~n", []),
+	%% write currpos and waypoint into R record.
+	NewR = R#task_env{waypoints = WayPoints},
 	{NewR, task:mk_idle_reset()}.
 
 set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->

@@ -42,7 +42,9 @@ scenario_05_test()-> {end_of_run_tests} = do_npc_move().
 scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
 scenario_08_test()-> {end_of_run_tests} = do_stat().
-scenario_09_test()-> {end_of_run_tests} = do_battle_unarmed().
+scenario_091_test()-> {end_of_run_tests} = do_battle_unarmed_01().
+scenario_0921_test()-> {end_of_run_tests} = do_battle_unarmed_021().
+scenario_0922_test()-> {end_of_run_tests} = do_battle_unarmed_022().
 
 check_record_test() ->
 	%% what is this test? why did I put a test for erlang module?
@@ -73,6 +75,9 @@ run_tests() ->
 	scenario_08_test(),
 	scenario_06_test(),
 	scenario_05_test(),
+	scenario_091_test(),
+	scenario_0921_test(),
+	scenario_0922_test(),
 	{end_of_test}.
 
 
@@ -108,8 +113,7 @@ repeat(F, X) ->
 % working.
 
 
-
-do_battle_unarmed() ->
+do_battle_unarmed_01() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
@@ -121,6 +125,13 @@ do_battle_unarmed() ->
 		{session, world:get_session(Cid2)},
 		{session, world:get_session("npc0001")})),
 
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+do_battle_unarmed_021() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
 	[{R1, _}|_T1] = battle:single(Cid1, "npc0001"),
@@ -128,6 +139,15 @@ do_battle_unarmed() ->
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+do_battle_unarmed_022() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
+	
 	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
 	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R3 == ok),
@@ -135,7 +155,6 @@ do_battle_unarmed() ->
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
-
 
 
 
