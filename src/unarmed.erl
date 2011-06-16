@@ -128,7 +128,7 @@ fixed_calc_03_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
-calc_01_10000_test() ->
+calc_01_1000_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	test:repeat(
@@ -144,12 +144,12 @@ calc_01_10000_test() ->
 					-> ?assert(C >= 15 andalso C =< 35)
 			end
 		end,
-		10000),
+		1000),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
-calc_02_10000_test() ->
+calc_02_1000_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	test:repeat(
@@ -165,7 +165,7 @@ calc_02_10000_test() ->
 					-> ?assert(C >= 11 andalso C =< 30)
 			end
 		end,
-		10000),
+		1000),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.

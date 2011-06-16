@@ -51,6 +51,7 @@ init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentP
 
 
 set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) ->
+	io:format("set_new_route:OldCurr = ~p, NewWP = ~p~n", [CurrPos, R#task_env.waypoints]),
 	%% write currpos and waypoint into R record.
 	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
 	{NewR, task:mk_idle_reset()}.
@@ -65,7 +66,7 @@ set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 %% initialize move. send move message to itself.
 %%
 
-mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.waypoints == [] ->
+mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.waypoints == [] andalso R#task_env.currpos == undefined ->
 	set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I);
 
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
@@ -87,7 +88,8 @@ mapmove_call({_From, move}, R, I) ->
 		[] ->
 			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
 			{pos, _X, _Y} = CurrPos,
-			{R, task:mk_idle_update(I)};
+			NewR = R#task_env{waypoints = [], currpos = undefined},
+			{NewR, task:mk_idle_update(I)};
 
 		[H | T] ->
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
@@ -99,6 +101,7 @@ mapmove_call({_From, move}, R, I) ->
 			end,
 
 			%% update currpos and waypoints with H and T.
+			%% these currpos and waypoints are valid in future(at wakeup call).
 			NewR = R#task_env{currpos = H, waypoints = T, utimer = morningcall:add(1000, F, R#task_env.utimer)},
 			
 			{NewR,task:mk_idle_update(I)}
