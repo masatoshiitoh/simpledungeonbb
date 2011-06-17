@@ -66,6 +66,10 @@ run_tests_with_log()
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
+	scenario_091_test(),
+	scenario_0921_test(),
+	scenario_0922_test(),
+
 	scenario_00_test(),
 	scenario_01_test(),
 	scenario_02_test(),
@@ -75,9 +79,6 @@ run_tests() ->
 	scenario_08_test(),
 	scenario_06_test(),
 	scenario_05_test(),
-	scenario_091_test(),
-	scenario_0921_test(),
-	scenario_0922_test(),
 	{end_of_test}.
 
 
