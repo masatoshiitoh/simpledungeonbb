@@ -45,6 +45,7 @@ scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_091_test()-> {end_of_run_tests} = do_battle_unarmed_01().
 scenario_0921_test()-> {end_of_run_tests} = do_battle_unarmed_021().
 scenario_0922_test()-> {end_of_run_tests} = do_battle_unarmed_022().
+scenario_0923_test()-> {end_of_run_tests} = do_battle_unarmed_023().
 
 check_record_test() ->
 	%% what is this test? why did I put a test for erlang module?
@@ -69,6 +70,7 @@ run_tests() ->
 	scenario_091_test(),
 	scenario_0921_test(),
 	scenario_0922_test(),
+	scenario_0923_test(),
 
 	scenario_00_test(),
 	scenario_01_test(),
@@ -147,14 +149,24 @@ do_battle_unarmed_021() ->
 do_battle_unarmed_022() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
+	%% try unarmed battle.(Cid1 ok)
 	
 	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
-	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R3 == ok),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+do_battle_unarmed_023() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	%% try unarmed battle.(Cid2 fail (too far))
+	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R4 == ng),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+
 	{end_of_run_tests}.
 
 
