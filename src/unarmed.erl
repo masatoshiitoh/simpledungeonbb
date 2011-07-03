@@ -35,7 +35,7 @@ fixed_calc(
 	#battle_param{oid=OidFrom, range=Range, str=Str1} = _From,
 	#battle_param{oid=OidTo, ac=Ac2} = _To)
 	->
-		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
+		Distance = mmoasp:distance({oid,OidFrom}, {oid,OidTo}),
 		if
 			(Distance > Range) -> {ng, 0};
 			true -> {ok, trim_negative(Str1 + (Ac2 - 10))}
@@ -46,7 +46,7 @@ calc(
 	#battle_param{oid=OidFrom, range=Range, str=_Str1} = From,
 	#battle_param{oid=OidTo, ac=_Ac2} = To)
 	->
-		Distance = u:distance({oid,OidFrom}, {oid,OidTo}),
+		Distance = mmoasp:distance({oid,OidFrom}, {oid,OidTo}),
 		if
 			(Distance > Range) ->
 				{ng, 0};

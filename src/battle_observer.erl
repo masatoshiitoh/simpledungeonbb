@@ -56,8 +56,8 @@ do_report(CidFrom, CidTo, DamTupple) ->
 
 
 make_reports(OidFrom, OidTo, DamTupple) ->
-	NewHp = u:db_getter(OidTo, "hp"),
-	Typ = u:db_getter(OidTo, "type"),
+	NewHp = mmoasp:db_getter(OidTo, "hp"),
+	Typ = mmoasp:db_getter(OidTo, "type"),
 	%%io:format("make_reports: calls proc_damage(~p, ~p, ~p,~p, ~p)~n", [OidFrom, OidTo, DamTupple, Typ, NewHp]),
 	proc_damage(OidFrom, OidTo, DamTupple, Typ, NewHp).
 
@@ -108,14 +108,14 @@ notice_result(OidFrom, OidTo, {fumble, Dam}, Radius) ->
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(OidTo, {ok, X}) ->
-	CurrHp = u:db_getter(OidTo, "hp"),
-	u:db_setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = mmoasp:db_getter(OidTo, "hp"),
+	mmoasp:db_setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
 store_result(OidTo, {critical, X}) ->
-	CurrHp = u:db_getter(OidTo, "hp"),
-	u:db_setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = mmoasp:db_getter(OidTo, "hp"),
+	mmoasp:db_setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
 	{fumble, 0}.
@@ -154,13 +154,13 @@ battle_observer_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
-	V1 = u:db_getter(Cid1, "hp"),
+	V1 = mmoasp:db_getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
-	V2 = u:db_getter(Cid1, "hp"),
+	V2 = mmoasp:db_getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 2),
 
-	u:wait(20),
+	mmoasp:wait(20),
 
 	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -180,16 +180,16 @@ battle_observer_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
-	?assert(u:db_getter(Cid1, "type") == "pc"),
-	?assert(u:db_getter(Npcid1, "type") == "npc"),
+	?assert(mmoasp:db_getter(Cid1, "type") == "pc"),
+	?assert(mmoasp:db_getter(Npcid1, "type") == "npc"),
 
-	V1 = u:db_getter(Cid1, "hp"),
+	V1 = mmoasp:db_getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
-	V2 = u:db_getter(Cid1, "hp"),
+	V2 = mmoasp:db_getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 9999),
 
-	u:wait(20),
+	mmoasp:wait(20),
 
 	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -217,9 +217,9 @@ battle_observer_pc_knockouted_test() ->
 store_result_ok_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 1}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {ok, 1}),
@@ -229,9 +229,9 @@ store_result_ok_1_test() ->
 store_result_ok_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 999}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {ok, 999}),
@@ -241,9 +241,9 @@ store_result_ok_999_test() ->
 store_result_ng_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ng, 0}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {ng, 0}),
@@ -253,9 +253,9 @@ store_result_ng_0_test() ->
 store_result_fumble_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {fumble, 0}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {fumble, 0}),
@@ -265,9 +265,9 @@ store_result_fumble_0_test() ->
 store_result_critical_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 1}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {critical, 1}),
@@ -277,9 +277,9 @@ store_result_critical_1_test() ->
 store_result_critical_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
@@ -289,15 +289,15 @@ store_result_critical_999_test() ->
 store_result_twice_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = u:db_getter(Npcid1, "hp"),
+	V1 = mmoasp:db_getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = u:db_getter(Npcid1, "hp"),
+	V2 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
 
 	R2 = store_result(Npcid1, {ok, 1}),
-	V3 = u:db_getter(Npcid1, "hp"),
+	V3 = mmoasp:db_getter(Npcid1, "hp"),
 
 	?assert(V2 - V3 == 1),
 	?assert(R2 == {ok, 1}),
@@ -316,7 +316,7 @@ notice_results_nil_test() ->
 	L2 = notice_results(Npcid1, Cid1, [], 30),
 	?assert(L2 == []),
 
-	u:wait(20),
+	mmoasp:wait(20),
 
 	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -342,7 +342,7 @@ notice_results_1_test() ->
 	L2 = notice_results(Npcid1, Cid1, [{ok, 999}], 30),
 	?assert(L2 == [{ok, 999}]),
 
-	u:wait(20),
+	mmoasp:wait(20),
 
 	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -368,7 +368,7 @@ notice_results_2_test() ->
 	L2 = notice_results(Npcid1, Cid1, [{ok, 7}, {ok, 13}], 30),
 	?assert(L2 == [{ok, 7}, {ok, 13}]),
 
-	u:wait(20),
+	mmoasp:wait(20),
 
 	{actions_and_stats, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),

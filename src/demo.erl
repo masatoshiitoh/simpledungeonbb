@@ -42,7 +42,7 @@ test_data_1() ->
 test_data() ->
 	[		
 		[
-			{id, u:make_new_id()},
+			{id, mmoasp:make_new_id()},
 			{type,"talk"},
 			{cid,"cid1234"},
 			{content,"talk, line 2"},
@@ -50,7 +50,7 @@ test_data() ->
 		],
 		
 		[
-			{id, u:make_new_id()},
+			{id, mmoasp:make_new_id()},
 			{type,"talk"},
 			{cid,"cid1234"},
 			{content, "hello cid0001 from cid1234, with love"},
@@ -58,7 +58,7 @@ test_data() ->
 		],
 		
 		[
-			{id, u:make_new_id()},
+			{id, mmoasp:make_new_id()},
 			{type,"talk"},
 			{cid,"cid1234"},
 			{content,"hello all from cid1234 "},
@@ -66,7 +66,7 @@ test_data() ->
 		],
 
 		[
-			{id, u:make_new_id()},
+			{id, mmoasp:make_new_id()},
 			{type, "status"},
 			{"cid","cid0001"},
 			{"name","alpha"},

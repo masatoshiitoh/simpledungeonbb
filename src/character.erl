@@ -27,25 +27,25 @@
 
 % API: sends message to child
 whoareyou(Cid) ->
-	world:apply_session(Cid,
+	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {test, {self(), whoareyou}} end).
 
 setter(From, Cid, Token, Key, Value) ->
-	world:apply_session(Cid,
+	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {From, set, Token, Key, Value} end).
 
 setter(Cid, Key, Value) ->
-	world:apply_session(Cid,
+	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {set, Key, Value} end).
 
 stop_child(Cid) ->
-	world:apply_session(Cid,
+	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
 
 % core loop -----------------------------------------------
 
 % process user operation.
-% uauth:db_login spawns this loop.
+% mmoasp:db_login spawns this loop.
 
 % this loop will expire 1800 second (just hard coded) after last operation.
 
@@ -58,7 +58,7 @@ loop(R, I)
 	when I#idle.since_last_op > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
-	uauth:db_logout(self(), R#task_env.cid, R#task_env.token);
+	mmoasp:db_logout(self(), R#task_env.cid, R#task_env.token);
 
 loop(R, I) ->
 	{NewR, NewI} = receive
@@ -99,12 +99,12 @@ loop(R, I) ->
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
-			NewCData = u:db_setter(R#task_env.cid, Key, Value),
+			NewCData = mmoasp:db_setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()};
 
 		%% Attribute setter simple
 		{set, Key, Value} ->
-			NewCData = u:db_setter(R#task_env.cid, Key, Value),
+			NewCData = mmoasp:db_setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()}
 
 	after 1000 ->
@@ -123,11 +123,11 @@ db_setpos(Cid, {pos, PosX, PosY}) ->
 	F = fun(X) ->
 		mnesia:write(X#session{x = PosX, y = PosY})
 	end,
-	world:apply_session(Cid, F);
+	mmoasp:apply_session(Cid, F);
 
 db_setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
 	F = fun(X) ->
 		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
 	end,
-	world:apply_session(Cid, F).
+	mmoasp:apply_session(Cid, F).
 

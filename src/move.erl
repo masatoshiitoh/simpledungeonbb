@@ -36,7 +36,7 @@ move(Cid, DestPos) ->
 		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
 		Result
 	end,
-	{atomic, WayPoints} = world:apply_session(Cid, F),
+	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
 	case WayPoints of
 		[] -> io:format("path unavailable.  no waypoints found.~n", []),
 			[];
@@ -44,7 +44,7 @@ move(Cid, DestPos) ->
 			FS = fun(X) ->
 				init_move(X#session.pid, Start, Path)
 			end,
-			world:apply_session(Cid, FS)
+			mmoasp:apply_session(Cid, FS)
 	end.
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.

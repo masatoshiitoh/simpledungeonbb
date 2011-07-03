@@ -27,7 +27,7 @@
 %% UNDER CONSTRUCTION !!!
 
 start(Cid, YawsPid) ->
-	Sess = world:get_session(Cid),
+	Sess = mmoasp:get_session(Cid),
 	% io:format("character_stream: start(~p) with pid ~p~n", [Sess#session.cid, Sess#session.pid]),
 	StreamPid = spawn(fun() -> loop(Sess, YawsPid) end),
 	F = fun() -> mnesia:write(Sess#session{stream_pid = StreamPid}) end,

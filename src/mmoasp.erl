@@ -20,12 +20,249 @@
 
 
 -module(mmoasp).
+-include("yaws_api.hrl").
+-include("mmoasp.hrl").
+-include_lib("stdlib/include/qlc.hrl").
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
+
+
 -compile(export_all).
 
--import(lists, [foreach/2]).
+% Module for Yaws.
 
--include_lib("mmoasp.hrl").
--include_lib("stdlib/include/qlc.hrl").
+
+%% GET version of login. This is only for test with web browser.
+%% This will be disabled soon.
+out(A, 'GET', ["service", _SVID, "login"]) ->
+	Params = dict:from_list(yaws_api:parse_query(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	%% io:format("yaws_if. login requested. ~p~n", [Id]),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = login(self(), Id, Pw, Ipaddr),
+	case Result of
+		{ok, Cid, Token} ->
+			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
+		{ng} ->
+			mout:return_html(mout:encode_json_array_with_result("failed", []))
+	end;
+
+
+%% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
+out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
+	spawn(character_stream, start, [CID,A#arg.pid]),
+	{streamcontent, "text/html", ""};
+
+% create account.
+out(A, 'POST', ["service", SVID, "create_account"]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = create_account(self(), SVID, Id, Pw, Ipaddr),
+	case Result of
+		{atomic, ok} ->
+			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
+		{ng, Reason} ->
+			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+% create account.
+out(A, 'POST', ["service", SVID, "delete_account"]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = delete_account(self(), SVID, Id, Pw, Ipaddr),
+	case Result of
+		{atomic, ok} ->
+			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
+		{ng, Reason} ->
+			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+
+% Add New Player Character.
+out(A, 'POST', ["service", SVID, "subscribe"]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = subscribe(self(), SVID, Id, Pw, Ipaddr),
+	case Result of
+		{atomic, ok} ->
+			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
+		{ng, Reason} ->
+			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+%% Change Password.
+%% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
+out(A, 'POST', ["service", SVID, "change_password"]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	NewPw = param(Params, "newpassword"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = change_password(self(), SVID, Id, Pw, NewPw, Ipaddr),
+	case Result of
+		{ok} ->
+			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
+		{ng, Reason} ->
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+%% Login
+%% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
+out(A, 'POST', ["service", _SVID, "login"]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = login(self(),Id, Pw, Ipaddr),
+	case Result of
+		{ok, Cid, Token} ->
+			%% io:format("yaws_if. login requested ok. ~p~n", [Cid]),
+			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
+		{ng, Reason} ->
+			%% io:format("yaws_if. login requested failed. ~p~n", [Reason]),
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+%% Logout
+%% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
+out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	Token = param(Params, "token"),
+	%% io:format("yaws_if. logout requested. ~p~n", [CidX]),
+	Result = logout(self(), CidX, Token),
+	case Result of
+		{ok, CidX} ->
+			mout:return_json(mout:encode_json_array_with_result("ok",[]));
+		{ng} ->
+			mout:return_json(mout:encode_json_array_with_result("failed",[]))
+	end;
+
+%% Get list to know (Your client calls this every xx sec.)
+%% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
+out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	_Token = param(Params, "token"),
+	%% io:format("yaws_if. listtoknow requested. ~p~n", [CidX]),
+	X = get_session(CidX),
+	X#session.pid ! {self(), update_neighbor_status, 10},
+
+	{actions_and_stats, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
+	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
+
+%% Talk (open talk)
+%% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
+out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	_Token = param(Params, "token"),
+	Talked = param(Params, "talked"),
+	%% io:format("yaws_if. talk requested. ~p~n", [CidX]),
+	Result = talk(open, CidX, Talked, 100),
+	mout:return_json(json:encode({struct, [Result]}));
+
+%% Whisper (person to person talk)
+%% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
+out(_A, 'GET', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
+	[{character, Cid, Pid}] = world_server:lookup(CidX),
+	Clist = world_server:test_getdump(),	%% NOT IMPLEMENTED.
+	lists:map(fun({character, _CidN, PidN}) ->
+			PidN ! {self(), {talk, Cid, Talked}}
+		end,
+		Clist),
+	{html,
+		io_lib:format(
+			"(~p) Talk by ~p (Pid = ~p) => ~p<br>",
+			[SVID,Cid,Pid,Talked])};
+
+%% Move
+%% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
+out(A, 'POST', ["service", _SVID, "move", CidX]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	_Token = param(Params, "token"),
+	X = erlang:list_to_integer(param(Params, "x")),
+	Y = erlang:list_to_integer(param(Params, "y")),
+	%% io:format("yaws_if. move requested. cid = ~p, x = ~p, y = ~p~n", [CidX, X, Y]),
+	_Result = move:move(CidX, {pos, X, Y}),
+	mout:return_json(mout:encode_json_array_with_result("ok",[]));
+
+%% Attack
+out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
+	Params = dict:from_list(yaws_api:parse_post(A)),
+	_Token = param(Params, "token"),
+	_Result = battle:single(CidX, CidTo),
+	mout:return_json(mout:encode_json_array_with_result("ok",[]));
+
+%% Set attribute
+%% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
+out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
+	Params = dict:from_list(yaws_api:parse_query(A)),
+	Value = param(Params, "value"),
+	Token = param(Params, "token"),
+	Result = character:setter(Cid, Token, Key, Value),
+	case Result of
+		{ok, _K, _V} ->
+			{html, io_lib:format("KV Storage Setter OK. owner=~p, key=~p, value=~p<br>",[Cid, Key, Value])};
+		{ng} ->
+			{html, "request failed<br>"}
+	end;
+
+%% Json sending test code.
+%% sample for "GET http://localhost:8002/service/hibari/json"
+%% Thanks to http://d.hatena.ne.jp/takkkun/20080626/1214468050
+out(_A, 'GET', ["service", _SVID, "json"]) ->
+	mout:return_json(json:encode({struct, [{"field1", "foo"}, {field2, "gova"}]}));
+
+
+% Add New Non Player Character.
+out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
+	npc:start_npc(NpcidX),
+	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
+
+
+%% sample for "catch all" handler.
+out(A, _Method, _Params) ->
+	io:format("yaws_if. catchall. ~n", []),
+	io:format("general handler: A#arg.appmoddata = ~p~n"
+		"A#arg.appmod_prepath = ~p~n"
+		"A#arg.querydata = ~p~n",
+		[A#arg.appmoddata,
+		A#arg.appmod_prepath,
+		A#arg.querydata]),
+	{status, 404}.
+
+%% dispacher for RESTful service (caller out/3)
+out(A) ->
+	{http_request, Req, _params, _unknown} = A#arg.req,
+	Uri = yaws_api:request_url(A),
+	Path = string:tokens(Uri#url.path, "/"),
+	out(A, Req, Path).
+
+
+param(ParamsDict, Key) ->
+	case dict:find(Key, ParamsDict) of
+		{ok, Value} -> Value;
+		error -> void
+	end.
+
+
+
+
+
 
 
 %-----------------------------------------------------------
@@ -53,20 +290,26 @@ change_schema() ->
 	db:do_this_once(),
 	db:start(reset_tables).
 
+
+%% 
+create_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
+delete_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
+
+
 %% account registration.
-subscribe(From, Svid, Id, Pw, Ipaddr) -> uauth:db_subscribe(From,Svid, Id, Pw, Ipaddr).
+subscribe(From, Svid, Id, Pw, Ipaddr) -> db_subscribe(From,Svid, Id, Pw, Ipaddr).
 
 
 %% change password command for subscribers.
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	case uauth:db_change_password(From,Svid, Id, Pw, NewPw, Ipaddr) of
+	case db_change_password(From,Svid, Id, Pw, NewPw, Ipaddr) of
 		{atomic,ok} -> {ok};
 		Other -> Other
 	end.
 
 % caution!
-% mmoasp:login/4 cannot detect its failure before return value.
+% login/4 cannot detect its failure before return value.
 % for example,
 % > a = 1.
 % > a = login(.....).  <- a is already bound!
@@ -74,9 +317,9 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 % in such case, requested character will be set to on-line, but no one can handle it.
 % Timeout mechanism will clear this situation.
 %
-login(From, Id, Pw, Ipaddr) ->	uauth:db_login(From, Id, Pw, Ipaddr).
+login(From, Id, Pw, Ipaddr) ->	db_login(From, Id, Pw, Ipaddr).
 logout(From, Cid, Token) ->
-	case uauth:db_logout(From, Cid, Token) of
+	case db_logout(From, Cid, Token) of
 		{atomic, ok} -> {ok, Cid};
 		Other -> Other
 	end.
@@ -94,7 +337,7 @@ get_list_to_know(_From, Cid) ->
 	F = fun(X) ->
 		X#session.pid ! {sensor, {self(), request_list_to_know}}
 	end,
-	world:apply_session(Cid, F),
+	apply_session(Cid, F),
 	
 	% wait reply and receive.
 	receive
@@ -121,12 +364,12 @@ confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
 get_all_neighbor_sessions(Oid, R) ->
-	Me = world:get_session(Oid),
+	Me = get_session(Oid),
 	
 	F = fun() ->
 		%%	Sess#session.oid =/= Oid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
-			u:distance({session, Sess}, {session, Me}) =< R
+			distance({session, Sess}, {session, Me}) =< R
 			]))
 	end,
 	case mnesia:transaction(F) of
@@ -135,12 +378,12 @@ get_all_neighbor_sessions(Oid, R) ->
 	end.
 
 get_neighbor_char_sessions(Oid, R) ->
-	Me = world:get_session(Oid),
+	Me = get_session(Oid),
 	
 	F = fun() ->
 		%%	Sess#session.oid =/= Oid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
-			u:distance({session, Sess}, {session,Me}) =< R,
+			distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
 	end,
 	case mnesia:transaction(F) of
@@ -149,7 +392,7 @@ get_neighbor_char_sessions(Oid, R) ->
 	end.
 
 get_neighbor_char_cdata(Oid, R) ->
-	Me = world:get_session(Oid),
+	Me = get_session(Oid),
 	F = fun() ->
 		qlc:e(qlc:q(
 			[CData#cdata{ attr = CData#cdata.attr ++ [
@@ -157,7 +400,7 @@ get_neighbor_char_cdata(Oid, R) ->
 				]}
 				|| Sess <- mnesia:table(session),
 				%%	Loc#location.cid =/= Cid,
-				u:distance({session, Sess}, {session, Me}) =< R,
+				distance({session, Sess}, {session, Me}) =< R,
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.oid]))
 	end,
@@ -174,7 +417,7 @@ talk(whisper, SenderCid, ToCid, MessageBody) ->
 	F = fun(X) ->
 		talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
 	end,
-	world:apply_session(ToCid, F);
+	apply_session(ToCid, F);
 
 talk(open, SenderCid, MessageBody, Radius) ->
 	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
@@ -210,5 +453,564 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 	
 % 	lookup state table and get Pid.
 % 	Send messagebody to Pid.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+db_subscribe(_From, Svid, Id, Pw, _Ipaddr)->
+	create_account(Svid, Id, Pw).
+
+create_account(_Svid, Id, Pw) ->
+	db:add_single(Id, Pw).
+
+
+db_change_password(_From, _Svid, Id, Pw, NewPw, _Ipaddr)->
+	case get_cid({basic, Id, Pw}) of
+		void -> {ng, check_id_and_password};
+		Cid -> basic_change_password(Cid,NewPw)
+	end.
+
+basic_change_password(Cid, NewPw) ->
+	mnesia:transaction(fun() ->
+		case mnesia:read({auth_basic, Cid}) of
+			[] ->mnesia:abort(not_found);
+			[Acct] ->
+				PasswordChanged = Acct#auth_basic{pass = NewPw},
+				mnesia:write(PasswordChanged),
+				ok
+			end
+		end).
+
+
+
+setup_player_character(Cid)->
+	{character, Cid, CData} = db_get_cdata(Cid),
+	db_location_online(Cid),
+	R = #task_env{
+		cid = Cid,
+		cdata = CData,
+		event_queue = queue:new(),
+		stat_dict = [],
+		token = gen_token("nil", Cid),
+		utimer =  morningcall:new()},
+	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
+	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
+	
+	%%setup_player_location(Cid),
+	setup_player_initial_location(Cid),
+
+	Radius = 100,
+	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
+	{ok, Child, R#task_env.token}.
+
+setup_player_initial_location(Cid) ->
+	Me = get_initial_location(Cid),
+	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
+	Z = Me#location.initz,
+	character:db_setpos(Cid, {allpos, Map, X, Y, Z}).
+
+setup_player_location(Cid) ->
+	%% copy location data from location table to cdata attribute.
+	Me = get_location(Cid),
+	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
+	setter(Cid, "map", Map),
+	setter(Cid, "x", X),
+	setter(Cid, "y", Y),
+	
+	mnesia:transaction(fun() ->
+		[Pc] = mnesia:read({session, Cid}),
+		mnesia:write(Pc#session{map = Map, x = X, y = Y}) end),
+	
+	{pos, X, Y}.
+
+db_login(_From, Id, Pw, _Ipaddr)->
+	Loaded = load_character(Id,Pw),
+	case Loaded of 
+		{character, Oid, _CData} ->
+			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
+			case P of
+				[] ->
+					% Not found.. Instanciate requested character !
+					{ok, _Pid, Token} = setup_player_character(Oid),
+					{ok, Oid, Token};
+				[Oid] ->
+					% found.
+					{ng, "character: account is in use"}
+			end;
+		void ->
+			% Load failed.
+			{ng, "character: authentication failed"}
+		end.
+
+db_get_cid(Id, Pw) ->
+	Loaded = load_character(Id,Pw),
+	case Loaded of 
+		{character, Cid, _CData} -> {character, Cid};
+		void -> {ng, "character: authentication failed"}
+		end.
+
+db_get_cdata(Cid) ->
+	{character, Cid, lookup_cdata(Cid)}.
+
+% db_logout : this will be called by character process.
+db_logout(_From, Cid, _Token) ->
+	io:format("character:logout(~p)~n", [Cid]),
+	Radius = 100,
+	notice_logout(Cid, {csummary, Cid}, Radius),
+	character:stop_child(Cid),
+	cancel_trade(Cid),
+	db_location_offline(Cid),
+	stop_stream((get_session(Cid))#session.stream_pid),
+	mnesia:transaction(fun()-> mnesia:delete({session, Cid})end).
+
+stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
+stop_stream(_) -> void.
+
+db_location_online(Cid) ->
+	F = fun() ->
+		[CLoc] = mnesia:read({location, Cid}),
+		[CSess] = mnesia:read({session, Cid}),
+		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
+	end,
+	mnesia:transaction(F).
+
+db_location_offline(_Cid) -> nop.
+
+db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
+
+
+
+%=======================
+% Character Persistency
+
+load_character(Id,Pw) ->
+	case get_cid({basic, Id, Pw}) of
+		void -> void;
+		Cid -> {character, Cid, lookup_cdata(Cid)}
+	end.
+
+save_character(Cid, CData) ->
+	store_cdata(Cid, CData).
+
+%=======================
+get_cid({basic, Id, Pw}) ->
+	case db:do(qlc:q([X#auth_basic.cid
+		|| X <- mnesia:table(auth_basic),
+			X#auth_basic.id =:= Id,
+			X#auth_basic.pass =:= Pw])) of
+		[] -> void;
+		[X] -> X
+	end.
+
+%% lookup_cdata -> #cdata | void
+lookup_cdata(Cid) ->
+	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
+		[] -> void;
+		[CData] -> CData
+	end.
+
+store_cdata(_Cid, CData) ->
+	F = fun() ->
+		mnesia:write(CData)
+	end,
+	mnesia:transaction(F).
+
+
+
+%=======================
+% Making token.
+
+gen_token(_Ipaddr, _Cid) -> make_new_id().
+
+%=======================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+get_session(Cid) ->
+	case apply_session(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
+
+get_location(Cid) ->
+	case apply_location(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
+
+get_initial_location(Cid) ->
+	case apply_initial_location(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
+
+%% F requires 1 arg (session record).
+apply_session(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]), F).
+
+apply_pc(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid, X#session.type == "pc"]), F).
+
+apply_npc(Oid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Oid, X#session.type == "npc"]), F).
+
+%% F requires 1 arg (cdata record).
+apply_cdata(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]), F).
+%% F requires 1 arg (cdata record).
+apply_location(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]), F).
+
+apply_initial_location(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]), F).
+
+apply_cid_indexed_table(Cond, F) ->
+	L = fun() ->
+		case qlc:e(Cond) of
+			[] -> {ng, "no such character"};	% this style makes return value as {atomic, {ng,"no~"}}
+			[R] -> F(R)
+		end
+	end,
+	mnesia:transaction(L).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% admnistration use.
+
+get_service_entry(Svid, AdminId, AdminPw) ->
+	case db:do(qlc:q([X
+		|| X <- mnesia:table(service),
+			X#service.svid =:= Svid,
+			X#service.adm_id =:= AdminId,
+			X#service.adm_pass =:= AdminPw])) of
+		[] -> void;
+		[X] -> X
+	end.
+
+
+admin_login(_From, Svid, AdminId, AdminPw, Ipaddr) ->
+	Loaded = get_service_entry(Svid, AdminId, AdminPw),
+	case Loaded of 
+		{service, Svid, AdminId, AdminPw, _Expire} ->
+			Token = gen_token(Ipaddr, AdminId),
+			Now = erlang:now(),
+			mnesia:transaction(
+				fun() ->
+					mnesia:write(#admin_session{key=Token, svid=Svid, adm_id=AdminId, token=Token, last_op_time=Now})
+					end),
+			{ok, AdminId, Token};
+		void ->
+			{ng, "admin_login: authentication failed"}
+		end.
+
+is_ok_admin_session(AdminId, Token) ->
+	Result = db:do(qlc:q([AdmSess || 
+			AdmSess <- mnesia:table(admin_session),	
+			AdmSess#admin_session.adm_id =:= AdminId,
+			AdmSess#admin_session.token =:= Token
+			])),
+	case Result of
+		[_X] -> true;
+		[] -> false
+	end.
+
+
+admin_delete_old_sessions(TimeoutSec) ->
+	Now = erlang:now(),
+	db:do(qlc:q([mnesia:delete({admin_session, AdmSess#admin_session.key}) || 
+		AdmSess <- mnesia:table(admin_session),	
+		timer:now_diff(Now, AdmSess#admin_session.last_op_time) > TimeoutSec * 1000000])).
+
+
+admin_logout(_From, _Svid, _AdminId, Token, _Ipaddr) ->
+	mnesia:transaction(fun() -> mnesia:delete({admin_session, Token}) end).
+
+
+admin_list_users(_From, _Svid, AdminId, AdminToken, _Ipaddr) ->
+	case is_ok_admin_session(AdminId, AdminToken) of
+		true -> 0;
+		false -> {ng, session_timed_out}
+	end.
+
+
+
+
+
+
+
+
+
+
+
+-ifdef(TEST).
+kv_get_1_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	Result = kv_get(L, "k1"),
+	?assert(Result == "v1").
+
+kv_get_0_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	Result = kv_get(L, "k3"),
+	?assert(Result == undefined).
+
+kv_set_1_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	NewL = kv_set(L, "k1", "vnew"),
+	Result = kv_get(NewL, "k1"),
+	?assert(Result == "vnew").
+
+kv_set_0_test() ->
+	L = [{"k1", "v1"}, {"k2", "v2"}],
+	NewL = kv_set(L, "k3", "v3"),
+	Result = kv_get(NewL, "k3"),
+	?assert(Result == "v3").
+
+db_get_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	V1 = db_getter(Cid1, "hp"),
+	?assert(V1 == 12),
+	
+	V2 = db_getter(Cid2, "hp"),
+	?assert(V2 == 16),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+	
+db_set_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	db_setter(Cid1, "hp", 2),
+	V1 = db_getter(Cid1, "hp"),
+	?assert(V1 == 2),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+-endif.
+
+wait(W) ->
+	receive
+		after W -> ok
+	end.
+
+kv_get(L, K) ->
+	case lists:keysearch(K, 1, L) of
+		{value, {K,V}} -> V;
+		false -> undefined
+	end.
+
+kv_set(L, K, V) ->
+	case lists:keymember(K, 1, L) of
+		true -> lists:keyreplace(K,1,L, {K, V});
+		false -> [{K,V}] ++ L
+	end.
+
+db_getter(Cid, Key) ->
+	F = fun(X) ->
+		kv_get(X#cdata.attr, Key)
+	end,
+	Result = apply_cdata(Cid, F),
+%%	io:format("db_getter(~p,~p) ~p~n", [Cid, Key, Result]),
+	case Result of
+		{atomic, undefined} -> undefined;
+		{atomic, V} -> V
+	end.
+
+db_setter(Cid, Key, Value) ->
+	F = fun(X) ->
+		mnesia:write(
+			X#cdata{attr = kv_set(X#cdata.attr, Key, Value)}
+		)
+	end,
+	apply_cdata(Cid, F).
+
+% use for Tid, Cid, ItemId...
+make_new_id() ->
+	list_to_hexstr(erlang:binary_to_list(erlang:term_to_binary(erlang:make_ref()))).
+
+list_to_hexstr(A) -> list_to_hexstr(A, []).
+list_to_hexstr([], Acc) -> lists:flatten(lists:reverse(Acc));
+list_to_hexstr([H|T], Acc) -> list_to_hexstr(T, io_lib:format("~2.16.0b", [H]) ++ Acc).
+
+%% TEST list_to_hexstr
+-ifdef(TEST).
+list_to_hexstr_two_test() -> "ff01" = list_to_hexstr([255,1]).
+list_to_hexstr_one_test() -> "ff" = list_to_hexstr([255]).
+list_to_hexstr_nil_test() -> "" = list_to_hexstr([]).
+-endif.
+
+distance({session, S1}, {session, S2}) ->
+	distance(
+		{mapxy, S1#session.map, S1#session.x, S1#session.y},
+		{mapxy, S2#session.map, S2#session.x, S2#session.y}
+	);
+
+distance({mapxy, Map1, X1, Y1}, {mapxy, Map2, X2, Y2}) when Map1 =:= Map2 ->
+	distance({pos, X1,Y1}, {pos, X2, Y2});
+distance({mapxy, _MapId1, _X1, _Y1}, {mapxy, _MapId2, _X2, _Y2}) ->
+	infinity;
+distance(_, offline) ->
+	infinity;
+distance(offline,_) ->
+	infinity;
+distance({pos, X1, Y1}, {pos, X2, Y2}) ->
+	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2));
+
+distance({oid,O1}, {oid,O2}) ->
+	distance(
+		{session, get_session(O1)},
+		{session, get_session(O2)}).
+
+
+%% TEST distance
+-ifdef(TEST).
+
+distance_l_offline_test() -> infinity = distance(offline, {pos, 3, 3}).
+distance_r_offline_test() -> infinity = distance({pos, 3,3}, offline).
+distance_1_1_test() -> 1.0 = distance({pos, 3, 3}, {pos, 2, 3}).
+distance_1_2_test() -> 1.0 = distance({pos, 3, 3}, {pos, 3, 2}).
+distance_1_3_test() -> 1.0 = distance({mapxy, "edo", 3, 3}, {mapxy, "edo", 3, 2}).
+distance_1_4_test() -> infinity = distance({mapxy, "edo", 3, 3}, {mapxy, "kyoto", 3, 2}).
+
+distance_1_sess_test() ->
+	S1 = #session{map = "edo", x = 3, y = 3, z = 1},
+	S2 = #session{map = "edo", x = 3, y = 2, z = 1},
+	?assert(1.0 == distance({session, S1}, {session, S2})).
+
+distance_by_oid_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	?assert(1.0 == distance({oid, Cid1}, {oid, Npcid1})),
+	?assert(3.0 == distance({oid, Cid2}, {oid, Npcid1})),
+	?assert(4.0 == distance({oid, Cid1}, {oid, Cid2})),
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}).
+-endif.
+
+
+
+cid_pair(Cid1, Cid2) when Cid1 < Cid2 -> {cid_pair, Cid1, Cid2};
+cid_pair(Cid1, Cid2) when Cid1 >= Cid2 -> {cid_pair, Cid2, Cid1}.
+
+%% TEST cid_pair
+-ifdef(TEST).
+cid_pair_lr_test() -> {cid_pair, "1", "2"} = cid_pair("1", "2").
+cid_pair_rl_test() -> {cid_pair, "1", "2"} = cid_pair("2", "1").
+cid_pair_eq_test() -> {cid_pair, "1", "1"} = cid_pair("1", "1").
+cid_pair_nil_test() -> {cid_pair, nil, "2"} = cid_pair(nil, "2").
+-endif.
+
+
+store_kvpairs([], Dict) -> Dict;
+
+store_kvpairs(KVPairList, Dict) ->
+	[{K,V}|T] = KVPairList,
+	store_kvpairs(T, case V of
+		[] -> dict:erase(K, V, Dict);
+		V -> dict:store(K, V, Dict)
+	end).
+
+
+-ifdef(TEST).
+	store_kvpairs_nil_test() ->
+		D = dict:new(),
+		D = store_kvpairs([], D).
+	store_kvpairs_one_test() ->
+		D = store_kvpairs([{"k1", "v1"}], dict:new()),
+		{ok, "v1"} = dict:find("k1", D).
+	store_kvpairs_two_test() ->
+		D = store_kvpairs([{"k1", "v1"}, {"k2", "v2"}], dict:new()),
+		{ok, "v2"} = dict:find("k2", D).
+	store_kvpairs_overwrite_test() ->
+		D = store_kvpairs([{"k1", "v1"}, {"k1", "vnew"}], dict:new()),
+		{ok, "vnew"} = dict:find("k1", D).
+-endif.
+
+
+% First implementation: its too simple...
+%store_kvpairs(KVPairList, Dict) ->
+%	[{K,V}|T] = KVPairList,
+%	store_kvpairs(T, dict:store(K,V, Dict)).
+
+
+find_list_from_dict(Cid, Dict) ->
+	case dict:find(Cid, Dict) of
+		{ok, V} -> V;
+		error -> []
+		end.
+
+add_new_member(NewMember, List) ->
+	case lists:member(NewMember, List) of
+		true -> List;
+		false -> [NewMember] ++ List
+		end.
+
+
+-ifdef(TEST).
+
+find_list_from_dict_empty_test() ->
+	[] = find_list_from_dict("k1", dict:new()).
+find_list_from_dict_notfound_test() ->
+	D = store_kvpairs([{"k1", "v1"}], dict:new()),
+	[] = find_list_from_dict("k2", D).
+find_list_from_dict_found_test() ->
+	D = store_kvpairs([{"k1", "v1"}], dict:new()),
+	"v1" = find_list_from_dict("k1", D).
+
+-endif.
+
+
+
+
 
 

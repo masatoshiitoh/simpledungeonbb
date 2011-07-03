@@ -208,9 +208,9 @@ example_tables() ->
 	{money, "cid0001", 1000, 15},
 	{money, "cid0002", 2000, 0},
 
-	{supplies, u:make_new_id(),"cid0001", item_herb, 10, 0},
-	{supplies, u:make_new_id(), "cid0002", item_herb, 5, 0},
-	{supplies, u:make_new_id(), "cid0002", item_portion, 15, 0},
+	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
+	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
+	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0},
 
 	{estate, item_sword01, "cid0001", false},
 	{estate, item_sword02, "cid0001", false},

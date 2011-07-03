@@ -61,7 +61,7 @@ start_yaws() ->
 		{port, 8002},
 		{listen, {0,0,0,0}},
 		{docroot, Docroot},
-		{appmods, [{"/service", yaws_if}]}
+		{appmods, [{"/service", mmoasp}]}
 	],
 
 	{ok, SCList, GC, ChildSpecs} =

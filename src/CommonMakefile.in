@@ -19,7 +19,7 @@
 #
 
 program = simpledungeon
-objs = simpledungeon.beam battle_observer.beam task.beam battle.beam throw.beam unarmed.beam admin.beam character.beam character_stream.beam db.beam mmoasp.beam morningcall.beam mout.beam move.beam npc.beam path_finder.beam test.beam trade.beam u.beam uauth.beam world.beam yaws_if.beam
+objs = simpledungeon.beam battle_observer.beam task.beam battle.beam throw.beam unarmed.beam character.beam character_stream.beam db.beam  morningcall.beam mout.beam move.beam npc.beam path_finder.beam test.beam trade.beam mmoasp.beam
 
 .SUFFIXES: .erl .beam
 
@@ -30,11 +30,9 @@ battle_observer.beam : battle_observer.erl mmoasp.hrl
 unarmed.beam : unarmed.erl mmoasp.hrl
 battle.beam : battle.erl mmoasp.hrl
 throw.beam : throw.erl mmoasp.hrl
-admin.beam : admin.erl mmoasp.hrl
 character.beam : character.erl mmoasp.hrl
 character_stream.beam : character_stream.erl mmoasp.hrl
 db.beam : db.erl mmoasp.hrl
-mmoasp.beam : mmoasp.erl mmoasp.hrl
 morningcall.beam : morningcall.erl mmoasp.hrl
 mout.beam : mout.erl mmoasp.hrl
 move.beam : move.erl mmoasp.hrl
@@ -43,10 +41,7 @@ path_finder.beam : path_finder.erl mmoasp.hrl
 task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
 trade.beam :trade.erl mmoasp.hrl
-u.beam : u.erl mmoasp.hrl
-uauth.beam :uauth.erl mmoasp.hrl
-world.beam :world.erl mmoasp.hrl
-yaws_if.beam :yaws_if.erl mmoasp.hrl
+mmoasp.beam :mmoasp.erl mmoasp.hrl
 
 
 install : $(objs)

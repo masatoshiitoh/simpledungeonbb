@@ -63,7 +63,7 @@ run_tests_with_log()
 	->
 		mmoasp:change_schema(),
 		eunit:test(
-		[battle_observer,task,battle,unarmed,test,u,throw],
+		[battle_observer,task,battle,unarmed,test,throw,mmoasp],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
@@ -120,13 +120,13 @@ do_battle_unarmed_01() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(1 == u:distance(
-		{session, world:get_session(Cid1)},
-		{session, world:get_session("npc0001")})),
+	?assert(1 == mmoasp:distance(
+		{session, mmoasp:get_session(Cid1)},
+		{session, mmoasp:get_session("npc0001")})),
 	
-	?assert(3 == u:distance(
-		{session, world:get_session(Cid2)},
-		{session, world:get_session("npc0001")})),
+	?assert(3 == mmoasp:distance(
+		{session, mmoasp:get_session(Cid2)},
+		{session, mmoasp:get_session("npc0001")})),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -175,7 +175,7 @@ do_look_around() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(4 == u:distance({session, world:get_session(Cid1)}, {session, world:get_session(Cid2)})),
+	?assert(4 == mmoasp:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
 
 	?assert(sets:from_list(["cid0001"])
 		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
@@ -191,14 +191,14 @@ do_stat() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% update neighbor stat.
-	X1 = world:get_session(Cid1),
+	X1 = mmoasp:get_session(Cid1),
 	X1#session.pid ! {self(), update_neighbor_status, 10},
-	X2 = world:get_session(Cid2),
+	X2 = mmoasp:get_session(Cid2),
 	X2#session.pid ! {self(), update_neighbor_status, 10},
 
 	% io:format("update request has sent.~n", []),
 
-	u:wait(200),
+	mmoasp:wait(200),
 
 	{actions_and_stats, Actions1, Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -250,7 +250,7 @@ do_pc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-	S0 = world:get_session(Cid1),
+	S0 = mmoasp:get_session(Cid1),
 	?assert(S0#session.x == 1),
 	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
@@ -266,7 +266,7 @@ do_pc_move() ->
 	end,
 	
 	
-	S1 = world:get_session(Cid1),
+	S1 = mmoasp:get_session(Cid1),
 	?assert(S1#session.x == 1),
 	?assert(S1#session.y == 2),
 	?assert(S1#session.map == 1),
@@ -285,7 +285,7 @@ do_npc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	io:format("npc starts at ~p~n", [db:demo(session)]),
-	S0 = world:get_session(Npcid1),
+	S0 = mmoasp:get_session(Npcid1),
 	?assert(S0#session.x == 2),
 	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
@@ -297,9 +297,9 @@ do_npc_move() ->
 	receive
 		after 1100 -> ok
 	end,
-	io:format("Latest session ~p~n", [world:get_session(Npcid1)]),
+	io:format("Latest session ~p~n", [mmoasp:get_session(Npcid1)]),
 	
-	S1 = world:get_session(Npcid1),
+	S1 = mmoasp:get_session(Npcid1),
 	?assert(S1#session.x == 3),
 	?assert(S1#session.y == 1),
 	?assert(S1#session.map == 1),
@@ -321,7 +321,7 @@ check_session_data() ->
 	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
 %%	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
 	
-	Me = world:get_session(Cid1),
+	Me = mmoasp:get_session(Cid1),
 	F = fun() ->
 		qlc:e(qlc:q(
 			[_NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
@@ -329,7 +329,7 @@ check_session_data() ->
 				]}
 				|| Sess <- mnesia:table(session),
 				%%	Loc#location.cid =/= Cid,
-				u:distance({session, Sess}, {session, Me}) < 10,
+				mmoasp:distance({session, Sess}, {session, Me}) < 10,
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.oid]))
 	end,

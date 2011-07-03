@@ -26,7 +26,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 db_start_trade(Cid1, Cid2) ->
-	CidPair = {cid_pair, CidL, CidH} = u:cid_pair(Cid1, Cid2),
+	CidPair = {cid_pair, CidL, CidH} = mmoasp:cid_pair(Cid1, Cid2),
 	F = fun() ->
 		set_tid_or_abort(CidL, void, CidPair),
 		set_tid_or_abort(CidH, void, CidPair),
@@ -206,7 +206,7 @@ supplies_add_1(Cid, ItemId, Num) ->
 				Num < 0 -> mnesia:abort(check_inventory);
 				true ->
 					mnesia:write(#supplies{
-						id=u:make_new_id(),
+						id=mmoasp:make_new_id(),
 						cid=Cid,
 						item_id=ItemId,
 						amount=Num,
