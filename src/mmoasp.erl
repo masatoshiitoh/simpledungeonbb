@@ -474,10 +474,7 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 
 
 
-db_subscribe(_From, Svid, Id, Pw, _Ipaddr)->
-	create_account(Svid, Id, Pw).
-
-create_account(_Svid, Id, Pw) ->
+db_subscribe(_From, _Svid, Id, Pw, _Ipaddr)->
 	db:add_single(Id, Pw).
 
 
