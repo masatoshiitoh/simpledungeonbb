@@ -153,21 +153,6 @@ demo(inventory, Cid) ->
 	end,
 	mnesia:transaction(F).
 
-add_single(Id, Pass) ->
-	mnesia:transaction(fun() ->
-			foreach(fun mnesia:write/1, get_single(Id, Pass))
-		end).
-
-get_single(Id, Pass) ->
-	Cid = "c" ++ Id,
-	Name = "name" ++ Id,
-	[
-		{auth_basic, Cid, Id, Pass},
-		{cdata, Cid, Name, [{"align", "neutral"}]},
-		{location, Cid, 1, {pos, 1,3}, offline, offline},
-		{money, Cid, 2000, 0}
-	].
-
 example_tables() ->
 	[
 	%% service

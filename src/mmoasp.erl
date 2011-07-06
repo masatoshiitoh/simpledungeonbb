@@ -22,6 +22,7 @@
 -module(mmoasp).
 -include("yaws_api.hrl").
 -include("mmoasp.hrl").
+-import(lists, [foreach/2]).
 -include_lib("stdlib/include/qlc.hrl").
 
 -ifdef(TEST).
@@ -32,8 +33,29 @@
 
 -compile(export_all).
 
-% Module for Yaws.
+%-----------------------------------------------------------
+%% implement simple api for mmoasp.erl
+%-----------------------------------------------------------
 
+start() ->
+	battle_observer:start_link(),
+	db:start(reset_tables),
+	path_finder:start().
+
+start(reset_tables) ->
+	battle_observer:start_link(),
+	db:start(reset_tables),
+	path_finder:start().
+
+stop() ->
+	battle_observer:stop(),
+	path_finder:stop(),
+	db:stop().
+	
+change_schema() ->
+	db:drop_all(),
+	db:do_this_once(),
+	db:start(reset_tables).
 
 %% GET version of login. This is only for test with web browser.
 %% This will be disabled soon.
@@ -96,7 +118,7 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = subscribe(self(), SVID, Id, Pw, Ipaddr),
+	Result = create_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
 			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
@@ -260,56 +282,57 @@ param(ParamsDict, Key) ->
 	end.
 
 
-
-
-
-
-
 %-----------------------------------------------------------
-%% implement simple api for yaws_if.erl
+%% account management.
 %-----------------------------------------------------------
 
-
-start() ->
-	battle_observer:start_link(),
-	db:start(reset_tables),
-	path_finder:start().
-
-start(reset_tables) ->
-	battle_observer:start_link(),
-	db:start(reset_tables),
-	path_finder:start().
-
-stop() ->
-	battle_observer:stop(),
-	path_finder:stop(),
-	db:stop().
-	
-change_schema() ->
-	db:drop_all(),
-	db:do_this_once(),
-	db:start(reset_tables).
-
-
-%% 
-create_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
 delete_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
 
+create_account(From, Svid, Id, Pw, Ipaddr) ->
+	mnesia:transaction(fun() ->
+			foreach(fun mnesia:write/1, get_single(Id, Pw))
+		end).
 
-%% account registration.
-subscribe(From, Svid, Id, Pw, Ipaddr) -> db_subscribe(From,Svid, Id, Pw, Ipaddr).
-
+get_single(Id, Pass) ->
+	Cid = "c" ++ Id,
+	Name = "name" ++ Id,
+	[
+		{auth_basic, Cid, Id, Pass},
+		{cdata, Cid, Name, [{"align", "neutral"}]},
+		{location, Cid, 1, {pos, 1,3}, offline, offline},
+		{money, Cid, 2000, 0}
+	].
 
 %% change password command for subscribers.
-
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	case db_change_password(From,Svid, Id, Pw, NewPw, Ipaddr) of
+	case 
+	
+		(case get_cid({basic, Id, Pw}) of
+		void -> {ng, check_id_and_password};
+		Cid -> 
+			mnesia:transaction(fun() ->
+				case mnesia:read({auth_basic, Cid}) of
+					[] ->mnesia:abort(not_found);
+					[Acct] ->
+						PasswordChanged = Acct#auth_basic{pass = NewPw},
+						mnesia:write(PasswordChanged),
+						ok
+					end
+				end)
+		end)
+
+	of
 		{atomic,ok} -> {ok};
 		Other -> Other
 	end.
 
+
+%-----------------------------------------------------------
+%% authorization.
+%-----------------------------------------------------------
+
 % caution!
-% login/4 cannot detect its failure before return value.
+% login/4 cannot avoid failure caused by caller side problem.
 % for example,
 % > a = 1.
 % > a = login(.....).  <- a is already bound!
@@ -317,12 +340,39 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 % in such case, requested character will be set to on-line, but no one can handle it.
 % Timeout mechanism will clear this situation.
 %
-login(From, Id, Pw, Ipaddr) ->	db_login(From, Id, Pw, Ipaddr).
+login(From, Id, Pw, Ipaddr) ->
+	Loaded = load_character(Id,Pw),
+	case Loaded of 
+		{character, Oid, _CData} ->
+			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
+			case P of
+				[] ->
+					% Not found.. Instanciate requested character !
+					{ok, _Pid, Token} = setup_player_character(Oid),
+					{ok, Oid, Token};
+				[Oid] ->
+					% found.
+					{ng, "character: account is in use"}
+			end;
+		void ->
+			% Load failed.
+			{ng, "character: authentication failed"}
+		end.
+
+
 logout(From, Cid, Token) ->
-	case db_logout(From, Cid, Token) of
+	Radius = 100,
+	notice_logout(Cid, {csummary, Cid}, Radius),
+	character:stop_child(Cid),
+	cancel_trade(Cid),
+	db_location_offline(Cid),
+	stop_stream((get_session(Cid))#session.stream_pid),
+	case mnesia:transaction(fun()-> mnesia:delete({session, Cid})end) of
 		{atomic, ok} -> {ok, Cid};
 		Other -> Other
 	end.
+
+
 
 % caution !!
 % General purpose setter.(use this for configuration store, or other misc operation.
@@ -363,6 +413,138 @@ confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 %-----------------------------------------------------------
 talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
+talk(whisper, SenderCid, ToCid, MessageBody) ->
+	F = fun(X) ->
+		talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
+	end,
+	apply_session(ToCid, F);
+
+talk(open, SenderCid, MessageBody, Radius) ->
+	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
+		|| X <- get_all_neighbor_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
+%talk(group, SenderCid, GroupId, MessageBody) ->
+%	[talk_to(X#state.pid, SenderCid, MessageBody, open)
+%		|| X <- get_group_char_states(GroupId)].
+
+%-----------------------------------------------------------
+% notice functions.
+%-----------------------------------------------------------
+
+notice_login(SenderCid, {csummary, _Cid, Name}, Radius) ->
+	[X#session.pid ! {sensor, {self(), notice_login, SenderCid, Name}}
+		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
+notice_logout(SenderCid, {csummary, _Cid}, Radius) ->
+	[X#session.pid ! {sensor, {self(), notice_logout, SenderCid}}
+		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
+notice_remove(SenderCid, {csummary, _Cid}, Radius) ->
+	[X#session.pid ! {sensor, {self(), notice_remove, SenderCid}}
+		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
+notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
+	[X#session.pid ! {mapmove, {self(), notice_move, SenderCid, From, To, Duration}}
+		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	{result, "ok"}.
+
+%-----------------------------------------------------------
+% Initialize character
+%-----------------------------------------------------------
+
+setup_player_character(Cid)->
+	{character, Cid, CData} = db_get_cdata(Cid),
+	db_location_online(Cid),
+	R = #task_env{
+		cid = Cid,
+		cdata = CData,
+		event_queue = queue:new(),
+		stat_dict = [],
+		token = gen_token("nil", Cid),
+		utimer =  morningcall:new()},
+	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
+	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
+	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
+	
+	%%setup_player_location(Cid),
+	setup_player_initial_location(Cid),
+
+	Radius = 100,
+	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
+	{ok, Child, R#task_env.token}.
+
+setup_player_initial_location(Cid) ->
+	Me = get_initial_location(Cid),
+	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
+	Z = Me#location.initz,
+	character:db_setpos(Cid, {allpos, Map, X, Y, Z}).
+
+setup_player_location(Cid) ->
+	%% copy location data from location table to cdata attribute.
+	Me = get_location(Cid),
+	Map = Me#location.initmap,
+	X = Me#location.initx,
+	Y = Me#location.inity,
+	setter(Cid, "map", Map),
+	setter(Cid, "x", X),
+	setter(Cid, "y", Y),
+	
+	mnesia:transaction(fun() ->
+		[Pc] = mnesia:read({session, Cid}),
+		mnesia:write(Pc#session{map = Map, x = X, y = Y}) end),
+	
+	{pos, X, Y}.
+
+
+%-----------------------------------------------------------
+% character data and session
+%-----------------------------------------------------------
+get_cid({basic, Id, Pw}) ->
+	case db:do(qlc:q([X#auth_basic.cid
+		|| X <- mnesia:table(auth_basic),
+			X#auth_basic.id =:= Id,
+			X#auth_basic.pass =:= Pw])) of
+		[] -> void;
+		[X] -> X
+	end.
+
+db_get_cid(Id, Pw) ->
+	Loaded = load_character(Id,Pw),
+	case Loaded of 
+		{character, Cid, _CData} -> {character, Cid};
+		void -> {ng, "character: authentication failed"}
+		end.
+
+db_get_cdata(Cid) ->
+	{character, Cid, lookup_cdata(Cid)}.
+
+
+stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
+stop_stream(_) -> void.
+
+db_location_online(Cid) ->
+	F = fun() ->
+		[CLoc] = mnesia:read({location, Cid}),
+		[CSess] = mnesia:read({session, Cid}),
+		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
+	end,
+	mnesia:transaction(F).
+
+db_location_offline(_Cid) -> nop.
+
+db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
+
+
+
+%-----------------------------------------------------------
+% sessions by location.
+%-----------------------------------------------------------
 get_all_neighbor_sessions(Oid, R) ->
 	Me = get_session(Oid),
 	
@@ -413,195 +595,10 @@ get_neighbor_char_cdata(Oid, R) ->
 %select * from location, session where location.cid = session.cid
 
 
-talk(whisper, SenderCid, ToCid, MessageBody) ->
-	F = fun(X) ->
-		talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
-	end,
-	apply_session(ToCid, F);
 
-talk(open, SenderCid, MessageBody, Radius) ->
-	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
-		|| X <- get_all_neighbor_sessions(SenderCid, Radius)],
-	{result, "ok"}.
-
-notice_login(SenderCid, {csummary, _Cid, Name}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_login, SenderCid, Name}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
-
-notice_logout(SenderCid, {csummary, _Cid}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_logout, SenderCid}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
-
-notice_remove(SenderCid, {csummary, _Cid}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_remove, SenderCid}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
-
-notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
-	[X#session.pid ! {mapmove, {self(), notice_move, SenderCid, From, To, Duration}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
-
-%% Following codes are under developing...
-
-%talk(group, SenderCid, GroupId, MessageBody) ->
-%	[talk_to(X#state.pid, SenderCid, MessageBody, open)
-%		|| X <- get_group_char_states(GroupId)].
-
-	
-% 	lookup state table and get Pid.
-% 	Send messagebody to Pid.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-db_subscribe(_From, _Svid, Id, Pw, _Ipaddr)->
-	db:add_single(Id, Pw).
-
-
-db_change_password(_From, _Svid, Id, Pw, NewPw, _Ipaddr)->
-	case get_cid({basic, Id, Pw}) of
-		void -> {ng, check_id_and_password};
-		Cid -> basic_change_password(Cid,NewPw)
-	end.
-
-basic_change_password(Cid, NewPw) ->
-	mnesia:transaction(fun() ->
-		case mnesia:read({auth_basic, Cid}) of
-			[] ->mnesia:abort(not_found);
-			[Acct] ->
-				PasswordChanged = Acct#auth_basic{pass = NewPw},
-				mnesia:write(PasswordChanged),
-				ok
-			end
-		end).
-
-
-
-setup_player_character(Cid)->
-	{character, Cid, CData} = db_get_cdata(Cid),
-	db_location_online(Cid),
-	R = #task_env{
-		cid = Cid,
-		cdata = CData,
-		event_queue = queue:new(),
-		stat_dict = [],
-		token = gen_token("nil", Cid),
-		utimer =  morningcall:new()},
-	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
-	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
-	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
-	
-	%%setup_player_location(Cid),
-	setup_player_initial_location(Cid),
-
-	Radius = 100,
-	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
-	{ok, Child, R#task_env.token}.
-
-setup_player_initial_location(Cid) ->
-	Me = get_initial_location(Cid),
-	Map = Me#location.initmap,
-	X = Me#location.initx,
-	Y = Me#location.inity,
-	Z = Me#location.initz,
-	character:db_setpos(Cid, {allpos, Map, X, Y, Z}).
-
-setup_player_location(Cid) ->
-	%% copy location data from location table to cdata attribute.
-	Me = get_location(Cid),
-	Map = Me#location.initmap,
-	X = Me#location.initx,
-	Y = Me#location.inity,
-	setter(Cid, "map", Map),
-	setter(Cid, "x", X),
-	setter(Cid, "y", Y),
-	
-	mnesia:transaction(fun() ->
-		[Pc] = mnesia:read({session, Cid}),
-		mnesia:write(Pc#session{map = Map, x = X, y = Y}) end),
-	
-	{pos, X, Y}.
-
-db_login(_From, Id, Pw, _Ipaddr)->
-	Loaded = load_character(Id,Pw),
-	case Loaded of 
-		{character, Oid, _CData} ->
-			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
-			case P of
-				[] ->
-					% Not found.. Instanciate requested character !
-					{ok, _Pid, Token} = setup_player_character(Oid),
-					{ok, Oid, Token};
-				[Oid] ->
-					% found.
-					{ng, "character: account is in use"}
-			end;
-		void ->
-			% Load failed.
-			{ng, "character: authentication failed"}
-		end.
-
-db_get_cid(Id, Pw) ->
-	Loaded = load_character(Id,Pw),
-	case Loaded of 
-		{character, Cid, _CData} -> {character, Cid};
-		void -> {ng, "character: authentication failed"}
-		end.
-
-db_get_cdata(Cid) ->
-	{character, Cid, lookup_cdata(Cid)}.
-
-% db_logout : this will be called by character process.
-db_logout(_From, Cid, _Token) ->
-	io:format("character:logout(~p)~n", [Cid]),
-	Radius = 100,
-	notice_logout(Cid, {csummary, Cid}, Radius),
-	character:stop_child(Cid),
-	cancel_trade(Cid),
-	db_location_offline(Cid),
-	stop_stream((get_session(Cid))#session.stream_pid),
-	mnesia:transaction(fun()-> mnesia:delete({session, Cid})end).
-
-stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
-stop_stream(_) -> void.
-
-db_location_online(Cid) ->
-	F = fun() ->
-		[CLoc] = mnesia:read({location, Cid}),
-		[CSess] = mnesia:read({session, Cid}),
-		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
-	end,
-	mnesia:transaction(F).
-
-db_location_offline(_Cid) -> nop.
-
-db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
-
-
-
-%=======================
+%-----------------------------------------------------------
 % Character Persistency
-
+%-----------------------------------------------------------
 load_character(Id,Pw) ->
 	case get_cid({basic, Id, Pw}) of
 		void -> void;
@@ -611,23 +608,14 @@ load_character(Id,Pw) ->
 save_character(Cid, CData) ->
 	store_cdata(Cid, CData).
 
-%=======================
-get_cid({basic, Id, Pw}) ->
-	case db:do(qlc:q([X#auth_basic.cid
-		|| X <- mnesia:table(auth_basic),
-			X#auth_basic.id =:= Id,
-			X#auth_basic.pass =:= Pw])) of
-		[] -> void;
-		[X] -> X
-	end.
-
-%% lookup_cdata -> #cdata | void
+%% Load cdata
 lookup_cdata(Cid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
 		[] -> void;
 		[CData] -> CData
 	end.
 
+%% Save cdata
 store_cdata(_Cid, CData) ->
 	F = fun() ->
 		mnesia:write(CData)
@@ -642,19 +630,6 @@ store_cdata(_Cid, CData) ->
 gen_token(_Ipaddr, _Cid) -> make_new_id().
 
 %=======================
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -711,73 +686,6 @@ apply_cid_indexed_table(Cond, F) ->
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-%% admnistration use.
-
-get_service_entry(Svid, AdminId, AdminPw) ->
-	case db:do(qlc:q([X
-		|| X <- mnesia:table(service),
-			X#service.svid =:= Svid,
-			X#service.adm_id =:= AdminId,
-			X#service.adm_pass =:= AdminPw])) of
-		[] -> void;
-		[X] -> X
-	end.
-
-
-admin_login(_From, Svid, AdminId, AdminPw, Ipaddr) ->
-	Loaded = get_service_entry(Svid, AdminId, AdminPw),
-	case Loaded of 
-		{service, Svid, AdminId, AdminPw, _Expire} ->
-			Token = gen_token(Ipaddr, AdminId),
-			Now = erlang:now(),
-			mnesia:transaction(
-				fun() ->
-					mnesia:write(#admin_session{key=Token, svid=Svid, adm_id=AdminId, token=Token, last_op_time=Now})
-					end),
-			{ok, AdminId, Token};
-		void ->
-			{ng, "admin_login: authentication failed"}
-		end.
-
-is_ok_admin_session(AdminId, Token) ->
-	Result = db:do(qlc:q([AdmSess || 
-			AdmSess <- mnesia:table(admin_session),	
-			AdmSess#admin_session.adm_id =:= AdminId,
-			AdmSess#admin_session.token =:= Token
-			])),
-	case Result of
-		[_X] -> true;
-		[] -> false
-	end.
-
-
-admin_delete_old_sessions(TimeoutSec) ->
-	Now = erlang:now(),
-	db:do(qlc:q([mnesia:delete({admin_session, AdmSess#admin_session.key}) || 
-		AdmSess <- mnesia:table(admin_session),	
-		timer:now_diff(Now, AdmSess#admin_session.last_op_time) > TimeoutSec * 1000000])).
-
-
-admin_logout(_From, _Svid, _AdminId, Token, _Ipaddr) ->
-	mnesia:transaction(fun() -> mnesia:delete({admin_session, Token}) end).
-
-
-admin_list_users(_From, _Svid, AdminId, AdminToken, _Ipaddr) ->
-	case is_ok_admin_session(AdminId, AdminToken) of
-		true -> 0;
-		false -> {ng, session_timed_out}
-	end.
 
 
 
@@ -870,6 +778,13 @@ db_setter(Cid, Key, Value) ->
 		)
 	end,
 	apply_cdata(Cid, F).
+
+
+
+%%%
+%%% -- utility functions --
+%%%
+
 
 % use for Tid, Cid, ItemId...
 make_new_id() ->

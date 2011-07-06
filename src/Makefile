@@ -25,6 +25,7 @@
 DESTDIR = ..\ebin
 INSTALL = MOVE
 RM = DEL
+REMOVEDIR = RD /Q /S
 COPY = COPY
 YAWS_EBINDIR = C:\opt\yaws\ebin
 

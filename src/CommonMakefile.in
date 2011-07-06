@@ -54,6 +54,7 @@ install : $(objs)
 .PHONY: clean
 clean:
 	$(RM) $(objs)
+	$(REMOVEDIR) Mnesia.nonode@nohost
 
 test: $(objs)
 	erl -pa .  -noshell -boot start_clean -s test run_tests_with_log -s init stop
