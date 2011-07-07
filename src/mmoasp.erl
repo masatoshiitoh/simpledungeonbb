@@ -359,7 +359,6 @@ login(From, Id, Pw, Ipaddr) ->
 			{ng, "character: authentication failed"}
 		end.
 
-
 logout(From, Cid, Token) ->
 	Radius = 100,
 	notice_logout(Cid, {csummary, Cid}, Radius),
@@ -374,15 +373,10 @@ logout(From, Cid, Token) ->
 
 
 
-% caution !!
-% General purpose setter.(use this for configuration store, or other misc operation.
-% DO NOT USE for set gaming parameters(like hit point or money) from client.).
-
-setter(From, Cid, Token, Key, Value) ->character:setter(From, Cid,Token, Key, Value).
-setter(Cid, Key, Value) ->character:setter(Cid, Key, Value).
-
+%-----------------------------------------------------------
+%% LIST to KNOW sender
+%-----------------------------------------------------------
 get_list_to_know(_From, Cid) ->
-	
 	% send message.
 	F = fun(X) ->
 		X#session.pid ! {sensor, {self(), request_list_to_know}}
@@ -453,7 +447,7 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 	{result, "ok"}.
 
 %-----------------------------------------------------------
-% Initialize character
+% load and setup character for each login.
 %-----------------------------------------------------------
 
 setup_player_character(Cid)->
@@ -483,7 +477,7 @@ setup_player_initial_location(Cid) ->
 	X = Me#location.initx,
 	Y = Me#location.inity,
 	Z = Me#location.initz,
-	character:db_setpos(Cid, {allpos, Map, X, Y, Z}).
+	db_setpos(Cid, {allpos, Map, X, Y, Z}).
 
 setup_player_location(Cid) ->
 	%% copy location data from location table to cdata attribute.
@@ -491,9 +485,9 @@ setup_player_location(Cid) ->
 	Map = Me#location.initmap,
 	X = Me#location.initx,
 	Y = Me#location.inity,
-	setter(Cid, "map", Map),
-	setter(Cid, "x", X),
-	setter(Cid, "y", Y),
+	db_setter(Cid, "map", Map),
+	db_setter(Cid, "x", X),
+	db_setter(Cid, "y", Y),
 	
 	mnesia:transaction(fun() ->
 		[Pc] = mnesia:read({session, Cid}),
@@ -501,6 +495,31 @@ setup_player_location(Cid) ->
 	
 	{pos, X, Y}.
 
+%-----------------------------------------------------------
+% Character Persistency
+%-----------------------------------------------------------
+load_character(Id,Pw) ->
+	case get_cid({basic, Id, Pw}) of
+		void -> void;
+		Cid -> {character, Cid, lookup_cdata(Cid)}
+	end.
+
+save_character(Cid, CData) ->
+	store_cdata(Cid, CData).
+
+%% Load cdata
+lookup_cdata(Cid) ->
+	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
+		[] -> void;
+		[CData] -> CData
+	end.
+
+%% Save cdata
+store_cdata(_Cid, CData) ->
+	F = fun() ->
+		mnesia:write(CData)
+	end,
+	mnesia:transaction(F).
 
 %-----------------------------------------------------------
 % character data and session
@@ -524,7 +543,6 @@ db_get_cid(Id, Pw) ->
 db_get_cdata(Cid) ->
 	{character, Cid, lookup_cdata(Cid)}.
 
-
 stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
 stop_stream(_) -> void.
 
@@ -540,10 +558,27 @@ db_location_offline(_Cid) -> nop.
 
 db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
 
+get_session(Cid) ->
+	case apply_session(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
 
+get_location(Cid) ->
+	case apply_location(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
+
+get_initial_location(Cid) ->
+	case apply_initial_location(Cid, fun(X) -> X end) of
+		{ng, _} -> void;
+		{atomic, Result} -> Result
+	end.
 
 %-----------------------------------------------------------
 % sessions by location.
+% (select * from location, session where location.cid = session.cid)
 %-----------------------------------------------------------
 get_all_neighbor_sessions(Oid, R) ->
 	Me = get_session(Oid),
@@ -591,65 +626,9 @@ get_neighbor_char_cdata(Oid, R) ->
 		Other -> Other
 	end.
 
-
-%select * from location, session where location.cid = session.cid
-
-
-
 %-----------------------------------------------------------
-% Character Persistency
+% apply function to online characters
 %-----------------------------------------------------------
-load_character(Id,Pw) ->
-	case get_cid({basic, Id, Pw}) of
-		void -> void;
-		Cid -> {character, Cid, lookup_cdata(Cid)}
-	end.
-
-save_character(Cid, CData) ->
-	store_cdata(Cid, CData).
-
-%% Load cdata
-lookup_cdata(Cid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
-		[] -> void;
-		[CData] -> CData
-	end.
-
-%% Save cdata
-store_cdata(_Cid, CData) ->
-	F = fun() ->
-		mnesia:write(CData)
-	end,
-	mnesia:transaction(F).
-
-
-
-%=======================
-% Making token.
-
-gen_token(_Ipaddr, _Cid) -> make_new_id().
-
-%=======================
-
-
-
-get_session(Cid) ->
-	case apply_session(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
-		{atomic, Result} -> Result
-	end.
-
-get_location(Cid) ->
-	case apply_location(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
-		{atomic, Result} -> Result
-	end.
-
-get_initial_location(Cid) ->
-	case apply_initial_location(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
-		{atomic, Result} -> Result
-	end.
 
 %% F requires 1 arg (session record).
 apply_session(Cid, F) ->
@@ -680,22 +659,36 @@ apply_cid_indexed_table(Cond, F) ->
 	end,
 	mnesia:transaction(L).
 
+%-----------------------------------------------------------
+% moved from character
+%-----------------------------------------------------------
+
+gen_stat_from_cdata(X) -> 
+	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
+
+db_setpos(Cid, {pos, PosX, PosY}) ->
+	F = fun(X) ->
+		mnesia:write(X#session{x = PosX, y = PosY})
+	end,
+	apply_session(Cid, F);
+
+db_setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
+	F = fun(X) ->
+		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
+	end,
+	apply_session(Cid, F).
 
 
 
+%-----------------------------------------------------------
+% Making token.
+%-----------------------------------------------------------
+gen_token(_Ipaddr, _Cid) -> make_new_id().
 
 
-
-
-
-
-
-
-
-
-
-
-
+%-----------------------------------------------------------
+% KV store
+%-----------------------------------------------------------
 
 -ifdef(TEST).
 kv_get_1_test() ->
@@ -748,6 +741,14 @@ wait(W) ->
 		after W -> ok
 	end.
 
+%-----------------------------------------------------------
+%% general purpose KV access function.
+%-----------------------------------------------------------
+
+% caution !!
+% General purpose setter.(use this for configuration store, or other misc operation.
+% DO NOT USE for set gaming parameters(like hit point or money) from client.).
+
 kv_get(L, K) ->
 	case lists:keysearch(K, 1, L) of
 		{value, {K,V}} -> V;
@@ -765,7 +766,6 @@ db_getter(Cid, Key) ->
 		kv_get(X#cdata.attr, Key)
 	end,
 	Result = apply_cdata(Cid, F),
-%%	io:format("db_getter(~p,~p) ~p~n", [Cid, Key, Result]),
 	case Result of
 		{atomic, undefined} -> undefined;
 		{atomic, V} -> V

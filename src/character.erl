@@ -30,14 +30,6 @@ whoareyou(Cid) ->
 	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {test, {self(), whoareyou}} end).
 
-setter(From, Cid, Token, Key, Value) ->
-	mmoasp:apply_session(Cid,
-		fun(X) -> X#session.pid ! {From, set, Token, Key, Value} end).
-
-setter(Cid, Key, Value) ->
-	mmoasp:apply_session(Cid,
-		fun(X) -> X#session.pid ! {set, Key, Value} end).
-
 stop_child(Cid) ->
 	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
@@ -72,7 +64,7 @@ loop(R, I) ->
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
 			NewStatDict =
-				[gen_stat_from_cdata(X)
+				[mmoasp:gen_stat_from_cdata(X)
 					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		
@@ -111,23 +103,4 @@ loop(R, I) ->
 		{R, task:mk_idle_update(I)}
 	end,
 	loop(NewR, NewI).
-
-% internal use -----------------------------------------------
-
-
-gen_stat_from_cdata(X) -> 
-	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-
-db_setpos(Cid, {pos, PosX, PosY}) ->
-	F = fun(X) ->
-		mnesia:write(X#session{x = PosX, y = PosY})
-	end,
-	mmoasp:apply_session(Cid, F);
-
-db_setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
-	F = fun(X) ->
-		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
-	end,
-	mmoasp:apply_session(Cid, F).
 

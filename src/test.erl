@@ -340,8 +340,8 @@ check_session_data() ->
 
 
 
-	%% at this point, X cauase badrecord error on character:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
-	io:format("gen_stat_from_cdata of X: ~p~n", [[character:gen_stat_from_cdata(A) || A <- X]]),
+	%% at this point, X cauase badrecord error on mmoasp:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
+	io:format("gen_stat_from_cdata of X: ~p~n", [[mmoasp:gen_stat_from_cdata(A) || A <- X]]),
 
 
 	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
@@ -397,9 +397,9 @@ do_setter() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% setter check.
-	mmoasp:setter(self(), Cid1, Token1, "WindowSize", "123,55"),
-	mmoasp:setter(self(), Cid2, Token2, "WindowSize", "99,160"),
-	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
+	mmoasp:db_setter(Cid1, "WindowSize", "123,55"),
+	mmoasp:db_setter(Cid2, "WindowSize", "99,160"),
+	io:format("db_setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
