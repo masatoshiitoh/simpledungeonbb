@@ -114,7 +114,7 @@ store_result(OidTo, {ok, X}) ->
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
 store_result(OidTo, {critical, X}) ->
-	CurrHp = mmoasp:setter(OidTo, "hp"),
+	CurrHp = mmoasp:getter(OidTo, "hp"),
 	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
