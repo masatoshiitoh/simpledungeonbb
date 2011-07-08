@@ -502,9 +502,9 @@ setup_player_location(Cid) ->
 	Map = Me#location.initmap,
 	X = Me#location.initx,
 	Y = Me#location.inity,
-	db_setter(Cid, "map", Map),
-	db_setter(Cid, "x", X),
-	db_setter(Cid, "y", Y),
+	setter(Cid, "map", Map),
+	setter(Cid, "x", X),
+	setter(Cid, "y", Y),
 	
 	mnesia:transaction(fun() ->
 		[Pc] = mnesia:read({session, Cid}),
@@ -714,10 +714,10 @@ kv_set_0_test() ->
 db_get_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	V1 = db_getter(Cid1, "hp"),
+	V1 = getter(Cid1, "hp"),
 	?assert(V1 == 12),
 	
-	V2 = db_getter(Cid2, "hp"),
+	V2 = getter(Cid2, "hp"),
 	?assert(V2 == 16),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -726,8 +726,8 @@ db_get_1_test() ->
 db_set_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	db_setter(Cid1, "hp", 2),
-	V1 = db_getter(Cid1, "hp"),
+	setter(Cid1, "hp", 2),
+	V1 = getter(Cid1, "hp"),
 	?assert(V1 == 2),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

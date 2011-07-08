@@ -91,12 +91,12 @@ loop(R, I) ->
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
-			NewCData = mmoasp:db_setter(R#task_env.cid, Key, Value),
+			NewCData = mmoasp:setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()};
 
 		%% Attribute setter simple
 		{set, Key, Value} ->
-			NewCData = mmoasp:db_setter(R#task_env.cid, Key, Value),
+			NewCData = mmoasp:setter(R#task_env.cid, Key, Value),
 			{R#task_env{cdata = NewCData}, task:mk_idle_reset()}
 
 	after 1000 ->

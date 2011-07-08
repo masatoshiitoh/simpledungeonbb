@@ -397,9 +397,9 @@ do_setter() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% setter check.
-	mmoasp:db_setter(Cid1, "WindowSize", "123,55"),
-	mmoasp:db_setter(Cid2, "WindowSize", "99,160"),
-	io:format("db_setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
+	mmoasp:setter(Cid1, "WindowSize", "123,55"),
+	mmoasp:setter(Cid2, "WindowSize", "99,160"),
+	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
