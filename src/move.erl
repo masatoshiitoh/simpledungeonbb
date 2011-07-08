@@ -88,7 +88,7 @@ mapmove_call({_From, move}, R, I) ->
 	CurrPos = R#task_env.currpos,
 	WayPoints = R#task_env.waypoints,
 
-	mmoasp:db_setpos(R#task_env.cid, CurrPos),
+	mmoasp:setpos(R#task_env.cid, CurrPos),
 	case WayPoints of
 		[] ->
 			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),

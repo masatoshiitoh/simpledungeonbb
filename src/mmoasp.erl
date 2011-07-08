@@ -290,10 +290,10 @@ delete_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
 
 create_account(From, Svid, Id, Pw, Ipaddr) ->
 	mnesia:transaction(fun() ->
-			foreach(fun mnesia:write/1, get_single(Id, Pw))
+			foreach(fun mnesia:write/1, get_player_character_template(Id, Pw))
 		end).
 
-get_single(Id, Pass) ->
+get_player_character_template(Id, Pass) ->
 	Cid = "c" ++ Id,
 	Name = "name" ++ Id,
 	[
@@ -364,7 +364,6 @@ logout(From, Cid, Token) ->
 	notice_logout(Cid, {csummary, Cid}, Radius),
 	character:stop_child(Cid),
 	cancel_trade(Cid),
-	db_location_offline(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
 	case mnesia:transaction(fun()-> mnesia:delete({session, Cid})end) of
 		{atomic, ok} -> {ok, Cid};
@@ -427,22 +426,31 @@ talk(open, SenderCid, MessageBody, Radius) ->
 %-----------------------------------------------------------
 
 notice_login(SenderCid, {csummary, _Cid, Name}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_login, SenderCid, Name}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
+	send_message_to_neighbors(
+		SenderCid,
+		{sensor, {self(), notice_login, SenderCid, Name}},
+		Radius).
 
 notice_logout(SenderCid, {csummary, _Cid}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_logout, SenderCid}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
+	send_message_to_neighbors(
+		SenderCid,
+		{sensor, {self(), notice_logout, SenderCid}},
+		Radius).
 
 notice_remove(SenderCid, {csummary, _Cid}, Radius) ->
-	[X#session.pid ! {sensor, {self(), notice_remove, SenderCid}}
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
+	send_message_to_neighbors(
+		SenderCid,
+		{sensor, {self(), notice_remove, SenderCid}},
+		Radius).
 
 notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
-	[X#session.pid ! {mapmove, {self(), notice_move, SenderCid, From, To, Duration}}
+	send_message_to_neighbors(
+		SenderCid,
+		{mapmove, {self(), notice_move, SenderCid, From, To, Duration}},
+		Radius).
+
+send_message_to_neighbors(SenderCid, Message, Radius) ->
+	[X#session.pid ! Message
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
@@ -452,7 +460,15 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 
 setup_player_character(Cid)->
 	{character, Cid, CData} = db_get_cdata(Cid),
-	db_location_online(Cid),
+
+	%% load init location
+	mnesia:transaction(fun() ->
+		[CLoc] = mnesia:read({location, Cid}),
+		[CSess] = mnesia:read({session, Cid}),
+		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
+	end),
+
+	%% setup task_env record
 	R = #task_env{
 		cid = Cid,
 		cdata = CData,
@@ -460,11 +476,12 @@ setup_player_character(Cid)->
 		stat_dict = [],
 		token = gen_token("nil", Cid),
 		utimer =  morningcall:new()},
+	
+	%% start player character process.
 	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
 	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
 	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
 	
-	%%setup_player_location(Cid),
 	setup_player_initial_location(Cid),
 
 	Radius = 100,
@@ -477,7 +494,7 @@ setup_player_initial_location(Cid) ->
 	X = Me#location.initx,
 	Y = Me#location.inity,
 	Z = Me#location.initz,
-	db_setpos(Cid, {allpos, Map, X, Y, Z}).
+	setpos(Cid, {allpos, Map, X, Y, Z}).
 
 setup_player_location(Cid) ->
 	%% copy location data from location table to cdata attribute.
@@ -533,30 +550,11 @@ get_cid({basic, Id, Pw}) ->
 		[X] -> X
 	end.
 
-db_get_cid(Id, Pw) ->
-	Loaded = load_character(Id,Pw),
-	case Loaded of 
-		{character, Cid, _CData} -> {character, Cid};
-		void -> {ng, "character: authentication failed"}
-		end.
-
 db_get_cdata(Cid) ->
 	{character, Cid, lookup_cdata(Cid)}.
 
 stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
 stop_stream(_) -> void.
-
-db_location_online(Cid) ->
-	F = fun() ->
-		[CLoc] = mnesia:read({location, Cid}),
-		[CSess] = mnesia:read({session, Cid}),
-		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
-	end,
-	mnesia:transaction(F).
-
-db_location_offline(_Cid) -> nop.
-
-db_location_offline(_Cid, _Map, {pos, _X, _Y}) -> nop.
 
 get_session(Cid) ->
 	case apply_session(Cid, fun(X) -> X end) of
@@ -666,13 +664,13 @@ apply_cid_indexed_table(Cond, F) ->
 gen_stat_from_cdata(X) -> 
 	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
 
-db_setpos(Cid, {pos, PosX, PosY}) ->
+setpos(Cid, {pos, PosX, PosY}) ->
 	F = fun(X) ->
 		mnesia:write(X#session{x = PosX, y = PosY})
 	end,
 	apply_session(Cid, F);
 
-db_setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
+setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
 	F = fun(X) ->
 		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
 	end,
@@ -761,7 +759,7 @@ kv_set(L, K, V) ->
 		false -> [{K,V}] ++ L
 	end.
 
-db_getter(Cid, Key) ->
+getter(Cid, Key) ->
 	F = fun(X) ->
 		kv_get(X#cdata.attr, Key)
 	end,
@@ -771,7 +769,7 @@ db_getter(Cid, Key) ->
 		{atomic, V} -> V
 	end.
 
-db_setter(Cid, Key, Value) ->
+setter(Cid, Key, Value) ->
 	F = fun(X) ->
 		mnesia:write(
 			X#cdata{attr = kv_set(X#cdata.attr, Key, Value)}

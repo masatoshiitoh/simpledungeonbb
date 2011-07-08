@@ -108,13 +108,13 @@ notice_result(OidFrom, OidTo, {fumble, Dam}, Radius) ->
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(OidTo, {ok, X}) ->
-	CurrHp = mmoasp:db_getter(OidTo, "hp"),
-	mmoasp:db_setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = mmoasp:getter(OidTo, "hp"),
+	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
 store_result(OidTo, {critical, X}) ->
-	CurrHp = mmoasp:db_getter(OidTo, "hp"),
+	CurrHp = mmoasp:setter(OidTo, "hp"),
 	mmoasp:db_setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
