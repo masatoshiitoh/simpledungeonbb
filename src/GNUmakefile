@@ -22,6 +22,7 @@ CC = gcc -o
 CCO = gcc -c -o
 RC = #
 RM = rm -f
+REMOVEDIR = rm -rf
 
 DESTDIR = ../ebin
 INSTALL = mv
