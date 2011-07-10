@@ -338,8 +338,6 @@ check_session_data() ->
 		Other -> Other
 	end]),
 
-
-
 	%% at this point, X cauase badrecord error on mmoasp:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
 	io:format("gen_stat_from_cdata of X: ~p~n", [[mmoasp:gen_stat_from_cdata(A) || A <- X]]),
 

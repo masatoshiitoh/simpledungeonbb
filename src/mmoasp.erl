@@ -57,10 +57,16 @@ change_schema() ->
 	db:do_this_once(),
 	db:start(reset_tables).
 
+make_params({get, A}) ->
+	dict:from_list(yaws_api:parse_query(A));
+
+make_params({post, A}) ->
+	dict:from_list(yaws_api:parse_post(A)).
+
 %% GET version of login. This is only for test with web browser.
 %% This will be disabled soon.
 out(A, 'GET', ["service", _SVID, "login"]) ->
-	Params = dict:from_list(yaws_api:parse_query(A)),
+	Params = make_params({get, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	%% io:format("yaws_if. login requested. ~p~n", [Id]),
@@ -81,7 +87,7 @@ out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
 
 % create account.
 out(A, 'POST', ["service", SVID, "create_account"]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
@@ -98,7 +104,7 @@ out(A, 'POST', ["service", SVID, "create_account"]) ->
 
 % create account.
 out(A, 'POST', ["service", SVID, "delete_account"]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
@@ -115,7 +121,7 @@ out(A, 'POST', ["service", SVID, "delete_account"]) ->
 
 % Add New Player Character.
 out(A, 'POST', ["service", SVID, "subscribe"]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
@@ -132,7 +138,7 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 %% Change Password.
 %% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
 out(A, 'POST', ["service", SVID, "change_password"]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	NewPw = param(Params, "newpassword"),
@@ -148,7 +154,7 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 %% Login
 %% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
 out(A, 'POST', ["service", _SVID, "login"]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
@@ -165,7 +171,7 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 %% Logout
 %% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
 out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	Token = param(Params, "token"),
 	%% io:format("yaws_if. logout requested. ~p~n", [CidX]),
 	Result = logout(self(), CidX, Token),
@@ -179,7 +185,7 @@ out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 %% Get list to know (Your client calls this every xx sec.)
 %% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
 out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	%% io:format("yaws_if. listtoknow requested. ~p~n", [CidX]),
 	X = get_session(CidX),
@@ -191,7 +197,7 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
 out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
 	%% io:format("yaws_if. talk requested. ~p~n", [CidX]),
@@ -200,22 +206,13 @@ out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 
 %% Whisper (person to person talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
-out(_A, 'GET', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
-	[{character, Cid, Pid}] = world_server:lookup(CidX),
-	Clist = world_server:test_getdump(),	%% NOT IMPLEMENTED.
-	lists:map(fun({character, _CidN, PidN}) ->
-			PidN ! {self(), {talk, Cid, Talked}}
-		end,
-		Clist),
-	{html,
-		io_lib:format(
-			"(~p) Talk by ~p (Pid = ~p) => ~p<br>",
-			[SVID,Cid,Pid,Talked])};
+out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
+	not_implemented;
 
 %% Move
 %% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
 out(A, 'POST', ["service", _SVID, "move", CidX]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
@@ -225,7 +222,7 @@ out(A, 'POST', ["service", _SVID, "move", CidX]) ->
 
 %% Attack
 out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
-	Params = dict:from_list(yaws_api:parse_post(A)),
+	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	_Result = battle:single(CidX, CidTo),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
@@ -233,7 +230,7 @@ out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
 %% Set attribute
 %% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
 out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
-	Params = dict:from_list(yaws_api:parse_query(A)),
+	Params = make_params({get, A}),
 	Value = param(Params, "value"),
 	Token = param(Params, "token"),
 	Result = character:setter(Cid, Token, Key, Value),
@@ -308,8 +305,7 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 						mnesia:write(PasswordChanged),
 						ok
 					end
-				end))
-			of
+				end)) of
 				{atomic,ok} -> {ok};
 				Other -> Other
 			end
@@ -330,9 +326,10 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 % Timeout mechanism will clear this situation.
 %
 login(From, Id, Pw, Ipaddr) ->
-	Loaded = load_character(Id,Pw),
-	case Loaded of 
-		{character, Cid, _CData} ->
+	case auth_get_cid({basic, Id, Pw}) of 
+		void ->
+			{ng, "character: authentication failed"};
+		Cid ->
 			P = db:do(qlc:q([X#session.cid||X<-mnesia:table(session), X#session.cid == Cid])),
 			case P of
 				[] ->
@@ -342,40 +339,23 @@ login(From, Id, Pw, Ipaddr) ->
 				[Cid] ->
 					% found.
 					{ng, "character: account is in use"}
-			end;
-		void ->
-			% Load failed.
-			{ng, "character: authentication failed"}
+			end
+
 		end.
 
-logout(From, Cid, Token) ->
-	Radius = 100,
-	notice_logout(Cid, {csummary, Cid}, Radius),
-	character:stop_child(Cid),
-	cancel_trade(Cid),
-	stop_stream((get_session(Cid))#session.stream_pid),
-	case mnesia:transaction(fun()-> mnesia:delete({session, Cid})end) of
-		{atomic, ok} -> {ok, Cid};
-		Other -> Other
-	end.
-
+logout(From, Cid, _Token) ->
+	setdown_player_character(Cid).
 
 %-----------------------------------------------------------
 %% LIST to KNOW sender
 %-----------------------------------------------------------
 get_list_to_know(_From, Cid) ->
-	% send message.
-	F = fun(X) ->
-		X#session.pid ! {sensor, {self(), request_list_to_know}}
-	end,
-	apply_session(Cid, F),
-	
+	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
 	% wait reply and receive.
 	receive
 		{list_to_know, Actions, Stats} -> {actions_and_stats, Actions, Stats}
 		after 2000 -> {[], []}
 	end.
-
 
 %-----------------------------------------------------------
 % Trade APIs.
@@ -442,13 +422,15 @@ send_message_to_neighbors(SenderCid, Message, Radius) ->
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
 	{result, "ok"}.
 
+send_message_by_cid(Cid, Message) ->
+	apply_session(Cid, fun(X) -> X#session.pid ! Message end).
+
 %-----------------------------------------------------------
 % load and setup character for each login.
 %-----------------------------------------------------------
 
 setup_player_character(Cid)->
 	CData = lookup_cdata(Cid),
-
 	%% setup task_env record
 	R = setup_task_env(Cid, CData),
 
@@ -465,6 +447,18 @@ setup_player_character(Cid)->
 	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
 	{ok, Child, R#task_env.token}.
 
+setdown_player_character(Cid) ->
+	Radius = 100,
+	notice_logout(Cid, {csummary, Cid}, Radius),
+	character:stop_child(Cid),
+	cancel_trade(Cid),
+	stop_stream((get_session(Cid))#session.stream_pid),
+	case delete_session(Cid) of
+		{atomic, ok} -> {ok, Cid};
+		Other -> Other
+	end.
+
+
 % *** charachter setup support functions. ***
 
 setup_player_initial_location(Cid) ->
@@ -477,10 +471,16 @@ setup_player_initial_location(Cid) ->
 	setpos(Cid, {allpos, Map, X, Y, Z}).
 
 add_session(Cid, Pid, Type) ->
-	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Pid, type=Type}) end).
+	mnesia:transaction(
+		fun() -> mnesia:write(#session{cid=Cid, pid=Pid, type=Type}) end).
+
+delete_session(Cid) ->
+	mnesia:transaction(
+		fun()-> mnesia:delete({session, Cid}) end).
 
 init_trade(Cid) ->
-	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
+	mnesia:transaction(
+		fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
 
 setup_task_env(Cid, CData) ->
 	#task_env{
@@ -494,14 +494,6 @@ setup_task_env(Cid, CData) ->
 %-----------------------------------------------------------
 % Character Persistency
 %-----------------------------------------------------------
-load_character(Id,Pw) ->
-	case auth_get_cid({basic, Id, Pw}) of
-		void -> void;
-		Cid -> {character, Cid, lookup_cdata(Cid)}
-	end.
-
-save_character(Cid, CData) ->
-	store_cdata(Cid, CData).
 
 %% Load cdata
 lookup_cdata(Cid) ->
@@ -558,7 +550,6 @@ get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
 	
 	F = fun() ->
-		%%	Sess#session.cid =/= Cid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session, Me}) =< R
 			]))
@@ -572,7 +563,6 @@ get_neighbor_char_sessions(Cid, R) ->
 	Me = get_session(Cid),
 	
 	F = fun() ->
-		%%	Sess#session.cid =/= Cid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
@@ -590,7 +580,6 @@ get_neighbor_char_cdata(Cid, R) ->
 					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
 				]}
 				|| Sess <- mnesia:table(session),
-				%%	Loc#location.cid =/= Cid,
 				distance({session, Sess}, {session, Me}) =< R,
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.cid]))
