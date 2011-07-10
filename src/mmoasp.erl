@@ -725,14 +725,14 @@ kv_set(L, K, V) ->
 	end.
 
 getter(Cid, Key) ->
-	F = fun(X) ->
-		kv_get(X#cdata.attr, Key)
+	F = fun() ->
+		case mnesia:read({cdata, Cid}) of
+			[] -> undefined;	%% no match
+			[D] -> kv_get(D#cdata.attr, Key)
+		end
 	end,
-	Result = apply_cdata(Cid, F),
-	case Result of
-		{atomic, undefined} -> undefined;
-		{atomic, V} -> V
-	end.
+	{atomic, Val} = mnesia:transaction(F),
+	Val.
 
 setter(Cid, Key, Value) ->
 	F = fun(X) ->
