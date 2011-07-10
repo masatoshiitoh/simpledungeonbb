@@ -178,10 +178,10 @@ do_look_around() ->
 	?assert(4 == mmoasp:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
 
 	?assert(sets:from_list(["cid0001"])
-		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
+		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
 
 	?assert(sets:from_list(["cid0001", "cid0002"])
-		== sets:from_list([X#session.oid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
+		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -331,7 +331,7 @@ check_session_data() ->
 				%%	Loc#location.cid =/= Cid,
 				mmoasp:distance({session, Sess}, {session, Me}) < 10,
 				CData <- mnesia:table(cdata),	
-				CData#cdata.cid == Sess#session.oid]))
+				CData#cdata.cid == Sess#session.cid]))
 	end,
 	io:format("check internal, get_neighbor_char_cdata ~p~n", [case mnesia:transaction(F) of
 		{atomic, Result} -> Result;

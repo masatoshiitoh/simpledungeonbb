@@ -95,6 +95,7 @@ out(A, 'POST', ["service", SVID, "create_account"]) ->
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
+
 % create account.
 out(A, 'POST', ["service", SVID, "delete_account"]) ->
 	Params = dict:from_list(yaws_api:parse_post(A)),
@@ -243,18 +244,10 @@ out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
 			{html, "request failed<br>"}
 	end;
 
-%% Json sending test code.
-%% sample for "GET http://localhost:8002/service/hibari/json"
-%% Thanks to http://d.hatena.ne.jp/takkkun/20080626/1214468050
-out(_A, 'GET', ["service", _SVID, "json"]) ->
-	mout:return_json(json:encode({struct, [{"field1", "foo"}, {field2, "gova"}]}));
-
-
 % Add New Non Player Character.
 out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
 	npc:start_npc(NpcidX),
 	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
-
 
 %% sample for "catch all" handler.
 out(A, _Method, _Params) ->
@@ -303,14 +296,11 @@ get_player_character_template(Id, Pass) ->
 		{money, Cid, 2000, 0}
 	].
 
-%% change password command for subscribers.
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	case 
-	
-		(case get_cid({basic, Id, Pw}) of
+	case auth_get_cid({basic, Id, Pw}) of
 		void -> {ng, check_id_and_password};
 		Cid -> 
-			mnesia:transaction(fun() ->
+			case (mnesia:transaction(fun() ->
 				case mnesia:read({auth_basic, Cid}) of
 					[] ->mnesia:abort(not_found);
 					[Acct] ->
@@ -318,13 +308,12 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 						mnesia:write(PasswordChanged),
 						ok
 					end
-				end)
-		end)
-
-	of
-		{atomic,ok} -> {ok};
-		Other -> Other
-	end.
+				end))
+			of
+				{atomic,ok} -> {ok};
+				Other -> Other
+			end
+		end.
 
 
 %-----------------------------------------------------------
@@ -343,14 +332,14 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 login(From, Id, Pw, Ipaddr) ->
 	Loaded = load_character(Id,Pw),
 	case Loaded of 
-		{character, Oid, _CData} ->
-			P = db:do(qlc:q([X#session.oid||X<-mnesia:table(session), X#session.oid == Oid])),
+		{character, Cid, _CData} ->
+			P = db:do(qlc:q([X#session.cid||X<-mnesia:table(session), X#session.cid == Cid])),
 			case P of
 				[] ->
 					% Not found.. Instanciate requested character !
-					{ok, _Pid, Token} = setup_player_character(Oid),
-					{ok, Oid, Token};
-				[Oid] ->
+					{ok, _Pid, Token} = setup_player_character(Cid),
+					{ok, Cid, Token};
+				[Cid] ->
 					% found.
 					{ng, "character: account is in use"}
 			end;
@@ -371,7 +360,6 @@ logout(From, Cid, Token) ->
 	end.
 
 
-
 %-----------------------------------------------------------
 %% LIST to KNOW sender
 %-----------------------------------------------------------
@@ -388,7 +376,7 @@ get_list_to_know(_From, Cid) ->
 		after 2000 -> {[], []}
 	end.
 
-	
+
 %-----------------------------------------------------------
 % Trade APIs.
 %   Tid is cid_pair tuple.
@@ -459,34 +447,25 @@ send_message_to_neighbors(SenderCid, Message, Radius) ->
 %-----------------------------------------------------------
 
 setup_player_character(Cid)->
-	{character, Cid, CData} = db_get_cdata(Cid),
-
-	%% load init location
-	mnesia:transaction(fun() ->
-		[CLoc] = mnesia:read({location, Cid}),
-		[CSess] = mnesia:read({session, Cid}),
-		mnesia:write(CSess#session{map = CLoc#location.initmap, x = CLoc#location.initx, y = CLoc#location.inity})
-	end),
+	CData = lookup_cdata(Cid),
 
 	%% setup task_env record
-	R = #task_env{
-		cid = Cid,
-		cdata = CData,
-		event_queue = queue:new(),
-		stat_dict = [],
-		token = gen_token("nil", Cid),
-		utimer =  morningcall:new()},
-	
+	R = setup_task_env(Cid, CData),
+
 	%% start player character process.
-	Child = spawn(fun() ->character:loop(R, task:mk_idle_reset()) end),
-	mnesia:transaction(fun() -> mnesia:write(#session{oid=Cid, pid=Child, type="pc"}) end),
-	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end),
-	
+	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
+	add_session(Cid, Child, "pc"),
+
+	%% setup character states.
+	init_trade(Cid),
 	setup_player_initial_location(Cid),
 
+	%% notice login information to nearby.
 	Radius = 100,
 	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
 	{ok, Child, R#task_env.token}.
+
+% *** charachter setup support functions. ***
 
 setup_player_initial_location(Cid) ->
 	Me = get_initial_location(Cid),
@@ -494,29 +473,29 @@ setup_player_initial_location(Cid) ->
 	X = Me#location.initx,
 	Y = Me#location.inity,
 	Z = Me#location.initz,
+	
 	setpos(Cid, {allpos, Map, X, Y, Z}).
 
-setup_player_location(Cid) ->
-	%% copy location data from location table to cdata attribute.
-	Me = get_location(Cid),
-	Map = Me#location.initmap,
-	X = Me#location.initx,
-	Y = Me#location.inity,
-	setter(Cid, "map", Map),
-	setter(Cid, "x", X),
-	setter(Cid, "y", Y),
-	
-	mnesia:transaction(fun() ->
-		[Pc] = mnesia:read({session, Cid}),
-		mnesia:write(Pc#session{map = Map, x = X, y = Y}) end),
-	
-	{pos, X, Y}.
+add_session(Cid, Pid, Type) ->
+	mnesia:transaction(fun() -> mnesia:write(#session{cid=Cid, pid=Pid, type=Type}) end).
+
+init_trade(Cid) ->
+	mnesia:transaction(fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
+
+setup_task_env(Cid, CData) ->
+	#task_env{
+		cid = Cid,
+		cdata = CData,
+		event_queue = queue:new(),
+		stat_dict = [],
+		token = gen_token("nil", Cid),
+		utimer =  morningcall:new()}.
 
 %-----------------------------------------------------------
 % Character Persistency
 %-----------------------------------------------------------
 load_character(Id,Pw) ->
-	case get_cid({basic, Id, Pw}) of
+	case auth_get_cid({basic, Id, Pw}) of
 		void -> void;
 		Cid -> {character, Cid, lookup_cdata(Cid)}
 	end.
@@ -541,7 +520,7 @@ store_cdata(_Cid, CData) ->
 %-----------------------------------------------------------
 % character data and session
 %-----------------------------------------------------------
-get_cid({basic, Id, Pw}) ->
+auth_get_cid({basic, Id, Pw}) ->
 	case db:do(qlc:q([X#auth_basic.cid
 		|| X <- mnesia:table(auth_basic),
 			X#auth_basic.id =:= Id,
@@ -549,12 +528,6 @@ get_cid({basic, Id, Pw}) ->
 		[] -> void;
 		[X] -> X
 	end.
-
-db_get_cdata(Cid) ->
-	{character, Cid, lookup_cdata(Cid)}.
-
-stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
-stop_stream(_) -> void.
 
 get_session(Cid) ->
 	case apply_session(Cid, fun(X) -> X end) of
@@ -574,15 +547,18 @@ get_initial_location(Cid) ->
 		{atomic, Result} -> Result
 	end.
 
+stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
+stop_stream(_) -> void.
+
 %-----------------------------------------------------------
 % sessions by location.
 % (select * from location, session where location.cid = session.cid)
 %-----------------------------------------------------------
-get_all_neighbor_sessions(Oid, R) ->
-	Me = get_session(Oid),
+get_all_neighbor_sessions(Cid, R) ->
+	Me = get_session(Cid),
 	
 	F = fun() ->
-		%%	Sess#session.oid =/= Oid,
+		%%	Sess#session.cid =/= Cid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session, Me}) =< R
 			]))
@@ -592,11 +568,11 @@ get_all_neighbor_sessions(Oid, R) ->
 		Other -> Other
 	end.
 
-get_neighbor_char_sessions(Oid, R) ->
-	Me = get_session(Oid),
+get_neighbor_char_sessions(Cid, R) ->
+	Me = get_session(Cid),
 	
 	F = fun() ->
-		%%	Sess#session.oid =/= Oid,
+		%%	Sess#session.cid =/= Cid,
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
@@ -606,8 +582,8 @@ get_neighbor_char_sessions(Oid, R) ->
 		Other -> Other
 	end.
 
-get_neighbor_char_cdata(Oid, R) ->
-	Me = get_session(Oid),
+get_neighbor_char_cdata(Cid, R) ->
+	Me = get_session(Cid),
 	F = fun() ->
 		qlc:e(qlc:q(
 			[CData#cdata{ attr = CData#cdata.attr ++ [
@@ -617,7 +593,7 @@ get_neighbor_char_cdata(Oid, R) ->
 				%%	Loc#location.cid =/= Cid,
 				distance({session, Sess}, {session, Me}) =< R,
 				CData <- mnesia:table(cdata),	
-				CData#cdata.cid == Sess#session.oid]))
+				CData#cdata.cid == Sess#session.cid]))
 	end,
 	case mnesia:transaction(F) of
 		{atomic, Result} -> Result;
@@ -630,20 +606,20 @@ get_neighbor_char_cdata(Oid, R) ->
 
 %% F requires 1 arg (session record).
 apply_session(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]), F).
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]), F).
 
 apply_pc(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid, X#session.type == "pc"]), F).
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid, X#session.type == "pc"]), F).
 
-apply_npc(Oid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Oid, X#session.type == "npc"]), F).
+apply_npc(Cid, F) ->
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid, X#session.type == "npc"]), F).
 
 %% F requires 1 arg (cdata record).
 apply_cdata(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]), F).
 %% F requires 1 arg (cdata record).
 apply_location(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]), F).
+	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]), F).
 
 apply_initial_location(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]), F).
@@ -816,7 +792,7 @@ distance(offline,_) ->
 distance({pos, X1, Y1}, {pos, X2, Y2}) ->
 	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2));
 
-distance({oid,O1}, {oid,O2}) ->
+distance({cid,O1}, {cid,O2}) ->
 	distance(
 		{session, get_session(O1)},
 		{session, get_session(O2)}).
@@ -837,12 +813,12 @@ distance_1_sess_test() ->
 	S2 = #session{map = "edo", x = 3, y = 2, z = 1},
 	?assert(1.0 == distance({session, S1}, {session, S2})).
 
-distance_by_oid_test() ->
+distance_by_cid_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	?assert(1.0 == distance({oid, Cid1}, {oid, Npcid1})),
-	?assert(3.0 == distance({oid, Cid2}, {oid, Npcid1})),
-	?assert(4.0 == distance({oid, Cid1}, {oid, Cid2})),
+	?assert(1.0 == distance({cid, Cid1}, {cid, Npcid1})),
+	?assert(3.0 == distance({cid, Cid2}, {cid, Npcid1})),
+	?assert(4.0 == distance({cid, Cid1}, {cid, Cid2})),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}).
 -endif.

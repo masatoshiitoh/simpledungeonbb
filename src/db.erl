@@ -132,7 +132,7 @@ demo(cdata, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
 
 demo(session, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(session), X#session.oid == Cid]));
+	do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]));
 
 demo(supplies, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid]));

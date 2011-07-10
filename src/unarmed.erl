@@ -32,10 +32,10 @@
 
 %% do not throw dice.
 fixed_calc(
-	#battle_param{oid=OidFrom, range=Range, str=Str1} = _From,
-	#battle_param{oid=OidTo, ac=Ac2} = _To)
+	#battle_param{cid=OidFrom, range=Range, str=Str1} = _From,
+	#battle_param{cid=OidTo, ac=Ac2} = _To)
 	->
-		Distance = mmoasp:distance({oid,OidFrom}, {oid,OidTo}),
+		Distance = mmoasp:distance({cid,OidFrom}, {cid,OidTo}),
 		if
 			(Distance > Range) -> {ng, 0};
 			true -> {ok, trim_negative(Str1 + (Ac2 - 10))}
@@ -43,10 +43,10 @@ fixed_calc(
 
 %% throw dice to calc result.
 calc(
-	#battle_param{oid=OidFrom, range=Range, str=_Str1} = From,
-	#battle_param{oid=OidTo, ac=_Ac2} = To)
+	#battle_param{cid=OidFrom, range=Range, str=_Str1} = From,
+	#battle_param{cid=OidTo, ac=_Ac2} = To)
 	->
-		Distance = mmoasp:distance({oid,OidFrom}, {oid,OidTo}),
+		Distance = mmoasp:distance({cid,OidFrom}, {cid,OidTo}),
 		if
 			(Distance > Range) ->
 				{ng, 0};
@@ -97,12 +97,12 @@ fixed_calc_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 
-	From = #battle_param{oid=Cid1, str = 7, range=1.0},
-	To = #battle_param{oid=Npcid1, ac = 10},
+	From = #battle_param{cid=Cid1, str = 7, range=1.0},
+	To = #battle_param{cid=Npcid1, ac = 10},
 	?assert({ok, 7} == fixed_calc(From, To)),
 
-	From2 = #battle_param{oid=Cid2, str = 7, range=1.0},
-	To = #battle_param{oid=Npcid1, ac = 10},
+	From2 = #battle_param{cid=Cid2, str = 7, range=1.0},
+	To = #battle_param{cid=Npcid1, ac = 10},
 	?assert({ng, 0} == fixed_calc(From2, To)),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -111,8 +111,8 @@ fixed_calc_01_test() ->
 fixed_calc_02_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	From = #battle_param{oid=Cid1, str = 3, range=1.0},
-	To = #battle_param{oid=Npcid1, ac = 6},
+	From = #battle_param{cid=Cid1, str = 3, range=1.0},
+	To = #battle_param{cid=Npcid1, ac = 6},
 	?assert({ok, 0} == fixed_calc(From, To)),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -121,8 +121,8 @@ fixed_calc_02_test() ->
 fixed_calc_03_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	From = #battle_param{oid=Cid1, str = 12, range=1.0},
-	To = #battle_param{oid=Npcid1, ac = -10},
+	From = #battle_param{cid=Cid1, str = 12, range=1.0},
+	To = #battle_param{cid=Npcid1, ac = -10},
 	?assert({ok, 0} == fixed_calc(From, To)),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -133,8 +133,8 @@ calc_01_1000_test() ->
 
 	test:repeat(
 		fun() ->
-			From = #battle_param{oid=Cid1, str = 7, range=1.0},
-			To = #battle_param{oid=Npcid1, ac = 10},
+			From = #battle_param{cid=Cid1, str = 7, range=1.0},
+			To = #battle_param{cid=Npcid1, ac = 10},
 			case (calc(From, To)) of
 				{ok, A}
 					-> ?assert(A >= 7 andalso A =< 14);
@@ -154,8 +154,8 @@ calc_02_1000_test() ->
 
 	test:repeat(
 		fun() ->
-			From = #battle_param{oid=Cid1, str = 5, range=1.0},
-			To = #battle_param{oid=Npcid1, ac = 0},
+			From = #battle_param{cid=Cid1, str = 5, range=1.0},
+			To = #battle_param{cid=Npcid1, ac = 0},
 			case (calc(From, To)) of
 				{ok, A}
 					-> ?assert(A == 0);

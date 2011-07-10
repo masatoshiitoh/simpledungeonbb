@@ -75,7 +75,7 @@ setup_npc(Npcid)->
 	mnesia:transaction(
 		fun() ->
 			[Loc1] = mnesia:read({location, Npcid}),
-			mnesia:write(#session{oid=Npcid, pid=Child, type="npc", map=Loc1#location.initmap, x=Loc1#location.initx,y=Loc1#location.inity}
+			mnesia:write(#session{cid=Npcid, pid=Child, type="npc", map=Loc1#location.initmap, x=Loc1#location.initx,y=Loc1#location.inity}
 		) end), %% TEMPORARY IMPLEMENTATION!!
 
 	Child.
@@ -113,7 +113,7 @@ db_get_npcdata(Cid) ->
 	end.
 
 lookup_pid_by_npcid(Npcid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.oid == Npcid, X#session.type == "npc"])) of
+	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Npcid, X#session.type == "npc"])) of
 		[] -> void;
 		[X] -> X#session.pid
 	end.

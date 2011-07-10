@@ -33,26 +33,26 @@
 %% battle with method
 %% (if not applicable (ex. too far to melee),
 %% just only fails - get {ng,0}).
-single(OidFrom, OidTo, Method) ->
-	BattleResult = calc_single(OidFrom, OidTo, Method),
+single(CidFrom, CidTo, Method) ->
+	BattleResult = calc_single(CidFrom, CidTo, Method),
 	io:format("single BattleResult ~p ~n", [BattleResult]),
-	battle_observer:set_one(OidFrom, OidTo, BattleResult).
+	battle_observer:set_one(CidFrom, CidTo, BattleResult).
 
 
 
 %% full automatic battle
-single(OidFrom, OidTo) ->
-	single(OidFrom, OidTo, get_default_battle_method(OidFrom)).
+single(CidFrom, CidTo) ->
+	single(CidFrom, CidTo, get_default_battle_method(CidFrom)).
 
 %%% not exported ------------------------------------------ %%%
 
-calc_single(_OidFrom, _OidTo, Method) when Method == "hth" -> {ok, 0};
-calc_single(_OidFrom, _OidTo, Method) when Method == "missile" -> {ok, 0};
-calc_single(_OidFrom, _OidTo, Method) when Method == "magic" -> {ok, 0};
-calc_single(OidFrom, OidTo, Method) ->
+calc_single(_CidFrom, _CidTo, Method) when Method == "hth" -> {ok, 0};
+calc_single(_CidFrom, _CidTo, Method) when Method == "missile" -> {ok, 0};
+calc_single(_CidFrom, _CidTo, Method) when Method == "magic" -> {ok, 0};
+calc_single(CidFrom, CidTo, Method) ->
 	%% any other method handler
 	proc_battle(
-		OidFrom, OidTo, Method,
+		CidFrom, CidTo, Method,
 		fun(X,Y) ->
 			unarmed:calc(X,Y)
 		end).
@@ -64,19 +64,19 @@ calc_single(OidFrom, OidTo, Method) ->
 %% magic: like tiltowait of wizardry,
 %%        and any other special resource consuming.
 
-proc_battle(OidFrom, OidTo, Method, CalcFunc) ->
+proc_battle(CidFrom, CidTo, Method, CalcFunc) ->
 	CalcFunc(
-		get_battle_parameter(OidFrom, Method),
-		get_battle_parameter(OidTo, Method)).
+		get_battle_parameter(CidFrom, Method),
+		get_battle_parameter(CidTo, Method)).
 
-get_battle_parameter(Oid, Method) ->
+get_battle_parameter(Cid, Method) ->
 	case Method of
 		"unarmed" ->
-			#battle_param{oid = Oid, range=1.0,
+			#battle_param{cid = Cid, range=1.0,
 				hp = 10, mp = 0, ac = 3, str = 5}
 	end.
 
-get_default_battle_method(_Oid) ->
+get_default_battle_method(_Cid) ->
 	%% check equipment.
 	"unarmed".
 

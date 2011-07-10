@@ -26,11 +26,10 @@
 -record(idle,  {since_last_op = 0, last_op = erlang:now()}).
 
 -record(cdata,	{cid, name, attr}).
-%% oid is onigiri id. what's onigiri? onigiri is element. (object or sprite, character...)
--record(session, {oid, pid, type, name = "", map = 0, x = 0, y = 0, z = 0, stream_pid}). 
+-record(session, {cid, pid, type, name = "", map = 0, x = 0, y = 0, z = 0, stream_pid}). 
 -record(location, {cid, initmap,initx, inity, initz}).
 
--record(battle_param, {oid, hp, mp, ac, str, range}).
+-record(battle_param, {cid, hp, mp, ac, str, range}).
 
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
