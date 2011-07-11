@@ -276,7 +276,7 @@ param(ParamsDict, Key) ->
 %% account management.
 %-----------------------------------------------------------
 
-delete_account(From, Svid, Id, Pw, Ipaddr) -> {failed}.
+delete_account(From, Svid, Id, Pw, Ipaddr) -> not_implemented.
 
 create_account(From, Svid, Id, Pw, Ipaddr) ->
 	mnesia:transaction(fun() ->
@@ -351,8 +351,7 @@ logout(From, Cid, _Token) ->
 %-----------------------------------------------------------
 get_list_to_know(_From, Cid) ->
 	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
-	% wait reply and receive.
-	receive
+	receive	% wait reply and receive.
 		{list_to_know, Actions, Stats} -> {actions_and_stats, Actions, Stats}
 		after 2000 -> {[], []}
 	end.
@@ -372,7 +371,8 @@ confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 % Talk APIs.
 % chat mode: open/whisper/group
 %-----------------------------------------------------------
-talk_to(Pid, Sender, MessageBody, Mode) -> Pid ! {self(), talk, Sender, MessageBody, Mode}.
+talk_to(Pid, Sender, MessageBody, Mode) ->
+	Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
 talk(whisper, SenderCid, ToCid, MessageBody) ->
 	F = fun(X) ->
