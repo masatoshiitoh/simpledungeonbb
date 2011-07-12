@@ -328,33 +328,90 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 login(From, Id, Pw, Ipaddr) ->
 	case auth_get_cid({basic, Id, Pw}) of 
 		void ->
-			{ng, "character: authentication failed"};
+			{ng, "authentication failed"};
 		Cid ->
-			P = db:do(qlc:q([X#session.cid||X<-mnesia:table(session), X#session.cid == Cid])),
-			case P of
-				[] ->
+			case get_session(Cid) of
+				{ng, "no such character"} ->
 					% Not found.. Instanciate requested character !
 					{ok, _Pid, Token} = setup_player_character(Cid),
 					{ok, Cid, Token};
-				[Cid] ->
+				Sess ->
 					% found.
-					{ng, "character: account is in use"}
+					{ng, "account is in use"}
 			end
 
 		end.
 
 logout(From, Cid, _Token) ->
-	setdown_player_character(Cid).
+	case get_session(Cid) of
+		{ng, Reason} -> {ng, Reason};
+		Sess -> setdown_player_character(Cid)
+	end.
+
+
+
+-ifdef(TEST).
+
+login_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{ok, Cid3, Token3}
+		= login(self(), "id0003", "pw0003", {192,168,1,200}),
+	logout(self(), Cid3, Token1),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+login_duplicated_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{ng, Reason} = login(self(), "id0001", "pw0001", {192,168,1,200}),
+	?assert(Reason == "account is in use"),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+logout_missing_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	logout(self(), "cid_not_exist", 0),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
+
 
 %-----------------------------------------------------------
 %% LIST to KNOW sender
 %-----------------------------------------------------------
 get_list_to_know(_From, Cid) ->
 	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
-	receive	% wait reply and receive.
+	receive
 		{list_to_know, Actions, Stats} -> {actions_and_stats, Actions, Stats}
-		after 2000 -> {[], []}
+		after 2000 -> {timeout, [], []}
 	end.
+
+-ifdef(TEST).
+get_list_to_know_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{actions_and_stats, AL, SL} = get_list_to_know(self(), Cid1),
+	[A1 | AT] = AL,
+	?assert(A1 == null),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+get_list_to_know_none_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{timeout, AL, SL} = get_list_to_know(self(), "cid_not_exist"),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
 
 %-----------------------------------------------------------
 % Trade APIs.
@@ -523,24 +580,46 @@ auth_get_cid({basic, Id, Pw}) ->
 
 get_session(Cid) ->
 	case apply_session(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
+		{atomic, {ng, A}} -> {ng, A};
 		{atomic, Result} -> Result
 	end.
 
 get_location(Cid) ->
 	case apply_location(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
+		{atomic, {ng, A}} -> {ng, A};
 		{atomic, Result} -> Result
 	end.
 
 get_initial_location(Cid) ->
 	case apply_initial_location(Cid, fun(X) -> X end) of
-		{ng, _} -> void;
+		{atomic, {ng, A}} -> {ng, A};
 		{atomic, Result} -> Result
 	end.
 
 stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
 stop_stream(_) -> void.
+
+
+-ifdef(TEST).
+get_session_online_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	S = get_session(Cid1),
+	?assert(is_record(S, session)),
+	?assert(S#session.cid == Cid1),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+get_session_offline_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	?assert({ng, "no such character"} == get_session("cid_not_exist")),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
 
 %-----------------------------------------------------------
 % sessions by location.
@@ -883,9 +962,5 @@ find_list_from_dict_found_test() ->
 	"v1" = find_list_from_dict("k1", D).
 
 -endif.
-
-
-
-
 
 
