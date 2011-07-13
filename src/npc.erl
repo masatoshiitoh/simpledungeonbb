@@ -59,13 +59,8 @@ remove_npc_from_db(Npcid) ->
 	end.
 
 setup_npc(Npcid)->
-	{cdata, Npcid, Name, Npcdata} = db_get_npcdata(Npcid),
-
-	io:format("setup_npc(~p) gets ~p, ~p~n", [Npcid, Name, Npcdata]),
-
 	R = #task_env{
 		cid = Npcid,
-		cdata = Npcdata,
 		event_queue = queue:new(),
 		stat_dict = [],
 		utimer = morningcall:new()

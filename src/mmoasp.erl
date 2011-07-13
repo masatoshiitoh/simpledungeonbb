@@ -69,7 +69,6 @@ out(A, 'GET', ["service", _SVID, "login"]) ->
 	Params = make_params({get, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
-	%% io:format("yaws_if. login requested. ~p~n", [Id]),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
 	Result = login(self(), Id, Pw, Ipaddr),
 	case Result of
@@ -94,10 +93,8 @@ out(A, 'POST', ["service", SVID, "create_account"]) ->
 	Result = create_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
-			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
 		{ng, Reason} ->
-			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
@@ -111,10 +108,8 @@ out(A, 'POST', ["service", SVID, "delete_account"]) ->
 	Result = delete_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
-			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
 		{ng, Reason} ->
-			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
@@ -128,10 +123,8 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 	Result = create_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
-			%% io:format("yaws_if. subscribe requested ok. ~p~n", [Id]),
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
 		{ng, Reason} ->
-			%% io:format("yaws_if. subscribe requested failed. ~p~n", [Reason]),
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
@@ -161,10 +154,8 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 	Result = login(self(),Id, Pw, Ipaddr),
 	case Result of
 		{ok, Cid, Token} ->
-			%% io:format("yaws_if. login requested ok. ~p~n", [Cid]),
 			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
 		{ng, Reason} ->
-			%% io:format("yaws_if. login requested failed. ~p~n", [Reason]),
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
 
@@ -173,7 +164,6 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 	Params = make_params({post, A}),
 	Token = param(Params, "token"),
-	%% io:format("yaws_if. logout requested. ~p~n", [CidX]),
 	Result = logout(self(), CidX, Token),
 	case Result of
 		{ok, CidX} ->
@@ -187,7 +177,6 @@ out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
-	%% io:format("yaws_if. listtoknow requested. ~p~n", [CidX]),
 	X = get_session(CidX),
 	X#session.pid ! {self(), update_neighbor_status, 10},
 
@@ -200,7 +189,6 @@ out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
-	%% io:format("yaws_if. talk requested. ~p~n", [CidX]),
 	Result = talk(open, CidX, Talked, 100),
 	mout:return_json(json:encode({struct, [Result]}));
 
@@ -216,7 +204,6 @@ out(A, 'POST', ["service", _SVID, "move", CidX]) ->
 	_Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
-	%% io:format("yaws_if. move requested. cid = ~p, x = ~p, y = ~p~n", [CidX, X, Y]),
 	_Result = move:move(CidX, {pos, X, Y}),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
@@ -393,12 +380,21 @@ get_list_to_know(_From, Cid) ->
 	end.
 
 -ifdef(TEST).
+
 get_list_to_know_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	{actions_and_stats, AL, SL} = get_list_to_know(self(), Cid1),
 	[A1 | AT] = AL,
-	?assert(A1 == null),
+	
+	% io:format("get_list_to_know_test:~p~n", [A1]),
+	A1Type = kv_get(A1, type),
+	A1Cid = kv_get(A1, cid),
+	A1Name = kv_get(A1, name),
+	?assert(A1Type == "login"),
+	?assert(A1Cid == "cid0001"),
+	?assert(A1Name == "alpha"),
+	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
@@ -450,22 +446,22 @@ talk(open, SenderCid, MessageBody, Radius) ->
 % notice functions.
 %-----------------------------------------------------------
 
-notice_login(SenderCid, {csummary, _Cid, Name}, Radius) ->
+notice_login(SenderCid, {csummary, Cid, Name}, Radius) ->
 	send_message_to_neighbors(
 		SenderCid,
-		{sensor, {self(), notice_login, SenderCid, Name}},
+		{sensor, {self(), notice_login, Cid, Name}},
 		Radius).
 
-notice_logout(SenderCid, {csummary, _Cid}, Radius) ->
+notice_logout(SenderCid, {csummary, Cid}, Radius) ->
 	send_message_to_neighbors(
 		SenderCid,
-		{sensor, {self(), notice_logout, SenderCid}},
+		{sensor, {self(), notice_logout, Cid}},
 		Radius).
 
-notice_remove(SenderCid, {csummary, _Cid}, Radius) ->
+notice_remove(SenderCid, {csummary, Cid}, Radius) ->
 	send_message_to_neighbors(
 		SenderCid,
-		{sensor, {self(), notice_remove, SenderCid}},
+		{sensor, {self(), notice_remove, Cid}},
 		Radius).
 
 notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
@@ -487,9 +483,8 @@ send_message_by_cid(Cid, Message) ->
 %-----------------------------------------------------------
 
 setup_player_character(Cid)->
-	CData = lookup_cdata(Cid),
 	%% setup task_env record
-	R = setup_task_env(Cid, CData),
+	R = setup_task_env(Cid),
 
 	%% start player character process.
 	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
@@ -500,6 +495,7 @@ setup_player_character(Cid)->
 	setup_player_initial_location(Cid),
 
 	%% notice login information to nearby.
+	CData = lookup_cdata(Cid),
 	Radius = 100,
 	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
 	{ok, Child, R#task_env.token}.
@@ -539,10 +535,9 @@ init_trade(Cid) ->
 	mnesia:transaction(
 		fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
 
-setup_task_env(Cid, CData) ->
+setup_task_env(Cid) ->
 	#task_env{
 		cid = Cid,
-		cdata = CData,
 		event_queue = queue:new(),
 		stat_dict = [],
 		token = gen_token("nil", Cid),
@@ -552,19 +547,11 @@ setup_task_env(Cid, CData) ->
 % Character Persistency
 %-----------------------------------------------------------
 
-%% Load cdata
 lookup_cdata(Cid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
 		[] -> void;
 		[CData] -> CData
 	end.
-
-%% Save cdata
-store_cdata(_Cid, CData) ->
-	F = fun() ->
-		mnesia:write(CData)
-	end,
-	mnesia:transaction(F).
 
 %-----------------------------------------------------------
 % character data and session
@@ -601,6 +588,7 @@ stop_stream(_) -> void.
 
 
 -ifdef(TEST).
+
 get_session_online_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
@@ -627,7 +615,6 @@ get_session_offline_test() ->
 %-----------------------------------------------------------
 get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
-	
 	F = fun() ->
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session, Me}) =< R
@@ -640,7 +627,6 @@ get_all_neighbor_sessions(Cid, R) ->
 
 get_neighbor_char_sessions(Cid, R) ->
 	Me = get_session(Cid),
-	
 	F = fun() ->
 		qlc:e(qlc:q([Sess || Sess <- mnesia:table(session),
 			distance({session, Sess}, {session,Me}) =< R,
@@ -705,7 +691,7 @@ apply_cid_indexed_table(Cond, F) ->
 % moved from character
 %-----------------------------------------------------------
 
-gen_stat_from_cdata(X) -> 
+gen_stat_from_cdata(X) ->
 	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
 
 setpos(Cid, {pos, PosX, PosY}) ->
@@ -719,7 +705,6 @@ setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
 		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
 	end,
 	apply_session(Cid, F).
-
 
 
 %-----------------------------------------------------------
@@ -815,9 +800,7 @@ getter(Cid, Key) ->
 
 setter(Cid, Key, Value) ->
 	F = fun(X) ->
-		mnesia:write(
-			X#cdata{attr = kv_set(X#cdata.attr, Key, Value)}
-		)
+		mnesia:write(X#cdata{attr = kv_set(X#cdata.attr, Key, Value)})
 	end,
 	apply_cdata(Cid, F).
 
@@ -904,63 +887,5 @@ cid_pair_eq_test() -> {cid_pair, "1", "1"} = cid_pair("1", "1").
 cid_pair_nil_test() -> {cid_pair, nil, "2"} = cid_pair(nil, "2").
 -endif.
 
-
-store_kvpairs([], Dict) -> Dict;
-
-store_kvpairs(KVPairList, Dict) ->
-	[{K,V}|T] = KVPairList,
-	store_kvpairs(T, case V of
-		[] -> dict:erase(K, V, Dict);
-		V -> dict:store(K, V, Dict)
-	end).
-
-
--ifdef(TEST).
-	store_kvpairs_nil_test() ->
-		D = dict:new(),
-		D = store_kvpairs([], D).
-	store_kvpairs_one_test() ->
-		D = store_kvpairs([{"k1", "v1"}], dict:new()),
-		{ok, "v1"} = dict:find("k1", D).
-	store_kvpairs_two_test() ->
-		D = store_kvpairs([{"k1", "v1"}, {"k2", "v2"}], dict:new()),
-		{ok, "v2"} = dict:find("k2", D).
-	store_kvpairs_overwrite_test() ->
-		D = store_kvpairs([{"k1", "v1"}, {"k1", "vnew"}], dict:new()),
-		{ok, "vnew"} = dict:find("k1", D).
--endif.
-
-
-% First implementation: its too simple...
-%store_kvpairs(KVPairList, Dict) ->
-%	[{K,V}|T] = KVPairList,
-%	store_kvpairs(T, dict:store(K,V, Dict)).
-
-
-find_list_from_dict(Cid, Dict) ->
-	case dict:find(Cid, Dict) of
-		{ok, V} -> V;
-		error -> []
-		end.
-
-add_new_member(NewMember, List) ->
-	case lists:member(NewMember, List) of
-		true -> List;
-		false -> [NewMember] ++ List
-		end.
-
-
--ifdef(TEST).
-
-find_list_from_dict_empty_test() ->
-	[] = find_list_from_dict("k1", dict:new()).
-find_list_from_dict_notfound_test() ->
-	D = store_kvpairs([{"k1", "v1"}], dict:new()),
-	[] = find_list_from_dict("k2", D).
-find_list_from_dict_found_test() ->
-	D = store_kvpairs([{"k1", "v1"}], dict:new()),
-	"v1" = find_list_from_dict("k1", D).
-
--endif.
 
 
