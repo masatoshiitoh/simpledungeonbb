@@ -178,7 +178,7 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	X = get_session(CidX),
-	X#session.pid ! {self(), update_neighbor_status, 10},
+	X#session.pid ! {self(), update_neighbor_status, default_distance()},
 
 	{actions_and_stats, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
 	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
@@ -189,7 +189,7 @@ out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
-	Result = talk(open, CidX, Talked, 100),
+	Result = talk(open, CidX, Talked, default_distance()),
 	mout:return_json(json:encode({struct, [Result]}));
 
 %% Whisper (person to person talk)
@@ -235,8 +235,7 @@ out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
 
 %% sample for "catch all" handler.
 out(A, _Method, _Params) ->
-	io:format("yaws_if. catchall. ~n", []),
-	io:format("general handler: A#arg.appmoddata = ~p~n"
+	io:format("out/3 general handler: A#arg.appmoddata = ~p~n"
 		"A#arg.appmod_prepath = ~p~n"
 		"A#arg.querydata = ~p~n",
 		[A#arg.appmoddata,
@@ -305,9 +304,9 @@ change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 
 % caution!
 % login/4 cannot avoid failure caused by caller side problem.
-% for example,
+% such as...
 % > a = 1.
-% > a = login(.....).  <- a is already bound!
+% > a = mmoasp:login(.....).  <- a is already bound!
 %
 % in such case, requested character will be set to on-line, but no one can handle it.
 % Timeout mechanism will clear this situation.
@@ -319,11 +318,9 @@ login(From, Id, Pw, Ipaddr) ->
 		Cid ->
 			case get_session(Cid) of
 				{ng, "no such character"} ->
-					% Not found.. Instanciate requested character !
 					{ok, _Pid, Token} = setup_player_character(Cid),
 					{ok, Cid, Token};
-				Sess ->
-					% found.
+				_FoundSession ->
 					{ng, "account is in use"}
 			end
 
@@ -402,7 +399,7 @@ get_list_to_know_test() ->
 get_list_to_know_none_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{timeout, AL, SL} = get_list_to_know(self(), "cid_not_exist"),
+	{timeout, [], []} = get_list_to_know(self(), "cid_not_exist"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -482,8 +479,10 @@ send_message_by_cid(Cid, Message) ->
 % load and setup character for each login.
 %-----------------------------------------------------------
 
+%% define notification range.
+default_distance() -> 100.
+
 setup_player_character(Cid)->
-	%% setup task_env record
 	R = setup_task_env(Cid),
 
 	%% start player character process.
@@ -496,13 +495,11 @@ setup_player_character(Cid)->
 
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
-	Radius = 100,
-	notice_login(Cid, {csummary, Cid, CData#cdata.name}, Radius),
+	notice_login(Cid, {csummary, Cid, CData#cdata.name}, default_distance()),
 	{ok, Child, R#task_env.token}.
 
 setdown_player_character(Cid) ->
-	Radius = 100,
-	notice_logout(Cid, {csummary, Cid}, Radius),
+	notice_logout(Cid, {csummary, Cid}, default_distance()),
 	character:stop_child(Cid),
 	cancel_trade(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
@@ -514,14 +511,15 @@ setdown_player_character(Cid) ->
 
 % *** charachter setup support functions. ***
 
+make_allpos(A) when is_record(A, location) ->
+	{allpos,
+		A#location.initmap,
+		A#location.initx,
+		A#location.inity,
+		A#location.initz}.
+
 setup_player_initial_location(Cid) ->
-	Me = get_initial_location(Cid),
-	Map = Me#location.initmap,
-	X = Me#location.initx,
-	Y = Me#location.inity,
-	Z = Me#location.initz,
-	
-	setpos(Cid, {allpos, Map, X, Y, Z}).
+	setpos(Cid, make_allpos(get_initial_location(Cid))).
 
 add_session(Cid, Pid, Type) ->
 	mnesia:transaction(
@@ -552,6 +550,56 @@ lookup_cdata(Cid) ->
 		[] -> void;
 		[CData] -> CData
 	end.
+
+gen_stat_from_cdata(X) ->
+	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
+
+% caution !!
+% Following getter/2 and setter/2 are dangerous to open to web interfaces.
+% DO NOT OPEN them as web i/f to clients to set gaming parameters
+% (like hit point or money) from remote.
+getter(Cid, Key) ->
+	F = fun() ->
+		case mnesia:read({cdata, Cid}) of
+			[] -> undefined;	%% no match
+			[D] -> kv_get(D#cdata.attr, Key)
+		end
+	end,
+	{atomic, Val} = mnesia:transaction(F),
+	Val.
+
+setter(Cid, Key, Value) ->
+	F = fun(X) ->
+		mnesia:write(X#cdata{attr = kv_set(X#cdata.attr, Key, Value)})
+	end,
+	apply_cdata(Cid, F).
+
+-ifdef(TEST).
+
+db_get_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	V1 = getter(Cid1, "hp"),
+	?assert(V1 == 12),
+	
+	V2 = getter(Cid2, "hp"),
+	?assert(V2 == 16),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+	
+db_set_1_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	setter(Cid1, "hp", 2),
+	V1 = getter(Cid1, "hp"),
+	?assert(V1 == 2),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
+
 
 %-----------------------------------------------------------
 % character data and session
@@ -611,7 +659,6 @@ get_session_offline_test() ->
 
 %-----------------------------------------------------------
 % sessions by location.
-% (select * from location, session where location.cid = session.cid)
 %-----------------------------------------------------------
 get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
@@ -655,6 +702,22 @@ get_neighbor_char_cdata(Cid, R) ->
 	end.
 
 %-----------------------------------------------------------
+% character location updater
+%-----------------------------------------------------------
+
+setpos(Cid, {pos, PosX, PosY}) ->
+	F = fun(X) ->
+		mnesia:write(X#session{x = PosX, y = PosY})
+	end,
+	apply_session(Cid, F);
+
+setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
+	F = fun(X) ->
+		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
+	end,
+	apply_session(Cid, F).
+
+%-----------------------------------------------------------
 % apply function to online characters
 %-----------------------------------------------------------
 
@@ -687,37 +750,36 @@ apply_cid_indexed_table(Cond, F) ->
 	end,
 	mnesia:transaction(L).
 
-%-----------------------------------------------------------
-% moved from character
-%-----------------------------------------------------------
-
-gen_stat_from_cdata(X) ->
-	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-setpos(Cid, {pos, PosX, PosY}) ->
-	F = fun(X) ->
-		mnesia:write(X#session{x = PosX, y = PosY})
-	end,
-	apply_session(Cid, F);
-
-setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
-	F = fun(X) ->
-		mnesia:write(X#session{map = Map, x = PosX, y = PosY, z = PosZ})
-	end,
-	apply_session(Cid, F).
 
 
 %-----------------------------------------------------------
-% Making token.
+%
+% Utilities.
+%
 %-----------------------------------------------------------
+
 gen_token(_Ipaddr, _Cid) -> make_new_id().
 
+wait(W) ->
+	receive
+		after W -> ok
+	end.
 
-%-----------------------------------------------------------
-% KV store
-%-----------------------------------------------------------
+kv_get(L, K) ->
+	case lists:keysearch(K, 1, L) of
+		{value, {K,V}} -> V;
+		false -> undefined
+	end.
+
+kv_set(L, K, V) ->
+	case lists:keymember(K, 1, L) of
+		true -> lists:keyreplace(K,1,L, {K, V});
+		false -> [{K,V}] ++ L
+	end.
+
 
 -ifdef(TEST).
+
 kv_get_1_test() ->
 	L = [{"k1", "v1"}, {"k2", "v2"}],
 	Result = kv_get(L, "k1"),
@@ -740,75 +802,7 @@ kv_set_0_test() ->
 	Result = kv_get(NewL, "k3"),
 	?assert(Result == "v3").
 
-db_get_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	V1 = getter(Cid1, "hp"),
-	?assert(V1 == 12),
-	
-	V2 = getter(Cid2, "hp"),
-	?assert(V2 == 16),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-	
-db_set_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	setter(Cid1, "hp", 2),
-	V1 = getter(Cid1, "hp"),
-	?assert(V1 == 2),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
 -endif.
-
-wait(W) ->
-	receive
-		after W -> ok
-	end.
-
-%-----------------------------------------------------------
-%% general purpose KV access function.
-%-----------------------------------------------------------
-
-% caution !!
-% General purpose setter.(use this for configuration store, or other misc operation.
-% DO NOT USE for set gaming parameters(like hit point or money) from client.).
-
-kv_get(L, K) ->
-	case lists:keysearch(K, 1, L) of
-		{value, {K,V}} -> V;
-		false -> undefined
-	end.
-
-kv_set(L, K, V) ->
-	case lists:keymember(K, 1, L) of
-		true -> lists:keyreplace(K,1,L, {K, V});
-		false -> [{K,V}] ++ L
-	end.
-
-getter(Cid, Key) ->
-	F = fun() ->
-		case mnesia:read({cdata, Cid}) of
-			[] -> undefined;	%% no match
-			[D] -> kv_get(D#cdata.attr, Key)
-		end
-	end,
-	{atomic, Val} = mnesia:transaction(F),
-	Val.
-
-setter(Cid, Key, Value) ->
-	F = fun(X) ->
-		mnesia:write(X#cdata{attr = kv_set(X#cdata.attr, Key, Value)})
-	end,
-	apply_cdata(Cid, F).
-
-
-
-%%%
-%%% -- utility functions --
-%%%
 
 
 % use for Tid, Cid, ItemId...

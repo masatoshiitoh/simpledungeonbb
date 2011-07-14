@@ -71,8 +71,11 @@ set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 %% initialize move. send move message to itself.
 %%
 
-mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.waypoints == [] andalso R#task_env.currpos == undefined ->
+mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I)
+	when R#task_env.waypoints == []
+		andalso R#task_env.currpos == undefined ->
 	set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I);
+
 
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 	set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I);
@@ -99,7 +102,7 @@ mapmove_call({_From, move}, R, I) ->
 		[H | T] ->
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 			{pos, _X, _Y} = CurrPos,
-			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, _Radius = 100),
+			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, mmoasp:default_distance()),
 			SelfPid = self(),
 			F = fun() ->
 				SelfPid ! {mapmove, {SelfPid, move}}
