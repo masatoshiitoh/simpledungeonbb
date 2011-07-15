@@ -660,6 +660,14 @@ get_session_offline_test() ->
 %-----------------------------------------------------------
 % sessions by location.
 %-----------------------------------------------------------
+
+get_query_result(F) ->
+	case mnesia:transaction(F) of
+		{atomic, Result} -> Result;
+		Other -> Other
+	end.
+
+
 get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
 	F = fun() ->
@@ -667,10 +675,7 @@ get_all_neighbor_sessions(Cid, R) ->
 			distance({session, Sess}, {session, Me}) =< R
 			]))
 	end,
-	case mnesia:transaction(F) of
-		{atomic, Result} -> Result;
-		Other -> Other
-	end.
+	get_query_result(F).
 
 get_neighbor_char_sessions(Cid, R) ->
 	Me = get_session(Cid),
@@ -679,10 +684,7 @@ get_neighbor_char_sessions(Cid, R) ->
 			distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
 	end,
-	case mnesia:transaction(F) of
-		{atomic, Result} -> Result;
-		Other -> Other
-	end.
+	get_query_result(F).
 
 get_neighbor_char_cdata(Cid, R) ->
 	Me = get_session(Cid),
@@ -696,10 +698,7 @@ get_neighbor_char_cdata(Cid, R) ->
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.cid]))
 	end,
-	case mnesia:transaction(F) of
-		{atomic, Result} -> Result;
-		Other -> Other
-	end.
+	get_query_result(F).
 
 %-----------------------------------------------------------
 % character location updater
@@ -760,6 +759,10 @@ apply_cid_indexed_table(Cond, F) ->
 
 gen_token(_Ipaddr, _Cid) -> make_new_id().
 
+% use for Tid, Cid, ItemId...
+make_new_id() ->
+	list_to_hexstr(erlang:binary_to_list(erlang:term_to_binary(erlang:make_ref()))).
+
 wait(W) ->
 	receive
 		after W -> ok
@@ -803,11 +806,6 @@ kv_set_0_test() ->
 	?assert(Result == "v3").
 
 -endif.
-
-
-% use for Tid, Cid, ItemId...
-make_new_id() ->
-	list_to_hexstr(erlang:binary_to_list(erlang:term_to_binary(erlang:make_ref()))).
 
 list_to_hexstr(A) -> list_to_hexstr(A, []).
 list_to_hexstr([], Acc) -> lists:flatten(lists:reverse(Acc));
