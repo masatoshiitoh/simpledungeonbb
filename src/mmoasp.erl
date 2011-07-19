@@ -280,23 +280,22 @@ get_player_character_template(Id, Pass) ->
 	].
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	case auth_get_cid({basic, Id, Pw}) of
-		void -> {ng, check_id_and_password};
-		Cid -> 
-			case (mnesia:transaction(fun() ->
-				case mnesia:read({auth_basic, Cid}) of
-					[] ->mnesia:abort(not_found);
-					[Acct] ->
-						PasswordChanged = Acct#auth_basic{pass = NewPw},
-						mnesia:write(PasswordChanged),
-						ok
-					end
-				end)) of
-				{atomic,ok} -> {ok};
-				Other -> Other
-			end
-		end.
+	do_change_password(
+		auth_get_cid({basic, Id, Pw}),
+		From, Svid, Id, Pw, NewPw, Ipaddr).
 
+do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) when Cid == void -> {ng, check_id_and_password};
+do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) ->
+	case (mnesia:transaction(fun() -> mn_rewrite_password(mnesia:read({auth_basic, Cid}), NewPw) end)) of
+		{atomic,ok} -> {ok};
+		Other -> Other
+	end.
+
+mn_rewrite_password(Accts, NewPw) when Accts == [] -> mnesia:abort(not_found);
+mn_rewrite_password([One], NewPw) ->
+	PasswordChanged = One#auth_basic{pass = NewPw},
+	mnesia:write(PasswordChanged),
+	ok.
 
 %-----------------------------------------------------------
 %% authorization.
@@ -556,7 +555,7 @@ gen_stat_from_cdata(X) ->
 
 % caution !!
 % Following getter/2 and setter/2 are dangerous to open to web interfaces.
-% DO NOT OPEN them as web i/f to clients to set gaming parameters
+% DO NOT OPEN them as web i/f to set gaming parameters
 % (like hit point or money) from remote.
 getter(Cid, Key) ->
 	F = fun() ->
@@ -667,7 +666,6 @@ get_query_result(F) ->
 		Other -> Other
 	end.
 
-
 get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
 	F = fun() ->
@@ -724,15 +722,10 @@ setpos(Cid, {allpos, Map, PosX, PosY, PosZ}) ->
 apply_session(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]), F).
 
-apply_pc(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid, X#session.type == "pc"]), F).
-
-apply_npc(Cid, F) ->
-	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid, X#session.type == "npc"]), F).
-
 %% F requires 1 arg (cdata record).
 apply_cdata(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]), F).
+
 %% F requires 1 arg (cdata record).
 apply_location(Cid, F) ->
 	apply_cid_indexed_table(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]), F).
@@ -757,6 +750,8 @@ apply_cid_indexed_table(Cond, F) ->
 %
 %-----------------------------------------------------------
 
+% token: session credential for web i/f.
+% TODO: record log Ipaddr and Cid.
 gen_token(_Ipaddr, _Cid) -> make_new_id().
 
 % use for Tid, Cid, ItemId...
@@ -818,6 +813,12 @@ list_to_hexstr_one_test() -> "ff" = list_to_hexstr([255]).
 list_to_hexstr_nil_test() -> "" = list_to_hexstr([]).
 -endif.
 
+%% distance calcurator.
+distance({cid,O1}, {cid,O2}) ->
+	distance(
+		{session, get_session(O1)},
+		{session, get_session(O2)});
+
 distance({session, S1}, {session, S2}) ->
 	distance(
 		{mapxy, S1#session.map, S1#session.x, S1#session.y},
@@ -826,20 +827,18 @@ distance({session, S1}, {session, S2}) ->
 
 distance({mapxy, Map1, X1, Y1}, {mapxy, Map2, X2, Y2}) when Map1 =:= Map2 ->
 	distance({pos, X1,Y1}, {pos, X2, Y2});
+
 distance({mapxy, _MapId1, _X1, _Y1}, {mapxy, _MapId2, _X2, _Y2}) ->
 	infinity;
+
 distance(_, offline) ->
 	infinity;
+
 distance(offline,_) ->
 	infinity;
+
 distance({pos, X1, Y1}, {pos, X2, Y2}) ->
-	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2));
-
-distance({cid,O1}, {cid,O2}) ->
-	distance(
-		{session, get_session(O1)},
-		{session, get_session(O2)}).
-
+	math:sqrt(math:pow((X1-X2),2) + math:pow((Y1-Y2),2)).
 
 %% TEST distance
 -ifdef(TEST).
