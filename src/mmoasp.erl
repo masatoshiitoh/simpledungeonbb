@@ -138,7 +138,7 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 	{Ipaddr, _Port} = A#arg.client_ip_port,
 	Result = change_password(self(), SVID, Id, Pw, NewPw, Ipaddr),
 	case Result of
-		{ok} ->
+		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
 		{ng, Reason} ->
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
@@ -257,6 +257,8 @@ param(ParamsDict, Key) ->
 		error -> void
 	end.
 
+-ifdef(TEST).
+-endif.
 
 %-----------------------------------------------------------
 %% account management.
@@ -280,16 +282,13 @@ get_player_character_template(Id, Pass) ->
 	].
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	do_change_password(
-		auth_get_cid({basic, Id, Pw}),
-		From, Svid, Id, Pw, NewPw, Ipaddr).
+	do_change_password(auth_get_cid({basic, Id, Pw}), From, Svid, Id, Pw, NewPw, Ipaddr).
 
-do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) when Cid == void -> {ng, check_id_and_password};
+do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) when Cid == void ->
+	{ng, check_id_and_password};
+
 do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) ->
-	case (mnesia:transaction(fun() -> mn_rewrite_password(mnesia:read({auth_basic, Cid}), NewPw) end)) of
-		{atomic,ok} -> {ok};
-		Other -> Other
-	end.
+	mnesia:transaction(fun() -> mn_rewrite_password(mnesia:read({auth_basic, Cid}), NewPw) end).
 
 mn_rewrite_password(Accts, NewPw) when Accts == [] -> mnesia:abort(not_found);
 mn_rewrite_password([One], NewPw) ->

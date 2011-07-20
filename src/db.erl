@@ -74,6 +74,9 @@ do(Q) ->
 	{atomic, Val} = mnesia:transaction(F),
 	Val.
 
+strip_transaction_result({atomic, ok}) -> ok;
+strip_transaction_result(A) -> A.
+
 reset_tables() ->
 	mnesia:clear_table(service),
 	mnesia:clear_table(admin_session),
