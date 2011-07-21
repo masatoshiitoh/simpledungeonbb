@@ -177,9 +177,7 @@ out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
-	X = get_session(CidX),
-	X#session.pid ! {self(), update_neighbor_status, default_distance()},
-
+	send_message_by_cid(CidX, {self(), update_neighbor_status, default_distance()}),
 	{actions_and_stats, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
 	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
 
@@ -310,19 +308,18 @@ mn_rewrite_password([One], NewPw) ->
 % Timeout mechanism will clear this situation.
 %
 login(From, Id, Pw, Ipaddr) ->
-	case auth_get_cid({basic, Id, Pw}) of 
-		void ->
-			{ng, "authentication failed"};
-		Cid ->
-			case get_session(Cid) of
-				{ng, "no such character"} ->
-					{ok, _Pid, Token} = setup_player_character(Cid),
-					{ok, Cid, Token};
-				_FoundSession ->
-					{ng, "account is in use"}
-			end
+	do_login(Id, Pw, auth_get_cid({basic, Id, Pw})).
 
-		end.
+do_login(Id, Pw, Cid) when Cid == void -> {ng, "authentication failed"};
+do_login(Id, Pw, Cid) ->
+	login_and_setup_player(Cid, get_session(Cid)).
+
+login_and_setup_player(Cid, ExistingSession) when ExistingSession == {ng, "no such character"} ->
+	{ok, _Pid, Token} = setup_player_character(Cid),
+	{ok, Cid, Token};
+
+login_and_setup_player(Cid, ExistingSession) ->
+	{ng, "account is in use"}.
 
 logout(From, Cid, _Token) ->
 	case get_session(Cid) of
