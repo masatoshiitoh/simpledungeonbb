@@ -114,7 +114,7 @@ battle_02_test() ->
 	?assert(R1 /= ng),
 	
 	%% 2-1: Get List to Know.
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 	
 	%% 2-1-1: Attacked Cid check: (check list head only.)

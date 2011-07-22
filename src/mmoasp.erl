@@ -178,7 +178,7 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	send_message_by_cid(CidX, {self(), update_neighbor_status, default_distance()}),
-	{actions_and_stats, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
+	{list_to_know, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
 	mout:return_json(mout:list_to_json(ListToKnow ++ NeighborStats));
 
 %% Talk (open talk)
@@ -310,23 +310,14 @@ mn_rewrite_password([One], NewPw) ->
 login(From, Id, Pw, Ipaddr) ->
 	do_login(Id, Pw, auth_get_cid({basic, Id, Pw})).
 
-do_login(Id, Pw, Cid) when Cid == void -> {ng, "authentication failed"};
+do_login(Id, Pw, Cid) when Cid == void ->
+	{ng, "authentication failed"};
+
 do_login(Id, Pw, Cid) ->
-	login_and_setup_player(Cid, get_session(Cid)).
-
-login_and_setup_player(Cid, ExistingSession) when ExistingSession == {ng, "no such character"} ->
-	{ok, _Pid, Token} = setup_player_character(Cid),
-	{ok, Cid, Token};
-
-login_and_setup_player(Cid, ExistingSession) ->
-	{ng, "account is in use"}.
+	setup_player(Cid).
 
 logout(From, Cid, _Token) ->
-	case get_session(Cid) of
-		{ng, Reason} -> {ng, Reason};
-		Sess -> setdown_player_character(Cid)
-	end.
-
+	setdown_player(Cid).
 
 
 -ifdef(TEST).
@@ -367,7 +358,7 @@ logout_missing_test() ->
 get_list_to_know(_From, Cid) ->
 	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
 	receive
-		{list_to_know, Actions, Stats} -> {actions_and_stats, Actions, Stats}
+		{list_to_know, Actions, Stats} -> {list_to_know, Actions, Stats}
 		after 2000 -> {timeout, [], []}
 	end.
 
@@ -376,7 +367,7 @@ get_list_to_know(_From, Cid) ->
 get_list_to_know_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{actions_and_stats, AL, SL} = get_list_to_know(self(), Cid1),
+	{list_to_know, AL, SL} = get_list_to_know(self(), Cid1),
 	[A1 | AT] = AL,
 	
 	% io:format("get_list_to_know_test:~p~n", [A1]),
@@ -477,23 +468,36 @@ send_message_by_cid(Cid, Message) ->
 %% define notification range.
 default_distance() -> 100.
 
-setup_player_character(Cid)->
-	R = setup_task_env(Cid),
+setup_player(Cid) ->
+	do_setup_player(Cid, get_session(Cid)).
 
+do_setup_player(Cid, ExistingSession)
+	when ExistingSession == {ng, "no such character"} ->
+
+	R = setup_task_env(Cid),
 	%% start player character process.
 	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
 	add_session(Cid, Child, "pc"),
-
 	%% setup character states.
 	init_trade(Cid),
 	setup_player_initial_location(Cid),
-
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
 	notice_login(Cid, {csummary, Cid, CData#cdata.name}, default_distance()),
-	{ok, Child, R#task_env.token}.
+	{ok, Cid, R#task_env.token};
 
-setdown_player_character(Cid) ->
+do_setup_player(Cid, ExistingSession) ->
+	{ng, "account is in use"}.
+
+
+setdown_player(Cid) ->
+	do_setdown_player(Cid, get_session(Cid)).
+
+do_setdown_player(Cid, ExistingSession)
+	when ExistingSession == {ng, "no such character"} ->
+		{ng, "no such character"};
+
+do_setdown_player(Cid, ExistingSession) ->
 	notice_logout(Cid, {csummary, Cid}, default_distance()),
 	character:stop_child(Cid),
 	cancel_trade(Cid),
@@ -560,8 +564,7 @@ getter(Cid, Key) ->
 			[D] -> kv_get(D#cdata.attr, Key)
 		end
 	end,
-	{atomic, Val} = mnesia:transaction(F),
-	Val.
+	mn_strip_atomic(mnesia:transaction(F)).
 
 setter(Cid, Key, Value) ->
 	F = fun(X) ->
@@ -609,22 +612,13 @@ auth_get_cid({basic, Id, Pw}) ->
 	end.
 
 get_session(Cid) ->
-	case apply_session(Cid, fun(X) -> X end) of
-		{atomic, {ng, A}} -> {ng, A};
-		{atomic, Result} -> Result
-	end.
+	mn_strip_atomic(apply_session(Cid, fun(X) -> X end)).
 
 get_location(Cid) ->
-	case apply_location(Cid, fun(X) -> X end) of
-		{atomic, {ng, A}} -> {ng, A};
-		{atomic, Result} -> Result
-	end.
+	mn_strip_atomic(apply_location(Cid, fun(X) -> X end)).
 
 get_initial_location(Cid) ->
-	case apply_initial_location(Cid, fun(X) -> X end) of
-		{atomic, {ng, A}} -> {ng, A};
-		{atomic, Result} -> Result
-	end.
+	mn_strip_atomic(apply_initial_location(Cid, fun(X) -> X end)).
 
 stop_stream(Pid) when is_pid(Pid) -> Pid ! {self(), stop};
 stop_stream(_) -> void.
@@ -656,12 +650,6 @@ get_session_offline_test() ->
 % sessions by location.
 %-----------------------------------------------------------
 
-get_query_result(F) ->
-	case mnesia:transaction(F) of
-		{atomic, Result} -> Result;
-		Other -> Other
-	end.
-
 get_all_neighbor_sessions(Cid, R) ->
 	Me = get_session(Cid),
 	F = fun() ->
@@ -669,7 +657,7 @@ get_all_neighbor_sessions(Cid, R) ->
 			distance({session, Sess}, {session, Me}) =< R
 			]))
 	end,
-	get_query_result(F).
+	do_query_and_strip_result(F).
 
 get_neighbor_char_sessions(Cid, R) ->
 	Me = get_session(Cid),
@@ -678,7 +666,7 @@ get_neighbor_char_sessions(Cid, R) ->
 			distance({session, Sess}, {session,Me}) =< R,
 			Sess#session.type == "pc"]))
 	end,
-	get_query_result(F).
+	do_query_and_strip_result(F).
 
 get_neighbor_char_cdata(Cid, R) ->
 	Me = get_session(Cid),
@@ -692,7 +680,13 @@ get_neighbor_char_cdata(Cid, R) ->
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.cid]))
 	end,
-	get_query_result(F).
+	do_query_and_strip_result(F).
+
+do_query_and_strip_result(F) ->
+	mn_strip_atomic( mnesia:transaction(F)).
+
+mn_strip_atomic({atomic, Result}) -> Result;
+mn_strip_atomic(Other) -> Other.
 
 %-----------------------------------------------------------
 % character location updater
@@ -733,7 +727,7 @@ apply_cid_indexed_table(Cond, F) ->
 	L = fun() ->
 		case qlc:e(Cond) of
 			[] -> {ng, "no such character"};	% this style makes return value as {atomic, {ng,"no~"}}
-			[R] -> F(R)
+			[Row] -> F(Row)
 		end
 	end,
 	mnesia:transaction(L).
@@ -862,6 +856,7 @@ distance_by_cid_test() ->
 -endif.
 
 
+%% cid_pair makes ordered cid_pair tuple.
 
 cid_pair(Cid1, Cid2) when Cid1 < Cid2 -> {cid_pair, Cid1, Cid2};
 cid_pair(Cid1, Cid2) when Cid1 >= Cid2 -> {cid_pair, Cid2, Cid1}.

@@ -36,7 +36,7 @@ start(Cid, YawsPid) ->
 % Sess: holds session type data that has character module process.
 loop(Sess, YawsPid) ->
 	link(YawsPid),		% this 'link' works "process living checker".
-	{actions_and_stats, A1, S1} = mmoasp:get_list_to_know(self(), Sess#session.cid),
+	{list_to_know, A1, S1} = mmoasp:get_list_to_know(self(), Sess#session.cid),
 	send_list_to_stream(YawsPid, (A1 ++ S1)),
 	receive
 		{_From, stop} ->

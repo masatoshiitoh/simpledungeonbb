@@ -152,7 +152,7 @@ code_change(_OldVsn, N, _Extra) -> {ok, N}.
 
 battle_observer_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
 	V1 = mmoasp:getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
@@ -162,7 +162,7 @@ battle_observer_01_test() ->
 
 	mmoasp:wait(20),
 
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 
 	?assert(
@@ -178,7 +178,7 @@ battle_observer_01_test() ->
 
 battle_observer_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
 	?assert(mmoasp:getter(Cid1, "type") == "pc"),
 	?assert(mmoasp:getter(Npcid1, "type") == "npc"),
@@ -191,7 +191,7 @@ battle_observer_pc_knockouted_test() ->
 
 	mmoasp:wait(20),
 
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 
 %%	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
@@ -311,17 +311,17 @@ store_result_twice_test() ->
 notice_results_nil_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [], 30),
 	?assert(L2 == []),
 
 	mmoasp:wait(20),
 
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
-%%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+%%		[Cid1, {list_to_know, Actions1, Stats1}]),
 
 	?assert(
 		test:sets_by_actions(Actions1, from_cid)
@@ -337,17 +337,17 @@ notice_results_nil_test() ->
 notice_results_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [{ok, 999}], 30),
 	?assert(L2 == [{ok, 999}]),
 
 	mmoasp:wait(20),
 
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
-%%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+%%		[Cid1, {list_to_know, Actions1, Stats1}]),
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
@@ -363,17 +363,17 @@ notice_results_1_test() ->
 notice_results_2_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{actions_and_stats, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [{ok, 7}, {ok, 13}], 30),
 	?assert(L2 == [{ok, 7}, {ok, 13}]),
 
 	mmoasp:wait(20),
 
-	{actions_and_stats, Actions1, _Stats1}
+	{list_to_know, Actions1, _Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
-%%		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+%%		[Cid1, {list_to_know, Actions1, Stats1}]),
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)

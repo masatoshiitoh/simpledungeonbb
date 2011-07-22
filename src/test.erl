@@ -200,16 +200,16 @@ do_stat() ->
 
 	mmoasp:wait(200),
 
-	{actions_and_stats, Actions1, Stats1}
+	{list_to_know, Actions1, Stats1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 	
-	{actions_and_stats, Actions2, Stats2}
+	{list_to_know, Actions2, Stats2}
 		= mmoasp:get_list_to_know(self(), Cid2),
 
 	io:format("list to know for ~p: ~p~n",
-		[Cid1, {actions_and_stats, Actions1, Stats1}]),
+		[Cid1, {list_to_know, Actions1, Stats1}]),
 	io:format("list to know for ~p: ~p~n",
-		[Cid2, {actions_and_stats, Actions2, Stats2}]),
+		[Cid2, {list_to_know, Actions2, Stats2}]),
 
 	%% now, world has 2 characters "cid0001" and "cid0002",
 	%% and  1 npc (npc0001).
@@ -380,9 +380,9 @@ do_talk() ->
 	mmoasp:talk(whisper,Cid2, Cid1, "talk, line 2"),
 
 	
-	{actions_and_stats, _A1, _S1} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _A1, _S1} = mmoasp:get_list_to_know(self(), Cid1),
 	%io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
-	{actions_and_stats, _A2, _S2} = mmoasp:get_list_to_know(self(), Cid2),
+	{list_to_know, _A2, _S2} = mmoasp:get_list_to_know(self(), Cid2),
 	%io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	
