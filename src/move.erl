@@ -102,7 +102,10 @@ mapmove_call({_From, move}, R, I) ->
 		[H | T] ->
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 			{pos, _X, _Y} = CurrPos,
-			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, 1000}, mmoasp:default_distance()),
+			
+			Distance = mmoasp:distance(CurrPos, H),
+			Duration = erlang:trunc(Distance * 1000),
+			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, Duration}, mmoasp:default_distance()),
 			SelfPid = self(),
 			F = fun() ->
 				SelfPid ! {mapmove, {SelfPid, move}}
@@ -110,7 +113,7 @@ mapmove_call({_From, move}, R, I) ->
 
 			%% update currpos and waypoints with H and T.
 			%% these currpos and waypoints are valid in future(at wakeup call).
-			NewR = R#task_env{currpos = H, waypoints = T, utimer = morningcall:add(1000, F, R#task_env.utimer)},
+			NewR = R#task_env{currpos = H, waypoints = T, utimer = morningcall:add(Duration, F, R#task_env.utimer)},
 			
 			{NewR,task:mk_idle_update(I)}
 	end;
