@@ -49,14 +49,13 @@ move(Cid, DestPos) ->
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
 
-
 set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.currpos == undefined ->
 	%% write currpos and waypoint into R record.
 	NewR = R#task_env{waypoints = WayPoints, currpos = CurrPos},
 	{NewR, task:mk_idle_reset()};
 
 set_new_route({_From, init_move, _CurrPos, WayPoints}, R, _I) ->
-	io:format("set_new_route: update only waypoints.~n", []),
+	io:format("set_new_route: overwrite waypoints.~n", []),
 	%% write currpos and waypoint into R record.
 	NewR = R#task_env{waypoints = WayPoints},
 	{NewR, task:mk_idle_reset()}.
@@ -74,10 +73,12 @@ set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I)
 	when R#task_env.waypoints == []
 		andalso R#task_env.currpos == undefined ->
+	notice_move_list_to_neighbor(R#task_env.cid, [CurrPos | WayPoints]),
 	set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I);
 
 
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I) ->
+	notice_move_list_to_neighbor(R#task_env.cid, [CurrPos | WayPoints]),
 	set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I);
 
 
@@ -104,7 +105,7 @@ mapmove_call({_From, move}, R, I) ->
 			{pos, _X, _Y} = CurrPos,
 			
 			Distance = mmoasp:distance(CurrPos, H),
-			Duration = erlang:trunc(Distance * 1000),
+			Duration = duration_millisec(Distance),
 			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, Duration}, mmoasp:default_distance()),
 			SelfPid = self(),
 			F = fun() ->
@@ -121,13 +122,38 @@ mapmove_call({_From, move}, R, I) ->
 %%
 %% receive others move.
 %%
+
+mapmove_call({_From, notice_move_list, SenderCid, MoveList}, R, I) ->
+	io:format("mapmove_call:~p got ~p 's move list: ~p ~n", [R#task_env.cid, SenderCid, MoveList]),
+	{task:add_event(R, {movelist, MoveList}), task:mk_idle_update(I)};
+
 mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 	{pos, FromX, FromY} = From,
 	{pos, ToX, ToY} = To,
-	{task:add_event(R,
-			[{type, "move"}, {cid, SenderCid},
-				{from_x, FromX}, {from_y, FromY},
-				{to_x, ToX}, {to_y, ToY},
-				{duration, Duration}]),
+	{task:add_event(R, make_move_info(SenderCid, From, To)),
 		task:mk_idle_update(I)}.
 
+make_move_info(SenderCid, From, To) ->
+	{pos, FromX, FromY} = From,
+	{pos, ToX, ToY} = To,
+	Distance = mmoasp:distance(From, To),
+	[{type, "move"}, {cid, SenderCid},
+				{from_x, FromX}, {from_y, FromY},
+				{to_x, ToX}, {to_y, ToY},
+				{duration, duration_millisec(Distance)}].
+
+duration_millisec(Distance) -> erlang:trunc(Distance * 1000).
+
+make_move_list(SenderCid, _CurrPos, L) ->
+	make_move_list([], SenderCid, _CurrPos, L).
+
+make_move_list(Acc, SenderCid, _CurrPos, []) ->
+	lists:reverse(Acc);
+
+make_move_list(Acc, SenderCid, CurrPos, [H|T] ) ->
+	make_move_list([make_move_info(SenderCid, CurrPos, H) | Acc], SenderCid, H, T).
+
+notice_move_list_to_neighbor(SenderCid, RawWaypoints) ->
+	[Start|L] = RawWaypoints,
+	%%mmoasp:notice_move_list(SenderCid, {transition_list, mout:list_to_json(make_move_list(SenderCid, Start, L))}, mmoasp:default_distance()).
+	0.

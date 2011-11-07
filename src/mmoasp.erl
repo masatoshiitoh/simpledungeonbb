@@ -453,6 +453,12 @@ notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
 		{mapmove, {self(), notice_move, SenderCid, From, To, Duration}},
 		Radius).
 
+notice_move_list(SenderCid, {transition_list, L}, Radius) ->
+	send_message_to_neighbors(
+		SenderCid,
+		{mapmove, {self(), notice_move_list, SenderCid, L}},
+		Radius).
+
 send_message_to_neighbors(SenderCid, Message, Radius) ->
 	[X#session.pid ! Message
 		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
