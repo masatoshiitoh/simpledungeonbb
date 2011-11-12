@@ -56,3 +56,32 @@ to_atom(K) when is_atom(K) -> K;
 to_atom(K) -> list_to_atom(K).
 
 
+
+
+
+%% mout:wrap_jsontype([[ {myoji, "yamada"}, {name, "taro"} ], [ {myoji, "yamada"}, {name, "taro"} ]]).
+
+%%[ {myoji, "yamada"}, {name, "taro"} ] -> {struct , [ {myoji, "yamada"}, {name, "taro"} ]}
+
+%% wrap_jsontye aims to replace 'prepare_json/1'.
+
+%wrap_jsontype([]) ->
+%	[];
+%
+%wrap_jsontype([H|T]) when is_number(H) -> %% given list must be a STRING.
+%	[H | T];	%% return STRING itself.
+%
+%wrap_jsontype([{struct, A} | T]) ->
+%	{array, [{struct, A}, wrap_jsontype(T)]};
+%
+%wrap_jsontype(T) ->
+%	{struct, T}.
+
+%add_element_to_hash({struct, ElementList}, {K,V}) ->
+%	{strucct, [{K,V} | ElementList]}.
+%
+%add_hash_to_array({array, Array}, {struct, H}) ->
+%	{array, [{struct, E} | Array]}.
+
+
+
