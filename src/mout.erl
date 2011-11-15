@@ -21,40 +21,46 @@
 
 -module(mout).
 -include("yaws_api.hrl").
--export([encode_json_array_with_result/2, return_html/1, return_json/1, list_to_json/1, list_to_xml/2]).
+-export([encode_json_array_with_result/2, return_html/1, return_json/1, object_list_to_json/1]).
 -compile(export_all).
 
-%% MMOASP Module - XML/JSON output support.
+%% mout.erl :
+%% MMOASP Module - JSON output support.
 
 return_json(Json) -> {content, "application/json; charset=utf-8", Json}.
 
 return_html(Json) -> {content,  "text/html; charset=utf-8", Json}.
 
 encode_json_array_with_result(Result, L) ->
-	json:encode({struct, [{result, Result}] ++ L}).
+	json:encode(json_result_object(Result, L)).
 
+object_list_to_json(L) when is_list(L) ->
+	json:encode(json_array([json_object(X) || X <- L])).
 
-list_to_json(L) ->
-	L2 = [{struct, X} || X <- L],
-	json:encode({array, L2}).
+json_result_object(Result, L) when is_list(L) ->
+	{struct, [{result, Result}] ++ L}.
 
+json_object(PropList) when is_list(PropList) ->
+	{struct, PropList}.
 
-list_to_xml(DATA, RootName)
-	->xmerl:export_simple(prepare_xmerl(DATA, RootName), xmerl_xml).
+json_array(Array) when is_list(Array) ->
+	{array, Array}.
 
-data_to_json(DATA)
-	->json:encode(prepare_json(DATA)).
+%%list_to_xml(DATA, RootName)
+%%	->xmerl:export_simple(prepare_xmerl(DATA, RootName), xmerl_xml).
+
+%data_to_json(DATA)
+%	->json:encode(prepare_json(DATA)).
 
 %%
 %%
 %%
 
-prepare_json(DATA) ->{struct, DATA}.
-prepare_xmerl(DATA, NAME) ->[{to_atom(NAME), [ {to_atom(K),[V]} || {K,V} <- DATA]}].
+%%prepare_json(DATA) ->{struct, DATA}.
+%%prepare_xmerl(DATA, NAME) ->[{to_atom(NAME), [ {to_atom(K),[V]} || {K,V} <- DATA]}].
 
 to_atom(K) when is_atom(K) -> K;
 to_atom(K) -> list_to_atom(K).
-
 
 
 

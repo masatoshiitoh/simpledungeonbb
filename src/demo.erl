@@ -28,7 +28,7 @@ json_test() ->
 	json:encode({array, D2}).
 
 json_test_liststyle() ->
-	lists:map(fun(X) -> mout:list_to_json(X) end, test_data()).
+	lists:map(fun(X) -> mout:object_list_to_json(X) end, test_data()).
 
 test_data_1() ->
 	{array, 
