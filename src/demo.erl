@@ -30,6 +30,26 @@ json_test() ->
 json_test_liststyle() ->
 	lists:map(fun(X) -> mout:object_list_to_json(X) end, test_data()).
 
+test_data_2() ->
+	[
+		[
+			{id, mmoasp:make_new_id()},
+			{type,"talk"},
+			{cid,"cid1234"},
+			{content,"talk, line 2"},
+			{mode,"whisper"},
+			{array, 
+				[
+					{struct, [{field1, "val1"}]},
+					{struct, [{field2, "val2"}]}
+				]
+			}
+
+		]
+	]
+		
+	
+
 test_data_1() ->
 	{array, 
 		[

@@ -142,6 +142,13 @@ make_move_info(SenderCid, From, To) ->
 				{to_x, ToX}, {to_y, ToY},
 				{duration, duration_millisec(Distance)}].
 
+make_move_list_info(SenderCid, []) ->
+	[{type, "move_list"}, {cid, SenderCid}];
+
+make_move_list_info(SenderCid, L) ->
+	[{type, "move_list"}, {cid, SenderCid},
+				{array, [{struct, X}|| X <- L]}].
+
 duration_millisec(Distance) -> erlang:trunc(Distance * 1000).
 
 make_move_list(SenderCid, _CurrPos, L) ->
@@ -155,5 +162,6 @@ make_move_list(Acc, SenderCid, CurrPos, [H|T] ) ->
 
 notice_move_list_to_neighbor(SenderCid, RawWaypoints) ->
 	[Start|L] = RawWaypoints,
-	%%mmoasp:notice_move_list(SenderCid, {transition_list, mout:list_to_json(make_move_list(SenderCid, Start, L))}, mmoasp:default_distance()).
+	MoveList = make_move_list(SenderCid, Start, L),
+	%mmoasp:notice_move_list(SenderCid, {transition_list, MoveList}, mmoasp:default_distance()).
 	0.
