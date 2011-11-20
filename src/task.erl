@@ -86,7 +86,7 @@ sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
 				task:get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict),
-				[] %% TODO set move_info from move_path_dict's values.
+				get_values(R#task_env.move_path_dict) %% [] %% TODO set move_info from move_path_dict's values.
 				},
 				
 			{R#task_env{event_queue = queue:new(), move_path_dict = dict:new()}, task:mk_idle_reset()};
@@ -117,6 +117,9 @@ sensor_call({_From, notice_remove, SenderCid}, R, I) ->
 
 %% utilities.
 
+get_values(Dict) ->
+	[V || {_K,V} <- dict:to_list(Dict)].
+
 get_stats(L) -> L.
 
 add_event(R, Event) when is_record(R, task_env) ->
@@ -132,4 +135,15 @@ mk_idle_update(I) when is_record(I, idle) ->
 	I#idle{
 		since_last_op = timer:now_diff(erlang:now(), I#idle.last_op)
 	}.
+
+-ifdef(TEST).
+
+get_values_01_test() ->
+	Dict = dict:from_list([{"cid0001","1"},{"cid0002","2"}]),
+	L = get_values(Dict),
+	SL = lists:sort(L),
+	?assert(SL == ["1","2"]),
+	{end_of_run_tests}.
+
+-endif.
 
