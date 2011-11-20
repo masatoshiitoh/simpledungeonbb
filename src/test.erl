@@ -200,10 +200,10 @@ do_stat() ->
 
 	mmoasp:wait(200),
 
-	{list_to_know, Actions1, Stats1}
+	{list_to_know, Actions1, Stats1, MoveInfo1}
 		= mmoasp:get_list_to_know(self(), Cid1),
 	
-	{list_to_know, Actions2, Stats2}
+	{list_to_know, Actions2, Stats2, MoveInfo2}
 		= mmoasp:get_list_to_know(self(), Cid2),
 
 	io:format("list to know for ~p: ~p~n",
@@ -380,9 +380,9 @@ do_talk() ->
 	mmoasp:talk(whisper,Cid2, Cid1, "talk, line 2"),
 
 	
-	{list_to_know, _A1, _S1} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _A1, _S1, _M1} = mmoasp:get_list_to_know(self(), Cid1),
 	%io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
-	{list_to_know, _A2, _S2} = mmoasp:get_list_to_know(self(), Cid2),
+	{list_to_know, _A2, _S2, _m2} = mmoasp:get_list_to_know(self(), Cid2),
 	%io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	

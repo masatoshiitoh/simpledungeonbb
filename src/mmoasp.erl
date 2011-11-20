@@ -178,8 +178,8 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	send_message_by_cid(CidX, {self(), update_neighbor_status, default_distance()}),
-	{list_to_know, ListToKnow, NeighborStats} = get_list_to_know(self(), CidX),
-	mout:return_json(mout:object_list_to_json(ListToKnow ++ NeighborStats));
+	{list_to_know, ListToKnow, NeighborStats, MovePaths} = get_list_to_know(self(), CidX),
+	mout:return_json(mout:object_list_to_json(ListToKnow ++ NeighborStats));%% TODO send MovePaths to json data!!!
 
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
@@ -358,8 +358,8 @@ logout_missing_test() ->
 get_list_to_know(_From, Cid) ->
 	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
 	receive
-		{list_to_know, Actions, Stats} -> {list_to_know, Actions, Stats}
-		after 2000 -> {timeout, [], []}
+		{list_to_know, Actions, Stats, MovePaths} -> {list_to_know, Actions, Stats, MovePaths}
+		after 2000 -> {timeout, [], [], []}
 	end.
 
 -ifdef(TEST).
@@ -367,7 +367,7 @@ get_list_to_know(_From, Cid) ->
 get_list_to_know_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{list_to_know, AL, SL} = get_list_to_know(self(), Cid1),
+	{list_to_know, AL, SL, ML} = get_list_to_know(self(), Cid1),
 	[A1 | AT] = AL,
 	
 	% io:format("get_list_to_know_test:~p~n", [A1]),
@@ -385,7 +385,7 @@ get_list_to_know_test() ->
 get_list_to_know_none_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{timeout, [], []} = get_list_to_know(self(), "cid_not_exist"),
+	{timeout, [], [], []} = get_list_to_know(self(), "cid_not_exist"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.

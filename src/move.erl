@@ -124,8 +124,11 @@ mapmove_call({_From, move}, R, I) ->
 %%
 
 mapmove_call({_From, notice_move_list, SenderCid, MoveList}, R, I) ->
-	io:format("mapmove_call:~p got ~p 's move list: ~p ~n", [R#task_env.cid, SenderCid, MoveList]),
-	{task:add_event(R, {movelist, MoveList}), task:mk_idle_update(I)};
+	%%io:format("mapmove_call:~p got ~p 's move list: ~p ~n", [R#task_env.cid, SenderCid, MoveList]),
+	io:format("mapmove_call:~p store move list info: ~p ~n", [R#task_env.cid, json:encode(make_move_list_info(SenderCid, MoveList))]),
+	NewMovePathDict = dict:store(SenderCid, make_move_list_info(SenderCid, MoveList), R#task_env.move_path_dict),
+	NewR = R#task_env{move_path_dict = NewMovePathDict},
+	{NewR, task:mk_idle_update(I)};
 
 mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 	{pos, FromX, FromY} = From,
@@ -143,11 +146,11 @@ make_move_info(SenderCid, From, To) ->
 				{duration, duration_millisec(Distance)}].
 
 make_move_list_info(SenderCid, []) ->
-	[{type, "move_list"}, {cid, SenderCid}];
+	{struct,[{type, "move_list"}, {cid, SenderCid}, {move_path, {array,[]}}]};
 
 make_move_list_info(SenderCid, L) ->
-	[{type, "move_list"}, {cid, SenderCid},
-				{array, [{struct, X}|| X <- L]}].
+	{struct,[{type, "move_list"}, {cid, SenderCid},
+				{move_path, {array, [{struct, X}|| X <- L]}}]}.
 
 duration_millisec(Distance) -> erlang:trunc(Distance * 1000).
 
@@ -163,5 +166,4 @@ make_move_list(Acc, SenderCid, CurrPos, [H|T] ) ->
 notice_move_list_to_neighbor(SenderCid, RawWaypoints) ->
 	[Start|L] = RawWaypoints,
 	MoveList = make_move_list(SenderCid, Start, L),
-	%mmoasp:notice_move_list(SenderCid, {transition_list, MoveList}, mmoasp:default_distance()).
-	0.
+	mmoasp:notice_move_list(SenderCid, {transition_list, MoveList}, mmoasp:default_distance()).

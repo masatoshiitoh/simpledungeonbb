@@ -57,7 +57,7 @@ clean:
 	$(REMOVEDIR) Mnesia.nonode@nohost
 
 test: $(objs)
-	erl -pa .  -noshell -boot start_clean -s test run_tests_with_log -s init stop
+	erl -pa . -pa $(YAWS_EBINDIR) -noshell -boot start_clean -s test run_tests_with_log -s init stop
 
 run: $(objs)
 	erl -pa . -pa $(YAWS_EBINDIR) -boot start_clean -s simpledungeon start
