@@ -86,9 +86,12 @@ sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
 				task:get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict),
-				get_values(R#task_env.move_path_dict) %% [] %% TODO set move_info from move_path_dict's values.
+				get_values(R#task_env.move_path_dict) %% UNDER CONSTRUCTION.
 				},
-				
+			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
+			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),
+			io:format("listtoknow: ~p MVPA ~p~n", [From, get_values(R#task_env.move_path_dict)]),
+			
 			{R#task_env{event_queue = queue:new(), move_path_dict = dict:new()}, task:mk_idle_reset()};
 
 sensor_call({_From, notice_login, SenderCid, Name}, R, I) ->
