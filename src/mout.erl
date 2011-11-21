@@ -37,6 +37,9 @@ encode_json_array_with_result(Result, L) ->
 object_list_to_json(L) when is_list(L) ->
 	json:encode(json_array([json_object(X) || X <- L])).
 
+struct_list_to_json(L) when is_list(L) ->
+	json:encode(json_array(L)).
+
 json_result_object(Result, L) when is_list(L) ->
 	{struct, [{result, Result}] ++ L}.
 

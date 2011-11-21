@@ -179,7 +179,13 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	_Token = param(Params, "token"),
 	send_message_by_cid(CidX, {self(), update_neighbor_status, default_distance()}),
 	{list_to_know, ListToKnow, NeighborStats, MovePaths} = get_list_to_know(self(), CidX),
-	mout:return_json(mout:object_list_to_json(ListToKnow ++ NeighborStats));%% UNDER CONSTRUCTION
+	mout:return_json(mout:struct_list_to_json(
+		[{struct, X} || X <- ListToKnow]
+		 ++
+		 [{struct, X} || X <- NeighborStats]
+		 ++
+		 MovePaths
+		 ));%% UNDER CONSTRUCTION
 
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"

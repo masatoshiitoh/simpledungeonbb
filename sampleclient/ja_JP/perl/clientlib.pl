@@ -29,6 +29,7 @@ use Jcode;
 
 # This is a 'simple dungeon' api caller library.
 
+# my $base_url = "http://www.simpledungeons.com:8002";
 my $base_url = "http://127.0.0.1:8002";
 
 my $sv = "hibari";
