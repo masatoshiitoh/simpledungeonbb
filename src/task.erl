@@ -86,7 +86,7 @@ sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
 				task:get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict),
-				get_values(R#task_env.move_path_dict) %% UNDER CONSTRUCTION.
+				get_values(R#task_env.move_path_dict)
 				},
 			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
 			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),

@@ -185,7 +185,7 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 		 [{struct, X} || X <- NeighborStats]
 		 ++
 		 MovePaths
-		 ));%% UNDER CONSTRUCTION
+		 ));
 
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"

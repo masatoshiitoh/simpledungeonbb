@@ -36,8 +36,16 @@ start(Cid, YawsPid) ->
 % Sess: holds session type data that has character module process.
 loop(Sess, YawsPid) ->
 	link(YawsPid),		% this 'link' works "process living checker".
-	{list_to_know, Actions1, Stats1} = mmoasp:get_list_to_know(self(), Sess#session.cid),
-	send_list_to_stream(YawsPid, (mout:object_list_to_json(Actions1) ++ mout:object_list_to_json(Stats1))),
+	
+	
+	{list_to_know, ListToKnow, NeighborStats, MovePaths} = mmoasp:get_list_to_know(self(), Sess#session.cid),
+	send_list_to_stream(YawsPid, (mout:struct_list_to_json(
+		[{struct, X} || X <- ListToKnow]
+		 ++
+		 [{struct, X} || X <- NeighborStats]
+		 ++
+		 MovePaths
+		 ))),
 	receive
 		{_From, stop} ->
 			io:format("character_stream: stop(~p)~n", [Sess]),
