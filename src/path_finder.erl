@@ -33,36 +33,28 @@ lookup_path(StartPos, DestPos)	-> gen_server:call(?MODULE, {lookup, StartPos, De
 
 
 init([]) ->
-	% setup digraph.
-	G = digraph:new(),
-	
-	%% ** Place map loading here. **
-	
-	
-	
-	% Make an array holds map tupples.
-	Map = path_finder:make_map_from_arraymap(path_finder:arraymap()),
-	
-	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
-	{G, PList } = path_finder:make_all_vertex(Map,G),
-	
-	% dictionary for pos tupple - vertex reference.
-	VertexDict = dict:from_list(PList),
-	
-	% fill connected path by Map into G
-	path_finder:make_all_edges(Map, G, VertexDict, PList),
-	
-	% dictionary for vertex - pos reference.
-	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),
-	
-	% End of initialize.
-	{ok, {map, Map, G, PList, VertexDict, RevDict}}.
+	{ok, make_entry_from_arraymap(path_finder:arraymap())}.
 
 % How to use multiple maps:
 %
 % 1. Hold multiple G/Map/PosList/VertexDict/RevDict sets.
 % 2. Hold one G, multiple Map/PosList/VertexDict/RevDict sets.
 
+make_entry_from_arraymap(ArrayMap) ->
+	% setup digraph.
+	G = digraph:new(),
+	% Make an array holds map tupples.
+	Map = path_finder:make_map_from_arraymap(ArrayMap),
+	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
+	{G, PList } = path_finder:make_all_vertex(Map,G),
+	% dictionary for pos tupple - vertex reference.
+	VertexDict = dict:from_list(PList),
+	% fill connected path by Map into G
+	path_finder:make_all_edges(Map, G, VertexDict, PList),
+	% dictionary for vertex - pos reference.
+	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),
+	% End of initialize.
+	{map, Map, G, PList, VertexDict, RevDict}.
 
 
 handle_call({lookup, StartPos, DestPos}, _From, {map, Map, G, PList, VertexDict, RevDict}) ->
