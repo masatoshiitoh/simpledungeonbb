@@ -203,12 +203,12 @@ out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
 
 %% Move
 %% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
-out(A, 'POST', ["service", _SVID, "move", CidX]) ->
+out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
-	_Result = move:move(CidX, {pos, X, Y}),
+	_Result = move:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Attack

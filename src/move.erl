@@ -30,10 +30,28 @@
 %%
 %% 'map based move' main api
 %%
-move(Cid, DestPos) ->
+move({map_id, SvId, MapId}, Cid, DestPos) ->
 	F = fun(X) ->
 		NowPos = {pos, X#session.x, X#session.y},
-		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
+		{ok, Result} = path_finder:lookup_path({map_id, SvId, MapId}, NowPos, DestPos),
+		Result
+	end,
+	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
+	case WayPoints of
+		[] -> io:format("path unavailable.  no waypoints found.~n", []),
+			[];
+		[Start| Path] ->
+			FS = fun(X) ->
+				init_move(X#session.pid, Start, Path)
+			end,
+			mmoasp:apply_session(Cid, FS)
+	end.
+
+
+obsolete_move(Cid, DestPos) ->
+	F = fun(X) ->
+		NowPos = {pos, X#session.x, X#session.y},
+		{ok, Result} = path_finder:lookup_path({map_id, "hibari", 1}, NowPos, DestPos),
 		Result
 	end,
 	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
