@@ -237,6 +237,20 @@ out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
 	npc:start_npc(NpcidX),
 	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
 
+
+% Add New Non Player Character.
+out(A, 'POST', ["service", _SVID, "ping"]) ->
+	Params = make_params({post, A}),
+	AdminId = param(Params, "admin_id"),
+	ConnectPhrase = param(Params, "connect_phrase"),
+	mout:return_json(
+		mout:encode_json_array_with_result(
+			"ok",
+			[{"status", ok},
+			{"admin_id", AdminId},
+			{"connect_phrase", ConnectPhrase}]));
+
+
 %% sample for "catch all" handler.
 out(A, _Method, _Params) ->
 	io:format("out/3 general handler: A#arg.appmoddata = ~p~n"
