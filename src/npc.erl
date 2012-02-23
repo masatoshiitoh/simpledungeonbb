@@ -75,7 +75,7 @@ setup_npc(Npcid)->
 
 	Child.
 	
-loop(undefined, _) -> ok;	%% exit loop.
+loop(undefined, _) -> true;	%% exit loop.
 
 loop(R, I) ->
 	{NewR, NewI} = receive

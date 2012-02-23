@@ -91,7 +91,6 @@ up_scenarios() ->
 		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
 	{ok, Cid2, Token2}
 		= mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
-
 	{scenarios, Cid1, Token1, Cid2, Token2, "npc0001"}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
