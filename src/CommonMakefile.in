@@ -19,7 +19,17 @@
 #
 
 program = simpledungeon
-objs = simpledungeon.beam battle_observer.beam task.beam battle.beam throw.beam unarmed.beam character.beam character_stream.beam db.beam  morningcall.beam mout.beam move.beam npc.beam path_finder.beam test.beam trade.beam mmoasp.beam
+objs = \
+	simpledungeon.beam \
+	battle_observer.beam task.beam \
+	battle.beam throw.beam \
+	unarmed.beam character.beam \
+	character_stream.beam db.beam  \
+	morningcall.beam mout.beam \
+	move.beam npc.beam path_finder.beam \
+	test.beam trade.beam \
+	mmoasp.beam \
+	u.beam
 
 .SUFFIXES: .erl .beam
 
@@ -42,7 +52,7 @@ task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
 trade.beam :trade.erl mmoasp.hrl
 mmoasp.beam :mmoasp.erl mmoasp.hrl
-
+u.beam :u.erl mmoasp.hrl
 
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)

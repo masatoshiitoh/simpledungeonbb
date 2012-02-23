@@ -99,7 +99,7 @@ check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, _I)
 check_killed(_, R, I) -> 
 	loop(R, I).
 
-dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
+%% dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 
 db_get_npcdata(Cid) ->
 	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of

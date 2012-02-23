@@ -23,3 +23,12 @@
 
 -include_lib("mmoasp.hrl").
 %%-export([wait/1, db_setter/3, db_getter/2, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
+
+-compile(export_all).
+%-----------------------------------------------------------
+% timer.
+%-----------------------------------------------------------
+wait(W) ->
+	receive
+		after W -> ok
+	end.
