@@ -835,7 +835,13 @@ distance({cid,O1}, {cid,O2}) ->
 		{session, get_session(O1)},
 		{session, get_session(O2)});
 
-distance({session, S1}, {session, S2}) ->
+distance({session, {ng, _}}, _) ->
+	infinity;
+
+distance(_, {session, {ng, _}}) ->
+	infinity;
+
+distance({session, S1}, {session, S2}) when is_record(S1, session), is_record(S2, session) ->
 	distance(
 		{mapxy, S1#session.map, S1#session.x, S1#session.y},
 		{mapxy, S2#session.map, S2#session.x, S2#session.y}

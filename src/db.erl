@@ -36,13 +36,21 @@
 % KV access utilities
 %=======================
 
-access_cdata(_Oid, _Key) -> _Value = 0.
+access_cdata(Cid, Key) ->
+	{atomic, Cdata} = mmoasp:apply_cdata(Cid, fun(X) -> X end),
+	mmoasp:kv_get(Cdata#cdata.attr, Key).
+
+
+
 
 %%% TEST CODE ------------------------------------------ %%%
 -ifdef(TEST).
 
 access_cdata_01_test() ->
+
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	?assert(access_cdata("cid0001", "hp") == 12),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 -endif.

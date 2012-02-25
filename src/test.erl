@@ -79,15 +79,15 @@ npc,
 path_finder,
 simpledungeon,
 task,
-%%test,
 throw,
-trade,u,
+trade,
+u,
 %%uauth,
 unarmed,
 %%world,
-		
-		
-battle,battle_observer
+battle,
+battle_observer,
+test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 

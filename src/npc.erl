@@ -65,7 +65,7 @@ setup_npc(Npcid)->
 		stat_dict = [],
 		utimer = morningcall:new()
 	},
-	Child = spawn_link(fun() -> npc:loop(R, task:mk_idle_reset()) end),
+	Child = spawn(fun() -> npc:loop(R, task:mk_idle_reset()) end),
 	%% store session
 	mnesia:transaction(
 		fun() ->
