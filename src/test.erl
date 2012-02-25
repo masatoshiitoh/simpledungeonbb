@@ -177,7 +177,7 @@ do_battle_unarmed_022() ->
 	%% try unarmed battle.(Cid1 ok)
 	
 	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
-	?assert(R3 == ok),
+	?assert( (R3 == ok) or (R3 == critical) ),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
