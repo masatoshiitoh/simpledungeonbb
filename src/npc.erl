@@ -65,7 +65,7 @@ setup_npc(Npcid)->
 		stat_dict = [],
 		utimer = morningcall:new()
 	},
-	Child = spawn(fun() -> npc:loop(R, task:mk_idle_reset()) end),
+	Child = spawn_link(fun() -> npc:loop(R, task:mk_idle_reset()) end),
 	%% store session
 	mnesia:transaction(
 		fun() ->
@@ -75,14 +75,22 @@ setup_npc(Npcid)->
 
 	Child.
 	
-loop(undefined, _) -> true;	%% exit loop.
+loop(undefined, _) -> ok;	%% exit loop.
 
 loop(R, I) ->
 	{NewR, NewI} = receive
-		{system, X} -> task:system_call(X, R, I);
-		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} -> move:mapmove_call(X,R,I);
-		{event, X} -> check_killed(X, R, I);
+		{system, X} -> 
+			io:format("task:system_call ~p~n", [X]),
+			task:system_call(X, R, I);
+		{timer, X} ->
+			io:format("task:timer_call ~p~n", [X]),
+			task:timer_call(X, R, I);
+		{mapmove, X} ->
+			io:format("move:mapmove_call ~p~n", [X]),
+			move:mapmove_call(X,R,I);
+		{event, X} ->
+			io:format("check_killed ~p~n", [X]),
+			check_killed(X, R, I);
 
 		{_From, talk, Talker, MessageBody, Mode} ->
 			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),

@@ -56,7 +56,7 @@ system_call({From, stop_process}, R, _I) ->
 	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid},
-	{undefined, undefined}.
+	{NewR = undefined, NewI = undefined}.
 
 test_call({From, whoareyou}, R, I) ->
 	From ! {iam, R#task_env.cid},
