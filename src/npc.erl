@@ -51,7 +51,7 @@ remove_npc_from_db(Npcid) ->
 			mnesia:delete({session, Npcid})
 			end) of
 		{atomic,ok}->
-			io:format("npcloop: stop_npc session entry clear succeeded.~n"),
+			%%io:format("npcloop: stop_npc session entry clear succeeded.~n"),
 			ok;
 		AbortedWithReason ->
 			io:format("npcloop: stop_npc session entry clear failed ~p.~n", [AbortedWithReason]),
