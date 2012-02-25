@@ -62,7 +62,7 @@ check_record_test() ->
 run_tests_with_log()
 	->
 		mmoasp:change_schema(),
-		eunit:test(
+		eunit:test({timeout, 1000, 
 		[
 		
 %%admin,
@@ -88,7 +88,7 @@ unarmed,
 battle,
 battle_observer,
 test
-		],
+		]},
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
@@ -111,7 +111,7 @@ run_tests() ->
 
 up_scenarios() ->
 	mmoasp:start(reset_tables),
-	u:wait(500),
+%	u:wait(100),
 	_NpcPid1 = npc:start_npc("npc0001"),
 	{ok, Cid1, Token1}
 		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
@@ -276,6 +276,7 @@ do_pc_move() ->
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	S0 = mmoasp:get_session(Cid1),
+	?assert(is_record(S0, session)),
 	?assert(S0#session.x == 1),
 	?assert(S0#session.y == 1),
 	?assert(S0#session.map == 1),
@@ -292,6 +293,7 @@ do_pc_move() ->
 	
 	
 	S1 = mmoasp:get_session(Cid1),
+	?assert(is_record(S1, session)),
 	?assert(S1#session.x == 1),
 	?assert(S1#session.y == 2),
 	?assert(S1#session.map == 1),

@@ -44,7 +44,7 @@ stop_child(Cid) ->
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
 
-loop(undefined, _) -> true;	%% exit loop.
+loop(undefined, _) -> ok;	%% exit loop.
 
 loop(R, I)
 	when I#idle.since_last_op > 300*1000*1000->

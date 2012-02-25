@@ -142,7 +142,7 @@ handle_info(_Info, N) ->
 	{noreply, N}.
 
 terminate(_Reason, _N) ->
-	%%io:format("~p stopping reason=~p~n", [?MODULE, _Reason]),
+%%	io:format("~p stopping reason=~p, State=~p~n", [?MODULE, _Reason, _N]),
 	ok.
 
 code_change(_OldVsn, N, _Extra) -> {ok, N}.
