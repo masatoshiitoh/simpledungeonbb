@@ -102,10 +102,10 @@ loop(R, I) ->
 check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, _I)
 	when KilledOid == R#task_env.cid ->
 	remove_npc_from_db(KilledOid),
-	loop(undefined, undefined);
+	{undefined, undefined};
 
 check_killed(_, R, I) -> 
-	loop(R, I).
+	{R, I}.
 
 %% dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 

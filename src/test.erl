@@ -66,15 +66,25 @@ run_tests_with_log()
 		[
 		
 %%admin,
-character,character_stream,db,
+character,
+character_stream,
+db,
 %%demo,
 %%melee,
 mmoasp,
-morningcall,mout,move,
-npc,path_finder,simpledungeon,
-task,test,throw,
-trade,u,uauth,
-unarmed,world,
+morningcall,
+mout,
+move,
+npc,
+path_finder,
+simpledungeon,
+task,
+%%test,
+throw,
+trade,u,
+%%uauth,
+unarmed,
+%%world,
 		
 		
 battle,battle_observer
