@@ -62,7 +62,7 @@ check_record_test() ->
 run_tests_with_log()
 	->
 		mmoasp:change_schema(),
-		eunit:test({timeout, 1000, 
+		eunit:test(
 		[
 		
 %%admin,
@@ -88,7 +88,7 @@ unarmed,
 battle,
 battle_observer,
 test
-		]},
+		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
 
 run_tests() ->
