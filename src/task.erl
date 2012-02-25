@@ -65,7 +65,7 @@ test_call({From, whoareyou}, R, I) ->
 %% EVENT
 
 event_call({_From, event, OidFrom, OidTo, Event, EventOwner}, R, I) ->
-	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
+%	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
 	{add_event(R,
 		[{type, erlang:atom_to_list(Event)},
 			{cid, EventOwner},
@@ -88,9 +88,9 @@ sensor_call({From, request_list_to_know}, R, _I) ->
 				get_stats(R#task_env.stat_dict),
 				get_values(R#task_env.move_path_dict)
 				},
-			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
-			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),
-			io:format("listtoknow: ~p MVPA ~p~n", [From, get_values(R#task_env.move_path_dict)]),
+%			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
+%			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),
+%			io:format("listtoknow: ~p MVPA ~p~n", [From, get_values(R#task_env.move_path_dict)]),
 			
 			{R#task_env{event_queue = queue:new(), move_path_dict = dict:new()}, task:mk_idle_reset()};
 
