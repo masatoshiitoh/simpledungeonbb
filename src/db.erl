@@ -36,21 +36,32 @@
 % KV access utilities
 %=======================
 
-access_cdata(Cid, Key) ->
-	{atomic, Cdata} = mmoasp:apply_cdata(Cid, fun(X) -> X end),
-	mmoasp:kv_get(Cdata#cdata.attr, Key).
 
-
-
+get_new_id_for_service(Svid, IdType) ->
+	mnesia:activity(transaction,
+		fun() ->
+			[S] = mnesia:read({service, Svid}),
+			CurrId = u:kv_get(S#service.id_list, IdType),
+			mnesia:write(S#service{id_list = u:kv_set(S#service.id_list, IdType, CurrId + 1)}),
+			CurrId
+			end
+		).
 
 %%% TEST CODE ------------------------------------------ %%%
 -ifdef(TEST).
 
-access_cdata_01_test() ->
+access_new_id_01_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	?assert(get_new_id_for_service(testservice, cid) == 100003),
+	?assert(get_new_id_for_service(testservice, cid) == 100004),
+	?assert(get_new_id_for_service(testservice, cid) == 100005),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	{end_of_run_tests}.
 
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	?assert(access_cdata("cid0001", "hp") == 12),
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+access_new_id_not_exist_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	?assertException(_,_, get_new_id_for_service(testservice, idname_not_exist) == 1),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
 	{end_of_run_tests}.
 
 -endif.
@@ -60,153 +71,233 @@ access_cdata_01_test() ->
 % DB access layer.
 %=======================
 
-start() ->
-	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
-
 start(reset_tables) ->
-	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000),
+	start(),
 	reset_tables().
 
+start() ->
+	mnesia:start(),
+	mnesia:wait_for_tables(
+		[service,
+		admin,
+		character,
+		online_character,
+		session,
+		id_password,
+		initial_location], 30000).
+
 stop() ->
-	%mnesia:stop(),
+	mnesia:stop(),
 	ok.
 
 do(Q) ->
 	F = fun() -> qlc:e(Q) end,
-	{atomic, Val} = mnesia:transaction(F),
-	Val.
+	mnesia:activity(transaction, F).
 
-strip_transaction_result({atomic, ok}) -> ok;
-strip_transaction_result(A) -> A.
+strip_transaction_result({atomic, ok}) -> ok.
 
 reset_tables() ->
 	mnesia:clear_table(service),
-	mnesia:clear_table(admin_session),
-	mnesia:clear_table(auth_basic),
-	mnesia:clear_table(id_next),
-	mnesia:clear_table(cdata),
+	mnesia:clear_table(admin),
+	mnesia:clear_table(character),
+	mnesia:clear_table(online_character),
 	mnesia:clear_table(session),
-	mnesia:clear_table(money),
-	mnesia:clear_table(supplies),
-	mnesia:clear_table(estate),
-	mnesia:clear_table(location),
-	mnesia:clear_table(trade),
-	mnesia:clear_table(u_trade),
-	mnesia:transaction(fun() ->
-			foreach(fun mnesia:write/1, example_tables())
-		end).
+	mnesia:clear_table(id_password),
+	mnesia:clear_table(initial_location),
+	mnesia:activity(transaction, fun() -> foreach(fun mnesia:write/1, example_tables()) end).
 
-drop_all() ->
-	mnesia:stop(),
-	mnesia:delete_schema([node()]).
+drop_database() -> mnesia:delete_schema([node()]).
+create_database() -> mnesia:create_schema([node()]).
+recreate_database() ->
+	drop_database(),
+	create_database().
 
-do_this_once() ->
-	mnesia:create_schema([node()]),
+create_all_tables() ->
 	mnesia:start(),
-
 	mnesia:create_table(service,	[{attributes, record_info(fields, service)}]),
-	mnesia:create_table(admin_session,	[{attributes, record_info(fields, admin_session)}]),
-	mnesia:create_table(auth_basic,	[{attributes, record_info(fields, auth_basic)}]),
-	mnesia:create_table(id_next,	[{attributes, record_info(fields, id_next)}]),
-	mnesia:create_table(cdata,		[{attributes, record_info(fields, cdata)}]),
+	mnesia:create_table(admin,		[{attributes, record_info(fields, admin)}]),
+	mnesia:create_table(character,	[{attributes, record_info(fields, character)}]),
+	mnesia:create_table(online_character,	[{attributes, record_info(fields, online_character)}]),
 	mnesia:create_table(session,	[{attributes, record_info(fields, session)}]),
-	mnesia:create_table(money,		[{attributes, record_info(fields, money)}]),
-	mnesia:create_table(supplies,	[{attributes, record_info(fields, supplies)}, {index, [cid, item_id]}]),
-	mnesia:create_table(estate,		[{attributes, record_info(fields, estate)}, {index, [cid]}]),
-
-	mnesia:create_table(location,	[{attributes, record_info(fields, location)}]),
-	mnesia:create_table(trade,		[{attributes, record_info(fields, trade)}]),
-	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
-
+	mnesia:create_table(id_password,	[{attributes, record_info(fields, id_password)}]),
+	mnesia:create_table(initial_location,	[{attributes, record_info(fields, initial_location)}]),
 	mnesia:stop().
+
+recreate_db_and_tables() ->
+	recreate_database(),
+	create_all_tables().
 
 %% *************************
 %% following codes are only for developing use.
 %% *************************
 
-demo(session) ->
-	do(qlc:q([X || X <- mnesia:table(session)]));
+demo(service) ->
+	do(qlc:q([X || X <- mnesia:table(service)]));
 
-demo(select_auth) ->
-	do(qlc:q([X || X <- mnesia:table(auth_basic)]));
-
-demo(select_trade) ->
-	do(qlc:q([X || X <- mnesia:table(trade)])).
-
-demo(cdata, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
-
-demo(session, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]));
-
-demo(supplies, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid]));
-
-demo(u_trade, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(u_trade), X#u_trade.cid == Cid]));
-
-demo(location, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]));
-
-demo(inventory, Cid) ->
-	F = fun() ->
-		Money = qlc:e(qlc:q([X || X <- mnesia:table(money), X#money.cid == Cid])),
-		Supplies = qlc:e(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid])),
-		Estate = qlc:e(qlc:q([X || X <- mnesia:table(estate), X#estate.cid == Cid])),
-	
-		#inventory{cid = Cid, money = Money, supplies = Supplies, estate = Estate}
-	end,
-	mnesia:transaction(F).
+demo(admin) ->
+	do(qlc:q([X || X <- mnesia:table(admin)])).
 
 example_tables() ->
+	Email = "masatoshi9953@gmail.com",
+	Pass = "DefAULTpASSWord!!",
+	AdminPass = "adM1Np@SS",
+	%%EncEmail = encrypt_text("masatoshi9953@gmail.com"),
+	%%EncPass = encrypt_text("DefAULTpASSWord!!"),
+	%%EncAdminPass = encrypt_text("adM1Np@SS"),
+	
+	%%io:format("decrypt_text(EncEmail) = ~p~n", [decrypt_text(EncEmail)]),
+	%%io:format("decrypt_text(EncPass) = ~p~n", [decrypt_text(EncPass)]),
+	
 	[
-	%% service
-	{service, "hibari", "s0001", "p0001", unlimited},
+	{service, hibari, "defaultphrase",[{uid, 3},{cid, 3},{map_id, 2}], {{2013,1,1},{23,59,59}}},
+	{admin, #uid{service_name= hibari, id=1}, AdminPass, dict:from_list([{"email", Email}])},
 
-	%% npc data
-	{auth_basic,"npc0001", void,void},
-	{auth_basic,"npc0002", void,void},
-	{auth_basic,"npc0003", void,void},
-	{auth_basic,"npc0004", void,void},
-	{cdata,"npc0001", "Slime1", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0002", "Slime2", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0003", "Slime3", [{"type", "npc"}, {"hp", 2}]},
-	{cdata,"npc0004", "Slime4", [{"type", "npc"}, {"hp", 2}]},
+%	{user, {global_uid, hibari, 1}, hibari, "masatoshi", Pass, true, dict:new()},
+%	{user, {global_uid, hibari, 2}, hibari, "ufoo", Pass, true, dict:new()},
 
-	%% login
-	{auth_basic,"cid0001","id0001",	"pw0001"},
-	{auth_basic,"cid0002","id0002",	"pw0002"},
-	{auth_basic,"cid0003","id0003",	"pw0003"},
-	{auth_basic,"cid0004","id0004",	"pw0004"},
-	%% cdata
-	{cdata,"cid0001", "alpha",		[{"type", "pc"}, {"align", "good"}, {"hp", 12}]},
-	{cdata,"cid0002", "bravo",		[{"type", "pc"}, {"align", "evil"}, {"hp", 16}]},
-	{cdata,"cid0003", "charlie",	[{"type", "pc"}, {"align", "good"}, {"hp", 10}]},
-	{cdata,"cid0004", "delta",		[{"type", "pc"}, {"align", "good"}, {"hp", 18}]},
+	{character,
+		#cid{service_name = hibari, id = 1},
+		"GM Masa",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
+	{character,
+		#cid{service_name = hibari, id = 2},
+		"Foo",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
 
-	%% initial location (= re-spawn point)
-	{location,"cid0001", 1, 1, 1, 0},
-	{location,"cid0002", 1, 5, 1, 0},
-	{location,"cid0003", 1, 6, 1, 0},
-	{location,"cid0004", 1, 7, 1, 0},
-	{location,"npc0001", 1, 2, 1, 0},
-	{location,"npc0002", 1, 4, 1, 0},
-	{location,"npc0003", 1, 4, 4, 0},
-	{location,"npc0004", 1, 5, 5, 0},
+%	{online_character,
+%		#cid{service_name = hibari, id = 1},
+%		#map_id{service_name = hibari, id = 1},
+%		{pos, 1, 1},
+%		now(),
+%		dummypid
+%	},
+%	{online_character,
+%		#cid{service_name = hibari, id = 2},
+%		#map_id{service_name = hibari, id = 1},
+%		{pos, 1, 2},
+%		now(),
+%		dummypid
+%	},
+
+	{session,
+		#cid{service_name = hibari, id = 1},
+		"ToKEN",
+		session:make_expire()
+	},
+	{session,
+		#cid{service_name = hibari, id = 2},
+		"ToKEN",
+		session:make_expire()
+	},
+
+	{initial_location,
+		#cid{service_name = hibari, id = 1},
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 1, y = 1}
+	},
+	{initial_location,
+		#cid{service_name = hibari, id = 2},
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 1, y = 2}
+	},
+
+	{id_password,
+		#login_id{service_name = hibari, id = "lid00001"},
+		"password",
+		#cid{service_name = hibari, id = 1}
+	},
+	{id_password,
+		#login_id{service_name = hibari, id = "lid00002"},
+		"password",
+		#cid{service_name = hibari, id = 2}
+	},
+
+%	{user_session, {global_uid, hibari, 1}, now(), "ToKEN"},
+
+%{user_character, {global_uid, hibari, 1}, {global_cid, hibari, 1}},
+%{user_character, {global_uid, hibari, 2}, {global_uid, hibari, 2}},
+
+	{service, testservice, "testservicephrase00", [{uid, 1003},{cid, 100003},{map_id, 2}], {{2011,12,31},{23,59,59}}},
+	{admin, #uid{service_name= testservice, id=1}, AdminPass, dict:from_list([{"email", Email}])},
+%	{user, {global_uid, testservice, 1001}, testservice, "testmasa", Pass, true, dict:new()},
+%	{user, {global_uid, testservice, 1002}, testservice, "testfoo", Pass, true, dict:new()},
+%	{character, {global_cid, testservice, 100001}, "GM TEST", dict:from_list([{"sword", 1}]), dict:from_list([{"hp", 12}])},
+%	{character, {global_cid, testservice, 100002}, "TEST CHAR", dict:from_list([{"sword", 1}]), dict:from_list([{"hp", 12}])},
+%	{session, {global_cid, testservice, 100001}, {global_map_id, testservice, 1}, {pos, 1, 1}, now(), "ToKEN", dummypid},
+%	{session, {global_cid, testservice, 100002}, {global_map_id, testservice, 1}, {pos, 1, 2}, now(), "ToKEN", dummypid}
+%	{user_session, {global_uid, testservice, 1001}, now(), "ToKEN"}
+
+	{character,
+		#cid{service_name = testservice, id = 100001},
+		"GM Masa",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
+	{character,
+		#cid{service_name = testservice, id = 100002},
+		"Foo",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
+
+	{online_character,
+		#cid{service_name = testservice, id = 100001},
+		#map_id{service_name = testservice, id = 1},
+		{pos, 1, 1},
+		now(),
+		dummypid
+	},
+	{online_character,
+		#cid{service_name = testservice, id = 100002},
+		#map_id{service_name = testservice, id = 1},
+		{pos, 1, 2},
+		now(),
+		dummypid
+	},
+
+	{session,
+		#cid{service_name = testservice, id = 100001},
+		"ToKEN",
+		session:make_expire()
+	},
+	{session,
+		#cid{service_name = testservice, id = 100002},
+		"ToKEN",
+		session:make_expire()
+	},
+
+	{id_password,
+		#login_id{service_name = testservice, id = "test00001"},
+		"password",
+		#cid{service_name = testservice, id = 100001}
+	},
+	{id_password,
+		#login_id{service_name = testservice, id = "test00002"},
+		"password",
+		#cid{service_name = testservice, id = 100002}
+	}
+
+%{user_character, {global_uid, testservice, 1001}, {global_cid, testservice, 100001}},
+%{user_character, {global_uid, testservice, 1002}, {global_cid, testservice, 100002}},
+	
 	
 	%% inventory ( key colomn is cid.)
-	{money, "cid0001", 1000, 15},
-	{money, "cid0002", 2000, 0},
+%	{money, "cid0001", 1000, 15},
+%	{money, "cid0002", 2000, 0},
 
-	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
-	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
-	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0},
+%	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
+%	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
+%	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0},
 
-	{estate, item_sword01, "cid0001", false},
-	{estate, item_sword02, "cid0001", false},
-	{estate, item_shield01, "cid0002", false}
+%	{estate, item_sword01, "cid0001", false},
+%	{estate, item_sword02, "cid0001", false},
+%	{estate, item_shield01, "cid0002", false}
 	
 
 	].

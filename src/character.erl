@@ -26,13 +26,34 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 % API: sends message to child
-whoareyou(Cid) ->
-	mmoasp:apply_session(Cid,
-		fun(X) -> X#session.pid ! {test, {self(), whoareyou}} end).
 
-stop_child(Cid) ->
-	mmoasp:apply_session(Cid,
-		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
+start_child(Cid) when is_record(Cid, cid) ->
+	spawn(?MODULE, loop, [setup_task_env(Cid), task:mk_idle_reset()]).
+
+
+setup_task_env(Cid) ->
+	#task_env{
+		cid = Cid,
+		event_queue = queue:new(),
+		stat_dict = [],
+		token = u:gen_token(),
+		utimer =  morningcall:new()}.
+
+whoareyou(Cid) when is_record(Cid, cid) ->
+	mmoasp:apply_online_character(Cid,
+		fun(X) -> X#online_character.pid ! {test, {self(), whoareyou}} end).
+
+stop_child(Cid) when is_record(Cid, cid)->
+	mmoasp:apply_online_character(Cid,
+		fun(X) -> X#online_character.pid ! {system, {self(), stop_process}} end).
+
+get_name(Cid) when is_record(Cid, cid) ->
+	mnesia:activity(transaction, fun() ->
+		case mnesia:read({character, Cid}) of
+		[] -> undefined;
+		[C] -> C#character.name
+		end
+	end).
 
 % core loop -----------------------------------------------
 

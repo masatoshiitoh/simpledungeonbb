@@ -21,14 +21,27 @@
 program = simpledungeon
 objs = \
 	simpledungeon.beam \
-	battle_observer.beam task.beam \
-	battle.beam throw.beam \
-	unarmed.beam character.beam \
-	character_stream.beam db.beam  \
-	morningcall.beam mout.beam \
-	move.beam npc.beam path_finder.beam \
-	test.beam trade.beam \
+	battle_observer.beam \
+	task.beam \
+	battle.beam \
+	throw.beam \
+	unarmed.beam \
+	character.beam \
+	character_stream.beam \
+	db.beam  \
+	morningcall.beam \
+	mout.beam \
+	move.beam \
+	npc.beam \
+	path_finder.beam \
+	test.beam \
+	id_password.beam \
 	mmoasp.beam \
+	char_kv.beam \
+	default.beam \
+	online_character.beam \
+	session.beam \
+	initial_location.beam \
 	u.beam
 
 .SUFFIXES: .erl .beam
@@ -50,9 +63,14 @@ npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl
 task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
-trade.beam :trade.erl mmoasp.hrl
 mmoasp.beam :mmoasp.erl mmoasp.hrl
 u.beam :u.erl mmoasp.hrl
+char_kv.beam :char_kv.erl mmoasp.hrl
+default.beam :default.erl mmoasp.hrl
+online_character.beam :online_character.erl mmoasp.hrl
+session.beam :session.erl mmoasp.hrl
+initial_location.beam :initial_location.erl mmoasp.hrl
+id_password.beam :id_password.erl mmoasp.hrl
 
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)

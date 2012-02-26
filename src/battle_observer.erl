@@ -76,34 +76,34 @@ proc_damage(_OidFrom, _OidTo, DamTupple, _CharType, _NewHp) ->
 notice_results(OidFrom, OidTo, L, Radius) ->
 	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
 
-notice_result(OidFrom, OidTo, {killed, KilledOid}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {event, {self(), event, OidFrom, OidTo, killed, KilledOid}}
-		|| X <- Sessions],
-	{killed, KilledOid};
+notice_result(CidFrom, CidTo, {killed, KilledCid}, Radius) ->
+	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	[X#online_character.pid ! {event, {self(), event, CidFrom, CidTo, killed, KilledCid}}
+		|| X <- OL],
+	{killed, KilledCid};
 
-notice_result(OidFrom, OidTo, {ok, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, ok, Dam}
-		|| X <- Sessions],
+notice_result(CidFrom, CidTo, {ok, Dam}, Radius) ->
+	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, ok, Dam}
+		|| X <- OL],
 	{ok, Dam};
 
-notice_result(OidFrom, OidTo, {ng, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, ng, Dam}
-		|| X <- Sessions],
+notice_result(CidFrom, CidTo, {ng, Dam}, Radius) ->
+	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, ng, Dam}
+		|| X <- OL],
 	{ng, Dam};
 
-notice_result(OidFrom, OidTo, {critical, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, critical, Dam}
-		|| X <- Sessions],
+notice_result(CidFrom, CidTo, {critical, Dam}, Radius) ->
+	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, critical, Dam}
+		|| X <- OL],
 	{critical, Dam};
 
-notice_result(OidFrom, OidTo, {fumble, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
-	[X#session.pid ! {self(), attack, OidFrom, OidTo, fumble, Dam}
-		|| X <- Sessions],
+notice_result(CidFrom, CidTo, {fumble, Dam}, Radius) ->
+	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, fumble, Dam}
+		|| X <- OL],
 	{fumble, Dam}.
 
 %% store_result series returns {Result, Damage} tapple.

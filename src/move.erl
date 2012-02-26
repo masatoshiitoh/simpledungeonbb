@@ -30,39 +30,39 @@
 %%
 %% 'map based move' main api
 %%
-move({map_id, SvId, MapId}, Cid, DestPos) ->
+move({map_id, SvId, MapId}, Cid, DestPos) when is_record(DestPos, location) ->
 	F = fun(X) ->
-		NowPos = {pos, X#session.x, X#session.y},
+		NowPos = X#online_character.location,
 		{ok, Result} = path_finder:lookup_path({map_id, SvId, MapId}, NowPos, DestPos),
 		Result
 	end,
-	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
+	WayPoints = online_character:apply_online_character(Cid, F),
 	case WayPoints of
 		[] -> io:format("path unavailable.  no waypoints found.~n", []),
 			[];
 		[Start| Path] ->
 			FS = fun(X) ->
-				init_move(X#session.pid, Start, Path)
+				init_move(X#online_character.pid, Start, Path)
 			end,
-			mmoasp:apply_session(Cid, FS)
+			online_character:apply_online_character(Cid, FS)
 	end.
 
 
-obsolete_move(Cid, DestPos) ->
+obsolete_move(Cid, DestPos) when is_record(DestPos, location) ->
 	F = fun(X) ->
-		NowPos = {pos, X#session.x, X#session.y},
+		NowPos = X#online_character.location,
 		{ok, Result} = path_finder:lookup_path({map_id, "hibari", 1}, NowPos, DestPos),
 		Result
 	end,
-	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
+	WayPoints = online_character:apply_online_character(Cid, F),
 	case WayPoints of
 		[] -> io:format("path unavailable.  no waypoints found.~n", []),
 			[];
 		[Start| Path] ->
 			FS = fun(X) ->
-				init_move(X#session.pid, Start, Path)
+				init_move(X#online_character.pid, Start, Path)
 			end,
-			mmoasp:apply_session(Cid, FS)
+			online_character:apply_online_character(Cid, FS)
 	end.
 
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.

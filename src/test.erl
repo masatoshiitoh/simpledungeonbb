@@ -34,7 +34,7 @@
 
 -ifdef(TEST).
 scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
-scenario_01_test()-> {end_of_run_tests} = check_session_data().
+scenario_01_test()-> {end_of_run_tests}.
 scenario_02_test()-> {end_of_run_tests} = do_trades().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
@@ -87,6 +87,9 @@ unarmed,
 %%world,
 battle,
 battle_observer,
+char_kv,
+default,
+online_character,
 test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
@@ -216,10 +219,8 @@ do_stat() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% update neighbor stat.
-	X1 = mmoasp:get_session(Cid1),
-	X1#session.pid ! {self(), update_neighbor_status, 10},
-	X2 = mmoasp:get_session(Cid2),
-	X2#session.pid ! {self(), update_neighbor_status, 10},
+	online_character:send_message_by_cid(Cid1, {self(), update_neighbor_status, 10}),
+	online_character:send_message_by_cid(Cid2, {self(), update_neighbor_status, 10}),
 
 	% io:format("update request has sent.~n", []),
 
@@ -275,11 +276,13 @@ do_pc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-	S0 = mmoasp:get_session(Cid1),
-	?assert(is_record(S0, session)),
-	?assert(S0#session.x == 1),
-	?assert(S0#session.y == 1),
-	?assert(S0#session.map == 1),
+	O = online_character:get_one(Cid1),
+	?assert(is_record(O, online_character)),
+	?assert(O#online_character.location ==
+		#location{
+			map_id = #map_id{service_name = hibari, id = 1},
+			x = 1,
+			y = 1}),
 	
 	%% moving !
 	io:format("order move 1,3 to 3,3 ~p~n", [move:move({map_id, "hibari", 1}, Cid1, {pos, 3,3})]),
@@ -291,12 +294,14 @@ do_pc_move() ->
 		after 3000 -> ok
 	end,
 	
+	O1 = online_character:get_one(Cid1),
+	?assert(is_record(O1, online_character)),
+	?assert(O#online_character.location ==
+		#location{
+			map_id = #map_id{service_name = hibari, id = 1},
+			x = 1,
+			y = 2}),
 	
-	S1 = mmoasp:get_session(Cid1),
-	?assert(is_record(S1, session)),
-	?assert(S1#session.x == 1),
-	?assert(S1#session.y == 2),
-	?assert(S1#session.map == 1),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
@@ -311,11 +316,15 @@ do_pc_move() ->
 do_npc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	io:format("npc starts at ~p~n", [db:demo(session)]),
-	S0 = mmoasp:get_session(Npcid1),
-	?assert(S0#session.x == 2),
-	?assert(S0#session.y == 1),
-	?assert(S0#session.map == 1),
+	io:format("npc starts at ~p~n", [db:demo(online_character)]),
+
+	O1 = online_character:get_one(Npcid1),
+	?assert(is_record(O1, online_character)),
+	?assert(O1#online_character.location ==
+		#location{
+			map_id = #map_id{service_name = hibari, id = 1},
+			x = 2,
+			y = 1}),
 	
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
@@ -326,10 +335,13 @@ do_npc_move() ->
 	end,
 	io:format("Latest session ~p~n", [mmoasp:get_session(Npcid1)]),
 	
-	S1 = mmoasp:get_session(Npcid1),
-	?assert(S1#session.x == 3),
-	?assert(S1#session.y == 1),
-	?assert(S1#session.map == 1),
+	O2 = online_character:get_one(Npcid1),
+	?assert(is_record(O2, online_character)),
+	?assert(O2#online_character.location ==
+		#location{
+			map_id = #map_id{service_name = hibari, id = 1},
+			x = 3,
+			y = 1}),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
@@ -337,41 +349,6 @@ do_npc_move() ->
 		after 1000 -> ok
 	end,
 	io:format("after stop npc ~p~n", [db:demo(session)]),
-	{end_of_run_tests}.
-
-
-
-% NOT working as test (just only work.).
-check_session_data() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-
-	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
-%%	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
-	
-	Me = mmoasp:get_session(Cid1),
-	F = fun() ->
-		qlc:e(qlc:q(
-			[_NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
-					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
-				]}
-				|| Sess <- mnesia:table(session),
-				%%	Loc#location.cid =/= Cid,
-				mmoasp:distance({session, Sess}, {session, Me}) < 10,
-				CData <- mnesia:table(cdata),	
-				CData#cdata.cid == Sess#session.cid]))
-	end,
-	io:format("check internal, get_neighbor_char_cdata ~p~n", [case mnesia:transaction(F) of
-		{atomic, Result} -> Result;
-		Other -> Other
-	end]),
-
-	%% at this point, X cauase badrecord error on mmoasp:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
-	io:format("gen_stat_from_cdata of X: ~p~n", [[mmoasp:gen_stat_from_cdata(A) || A <- X]]),
-
-
-	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 do_trades() ->

@@ -18,49 +18,59 @@
 %%  http://www.gnu.org/copyleft/gpl.html
 %%
 
+-record(battle_param, {cid, hp, mp, ac, str, range}).
+
+%% Common record.
+
+-record(uid,      {service_name, id}).
+-record(cid,      {service_name, id}).
+-record(map_id,   {service_name, id}).
+-record(login_id, {service_name, id}).
+-record(location, {map_id, x, y}).
+
+-record(notice,   {cid, type, value}).
+-record(talk,     {cid, speaker_name, message}).
+
+-record(request,  {client_ip, port, version, service_name, action, id1, id2, id3}).
+-record(list_to_know, {actions, stats, move_paths}).
+
+
+
+-record(task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined, move_path_dict = dict:new()}).
+-record(idle,  {since_last_op = 0, last_op = erlang:now()}).
 
 %% Mnesia table structure
 
-%% under development:
-%-record(task_env, {cid, cdata, event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined}).
-%-record(task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined}).
--record( task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined, move_path_dict = dict:new()}).
--record(idle,  {since_last_op = 0, last_op = erlang:now()}).
+-record(service,
+	{service_name, conn_phrase, id_list, expire_date}).
+	%% conn_phrase is just for a fail-safe (typo service name, just so on.).
+	%% because conn_phrase is embedded in client program, and must be insecure.
+	%% id_list holds list like [{uid, 2}, {cid, 102}, {map_id, 21}]
 
--record(cdata,	{cid, name, attr}).
--record(session, {cid, pid, type, name = "", map = 0, x = 0, y = 0, z = 0, stream_pid}). 
--record(location, {cid, initmap,initx, inity, initz}).
+-record(admin,
+	{uid, crypted_password, attributes}).
+	%% attributes holds a dictionary.  developers can store parameters into it.
+	%% (ex. email, phone, facebook id,....)
 
--record(battle_param, {cid, hp, mp, ac, str, range}).
+-record(character,
+	{cid, name, inventory, status, hidden_parameters}).
+	%% inventory and status : you can store parameters.
+	%% hidden_parameters : storage for erlang code.
 
-% ** Admin **
--record(service, {svid, adm_id, adm_pass, expire}).
--record(admin_session, {key, svid, adm_id, token, last_op_time}).
+-record(online_character,
+	{cid, map_id, location, last_update, pid, stream_pid}).
+	%% session holds online characters.
+	%% map_id is included also in location. why? Help to select same map players.
+	%% expired sessions will be removed by remover service (we must make it).
 
--record(id_next, {svid, next}).  %% Holds next CID. Increment when getter called.
+-record(initial_location,
+	{cid, location}).
 
-% ** Authentication **
--record(auth_basic,	{cid, id, pass}). 
+-record(session,
+	{cid, token, expire_at}).
+	%% session holds session token.
+	%% expired sessions will be removed by remover service (we must make it).
 
-% ** Base **
--record(private_kv,	{cid, attr}).	%% private (hidden from other player) information(last window position, shortcut...
-
-%-record(level, {cid, lv, exp}).
-%-record(skill, {cid, list, rest_exp, used_exp}).
-%-record(friends, {cid, list}).
-
-% ** MMO style inventory: you can lookup them by character id **
--record(money,	{cid,  amount, offer}).
--record(supplies,	{id, cid, item_id, amount, offer}).
--record(estate,	{item_id, cid, is_offer}).
--record(trade,	{id, confirm_l, confirm_r}).
--record(u_trade, {cid, tid}).
--record(neighbors, {cid, list, updated}).
-
-%% item master table.
-%-record(m_item,		{id, data}).
-
-%% Just records. Not for Mnesia
--record(inventory, {cid, money, supplies, estate}).
-
+-record(id_password,
+	{login_id, password, cid}).
 

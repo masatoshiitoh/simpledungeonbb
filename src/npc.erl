@@ -69,8 +69,8 @@ setup_npc(Npcid)->
 	%% store session
 	mnesia:transaction(
 		fun() ->
-			[Loc1] = mnesia:read({location, Npcid}),
-			mnesia:write(#session{cid=Npcid, pid=Child, type="npc", map=Loc1#location.initmap, x=Loc1#location.initx,y=Loc1#location.inity}
+			Loc1 = initial_location:get_one(Npcid),
+			mnesia:write(#online_character{cid=Npcid, pid=Child, map_id=Loc1#location.map_id, location=Loc1}
 		) end), %% TEMPORARY IMPLEMENTATION!!
 
 	Child.
@@ -109,14 +109,10 @@ check_killed(_, R, I) ->
 
 %% dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 
-db_get_npcdata(Cid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
-		[] -> void;
-		[CData] -> CData
-	end.
+db_get_npc_status(Cid) when is_record(Cid, cid) ->
+	C = online_character:apply_character(Cid, fun(X) -> X end),
+	C#character.status.
 
-lookup_pid_by_npcid(Npcid) ->
-	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Npcid, X#session.type == "npc"])) of
-		[] -> void;
-		[X] -> X#session.pid
-	end.
+lookup_pid_by_npcid(Npcid) when is_record(Npcid, cid) ->
+	O = online_character:get_one(Npcid),
+	O#online_character.pid.

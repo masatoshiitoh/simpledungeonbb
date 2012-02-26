@@ -412,16 +412,6 @@ get_list_to_know_none_test() ->
 
 -endif.
 
-%-----------------------------------------------------------
-% Trade APIs.
-%   Tid is cid_pair tuple.
-% start_trade returns CidPair. use it for trade id (Tid).
-%-----------------------------------------------------------
-start_trade(Cid1,Cid2) -> trade:db_start_trade(Cid1, Cid2).
-set_offer(Cid, Money, Supplies, Estates) -> trade:db_set_offer(Cid, Money, Supplies, Estates).
-get_offer(Cid) -> trade:db_get_offer(Cid).
-cancel_trade(Cid) -> trade:db_cancel_trade(Cid).
-confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
 
 %-----------------------------------------------------------
 % Talk APIs.
@@ -432,13 +422,13 @@ talk_to(Pid, Sender, MessageBody, Mode) ->
 
 talk(whisper, SenderCid, ToCid, MessageBody) ->
 	F = fun(X) ->
-		talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
+		talk_to(X#online_character.pid, SenderCid, MessageBody, "whisper")
 	end,
-	apply_session(ToCid, F);
+	online_character:apply_online_character(ToCid, F);
 
 talk(open, SenderCid, MessageBody, Radius) ->
-	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
-		|| X <- get_all_neighbor_sessions(SenderCid, Radius)],
+	[talk_to(X#online_character.pid, SenderCid, MessageBody, "open")
+		|| X <- online_character:get_all_neighbors(SenderCid, Radius)],
 	{result, "ok"}.
 
 %talk(group, SenderCid, GroupId, MessageBody) ->
@@ -480,12 +470,12 @@ notice_move_list(SenderCid, {transition_list, L}, Radius) ->
 		Radius).
 
 send_message_to_neighbors(SenderCid, Message, Radius) ->
-	[X#session.pid ! Message
-		|| X <- get_neighbor_char_sessions(SenderCid, Radius)],
+	[X#online_character.pid ! Message
+		|| X <- online_character:get_all_neighbors(SenderCid, Radius)],
 	{result, "ok"}.
 
 send_message_by_cid(Cid, Message) ->
-	apply_session(Cid, fun(X) -> X#session.pid ! Message end).
+	online_character:apply_online_character(Cid, fun(X) -> X#online_character.pid ! Message end).
 
 %-----------------------------------------------------------
 % load and setup character for each login.
@@ -505,11 +495,10 @@ do_setup_player(Cid, ExistingSession)
 	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
 	add_session(Cid, Child, "pc"),
 	%% setup character states.
-	init_trade(Cid),
 	setup_player_initial_location(Cid),
 	%% notice login information to nearby.
-	CData = lookup_cdata(Cid),
-	notice_login(Cid, {csummary, Cid, CData#cdata.name}, default_distance()),
+	Name = character:get_name(Cid),
+	notice_login(Cid, {csummary, Cid, Name}, default:distance()),
 	{ok, Cid, R#task_env.token};
 
 do_setup_player(Cid, ExistingSession) ->
@@ -526,8 +515,7 @@ do_setdown_player(Cid, ExistingSession)
 do_setdown_player(Cid, ExistingSession) ->
 	notice_logout(Cid, {csummary, Cid}, default_distance()),
 	character:stop_child(Cid),
-	cancel_trade(Cid),
-	stop_stream((get_session(Cid))#session.stream_pid),
+	stop_stream((online_character:get_one(Cid))#online_character.stream_pid),
 	case delete_session(Cid) of
 		{atomic, ok} -> {ok, Cid};
 		Other -> Other
@@ -554,10 +542,6 @@ delete_session(Cid) ->
 	mnesia:transaction(
 		fun()-> mnesia:delete({session, Cid}) end).
 
-init_trade(Cid) ->
-	mnesia:transaction(
-		fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
-
 setup_task_env(Cid) ->
 	#task_env{
 		cid = Cid,
@@ -578,52 +562,6 @@ lookup_cdata(Cid) ->
 
 gen_stat_from_cdata(X) ->
 	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-% caution !!
-% Following getter/2 and setter/2 are dangerous to open to web interfaces.
-% DO NOT OPEN them as web i/f to set gaming parameters
-% (like hit point or money) from remote.
-getter(Cid, Key) ->
-	F = fun() ->
-		case mnesia:read({cdata, Cid}) of
-			[] -> undefined;	%% no match
-			[D] -> kv_get(D#cdata.attr, Key)
-		end
-	end,
-	mn_strip_atomic(mnesia:transaction(F)).
-
-setter(Cid, Key, Value) ->
-	F = fun(X) ->
-		mnesia:write(X#cdata{attr = kv_set(X#cdata.attr, Key, Value)})
-	end,
-	apply_cdata(Cid, F).
-
--ifdef(TEST).
-
-db_get_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	V1 = getter(Cid1, "hp"),
-	?assert(V1 == 12),
-	
-	V2 = getter(Cid2, "hp"),
-	?assert(V2 == 16),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-	
-db_set_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	setter(Cid1, "hp", 2),
-	V1 = getter(Cid1, "hp"),
-	?assert(V1 == 2),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
--endif.
-
 
 %-----------------------------------------------------------
 % character data and session
