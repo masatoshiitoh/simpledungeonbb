@@ -86,7 +86,13 @@ connect(Cid) when is_record(Cid, cid)->
 
 start_character_impl(C) when is_record(C, character) ->
 	O = make_record(C),
-	Pid = character:start_child(C#character.cid),
+	Cid = C#character.cid,
+	Pid = character:start_child(Cid),
+
+	%% notice login information to nearby.
+	Name = character:get_name(Cid),
+	mmoasp:notice_login(Cid, {csummary, Cid, Name}, default:distance()),
+
 	set_pid(O, Pid).
 
 make_record(C) when is_record(C, character) ->
@@ -100,6 +106,14 @@ make_record(C) when is_record(C, character) ->
 
 set_pid(O, Pid) when is_record(O, online_character), is_pid(Pid) ->
 	O#online_character{pid = Pid}.
+
+add_record(O) when is_record(O, online_character) ->
+	mnesia:activity(transaction,
+		fun() ->
+			mnesia:write(O),
+			O
+		end).
+
 
 %---------------------------------
 %% stop online character.
@@ -118,6 +132,10 @@ stop_character_impl(O) when is_record(O, online_character) ->
 stop_process(O) when is_record(O, online_character) ->
 	O#online_character.pid ! {logout, self()}.
 
+stop_stream(Pid) when is_pid(Pid) ->
+	Pid ! {self(), stop}.
+
+
 delete_record(O) when is_record(O, online_character) ->
 	mnesia:activity(transaction,
 		fun() ->
@@ -128,16 +146,24 @@ delete_record(O) when is_record(O, online_character) ->
 %-----------------------------------------------------------
 % character location updater
 %-----------------------------------------------------------
-
 setpos(Cid, MapId, {pos, PosX, PosY}) ->
 	F = fun(X) ->
 		mnesia:write(X#online_character{location = {pos, PosX, PosY}, map_id = MapId})
 	end,
 	apply_online_character(Cid, F).
 
+setpos(Cid, Location) when is_record(Cid, cid), is_record(Location, location) ->
+	F = fun(X) ->
+		mnesia:write(X#online_character{location = Location, map_id = Location#location.map_id})
+	end,
+	apply_online_character(Cid, F);
+
 setpos(Cid, {pos, PosX, PosY}) ->
 	F = fun(X) ->
-		mnesia:write(X#online_character{location = {pos, PosX, PosY}})
+		O = mnesia:read({online_character, Cid}),
+		L = O#online_character.location,
+		NewL = L#location{x = PosX, y = PosY},
+		mnesia:write(O#online_character{location = NewL})
 	end,
 	apply_online_character(Cid, F).
 
