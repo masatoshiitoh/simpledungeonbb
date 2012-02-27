@@ -30,12 +30,12 @@
 
 %% for NPC implementation
 
-start_npc(Npcid) ->
-	case lookup_pid_by_npcid(Npcid) of
-		void ->
-			_Pid = setup_npc(Npcid);
-		FoundPid -> FoundPid
-	end.
+%start_npc(Npcid) ->
+%	case lookup_pid_by_npcid(Npcid) of
+%		void ->
+%			_Pid = setup_npc(Npcid);
+%		FoundPid -> FoundPid
+%	end.
 
 stop_npc(Npcid) ->
 	case lookup_pid_by_npcid(Npcid) of
@@ -58,7 +58,8 @@ remove_npc_from_db(Npcid) ->
 			AbortedWithReason
 	end.
 
-setup_npc(Npcid)->
+%setup_npc(Npcid)->
+start_npc(Npcid)->
 	R = #task_env{
 		cid = Npcid,
 		event_queue = queue:new(),
@@ -106,8 +107,6 @@ check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, _I)
 
 check_killed(_, R, I) -> 
 	{R, I}.
-
-%% dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 
 db_get_npc_status(Cid) when is_record(Cid, cid) ->
 	C = online_character:apply_character(Cid, fun(X) -> X end),

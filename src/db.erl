@@ -169,6 +169,14 @@ example_tables() ->
 		dict:from_list([{"hp", 12}]),
 		dict:from_list([{"hidden", 0}])
 	},
+	{character,
+		#cid{service_name = hibari, id = 99990001},
+		"Slime",
+		dict:from_list([]),
+		dict:from_list([{"hp", 1}]),
+		dict:from_list([{"hidden", 0}])
+	},
+
 
 %	{online_character,
 %		#cid{service_name = hibari, id = 1},
@@ -185,16 +193,16 @@ example_tables() ->
 %		dummypid
 %	},
 
-	{session,
-		#cid{service_name = hibari, id = 1},
-		"ToKEN",
-		session:make_expire()
-	},
-	{session,
-		#cid{service_name = hibari, id = 2},
-		"ToKEN",
-		session:make_expire()
-	},
+%	{session,
+%		#cid{service_name = hibari, id = 1},
+%		"ToKEN",
+%		session:make_expire()
+%	},
+%	{session,
+%		#cid{service_name = hibari, id = 2},
+%		"ToKEN",
+%		session:make_expire()
+%	},
 
 	{initial_location,
 		#cid{service_name = hibari, id = 1},
@@ -203,6 +211,10 @@ example_tables() ->
 	{initial_location,
 		#cid{service_name = hibari, id = 2},
 		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 1, y = 2}
+	},
+	{initial_location,
+		#cid{service_name = hibari, id = 99990001},
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 3, y = 3}
 	},
 
 	{id_password,
@@ -249,15 +261,19 @@ example_tables() ->
 	{online_character,
 		#cid{service_name = testservice, id = 100001},
 		#map_id{service_name = testservice, id = 1},
-		{pos, 1, 1},
+		#location{ map_id = #map_id{service_name = testservice, id = 1},
+			x = 1, y = 1},
 		now(),
+		dummypid,
 		dummypid
 	},
 	{online_character,
 		#cid{service_name = testservice, id = 100002},
 		#map_id{service_name = testservice, id = 1},
-		{pos, 1, 2},
+		#location{ map_id = #map_id{service_name = testservice, id = 1},
+			x = 1, y = 2},
 		now(),
+		dummypid,
 		dummypid
 	},
 

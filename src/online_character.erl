@@ -174,7 +174,7 @@ setpos(Cid, {pos, PosX, PosY}) ->
 apply_cid_indexed_table(Cond, F) ->
 	L = fun() ->
 		case qlc:e(Cond) of
-			[] -> exit({mmoasp_error, character_not_found});
+			[] -> exit({mmoasp_error, character_not_found, Cond});
 			[Row] -> F(Row)
 		end
 	end,

@@ -115,12 +115,12 @@ run_tests() ->
 up_scenarios() ->
 	mmoasp:start(reset_tables),
 %	u:wait(100),
-	_NpcPid1 = npc:start_npc("npc0001"),
+	_NpcPid1 = npc:start_npc(#cid{service_name = hibari, id=99990001}),
 	{ok, Cid1, Token1}
-		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+		= mmoasp:login(self(), id_password:make_login_id(hibari, "lid00001"), "password", {192,168,1,200}),
 	{ok, Cid2, Token2}
-		= mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
-	{scenarios, Cid1, Token1, Cid2, Token2, "npc0001"}.
+		= mmoasp:login(self(), id_password:make_login_id(hibari, "lid00002"), "password", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id=99990001}}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
 	mmoasp:logout(self(), Cid1, Token1),
@@ -150,11 +150,11 @@ do_battle_unarmed_01() ->
 	%% look around test
 	?assert(1 == mmoasp:distance(
 		{session, mmoasp:get_session(Cid1)},
-		{session, mmoasp:get_session("npc0001")})),
+		{session, mmoasp:get_session(#cid{service_name = hibari, id=99990001})})),
 	
 	?assert(3 == mmoasp:distance(
 		{session, mmoasp:get_session(Cid2)},
-		{session, mmoasp:get_session("npc0001")})),
+		{session, mmoasp:get_session(#cid{service_name = hibari, id=99990001})})),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -165,8 +165,8 @@ do_battle_unarmed_021() ->
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
-	[{R1, _}|_T1] = battle:single(Cid1, "npc0001"),
-	[{R2, _}|_T2] = battle:single(Cid2, "npc0001"),
+	[{R1, _}|_T1] = battle:single(Cid1, #cid{service_name = hibari, id=99990001}),
+	[{R2, _}|_T2] = battle:single(Cid2, #cid{service_name = hibari, id=99990001}),
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
@@ -179,7 +179,7 @@ do_battle_unarmed_022() ->
 
 	%% try unarmed battle.(Cid1 ok)
 	
-	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
+	[{R3, _}|_T3] = battle:single(Cid1, #cid{service_name = hibari, id=99990001}, "unarmed"),
 	?assert( (R3 == ok) or (R3 == critical) ),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -190,7 +190,7 @@ do_battle_unarmed_023() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% try unarmed battle.(Cid2 fail (too far))
-	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
+	[{R4, _}|_T4] = battle:single(Cid2, #cid{service_name = hibari, id=99990001}, "unarmed"),
 	?assert(R4 == ng),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -243,13 +243,13 @@ do_stat() ->
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
 	?assert(sets:from_list(CidList1)
 		== sets:from_list(
-			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, #cid{service_name = hibari, id=99990001}}])),
 
 	CidList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
 	?assert(sets:from_list(CidList2)
 		== sets:from_list(
-			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, #cid{service_name = hibari, id=99990001}}])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
 	AList1 = lists:flatten(

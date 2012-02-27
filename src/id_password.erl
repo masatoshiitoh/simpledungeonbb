@@ -64,6 +64,9 @@ update_password(Lid, OldPw, NewPw) ->
 
 %% login
 %%
+login(FromPid, Lid, Pw, Ipaddr) when is_record(Lid, login_id) ->
+	login(FromPid, Lid#login_id.service_name, Lid#login_id.id, Pw, Ipaddr).
+
 login(FromPid, Service, Id, Pw, Ipaddr) ->
 	case check_id_and_password(Service, Id, Pw) of
 		failed ->
