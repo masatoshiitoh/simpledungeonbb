@@ -260,7 +260,7 @@ param(ParamDict, Key, Default) -> %% this param/3 will return Default value when
 param(ParamDict, Key) -> %% this param/2 will exit when key not found.
 	case dict:find(Key, ParamDict) of
 		{ok, Value} -> Value;
-		error -> exit({mmoasp_error, key_not_found})
+		error -> error({mmoasp_error, key_not_found, Key})
 	end.
 
 %-----------------------------------------------------------
@@ -339,7 +339,7 @@ param_2_test() ->
 	{end_of_run_tests}.
 
 param_3_test() ->
-	?assertExit(_, param(dict:from_list([{"a", "128"}, {"b", "256"}]), "c") == "will_cause_error_exit"),
+	?assertException(error,{mmoasp_error, key_not_found, "c"} , param(dict:from_list([{"a", "128"}, {"b", "256"}]), "c") == "will_cause_error_exit"),
 	{end_of_run_tests}.
 
 -endif.
@@ -715,7 +715,7 @@ old_get_list_to_know_test() ->
 	A1Cid = u:kv_get(A1, cid),
 	A1Name = u:kv_get(A1, name),
 	?assert(A1Type == "login"),
-	?assert(A1Cid == "cid0001"),
+	?assert(A1Cid == u:gen_cid(hibari,1)),
 	?assert(A1Name == "alpha"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -725,7 +725,7 @@ old_get_list_to_know_test() ->
 old_get_list_to_know_none_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{timeout, [], [], []} = old_get_list_to_know(self(), "cid_not_exist"),
+	{timeout, [], [], []} = old_get_list_to_know(self(), u:gen_cid(hibari,"cid_not_exist")),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.

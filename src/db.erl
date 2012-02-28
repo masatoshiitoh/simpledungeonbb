@@ -159,21 +159,21 @@ example_tables() ->
 		#cid{service_name = hibari, id = 1},
 		"GM Masa",
 		dict:from_list([{"sword", 1}]),
-		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"type", "pc"}, {"hp", 12}]),
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
 		#cid{service_name = hibari, id = 2},
 		"Foo",
 		dict:from_list([{"sword", 1}]),
-		dict:from_list([{"hp", 12}]),
+		dict:from_list([{"type", "pc"}, {"hp", 12}]),
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
 		#cid{service_name = hibari, id = 99990001},
 		"Slime",
 		dict:from_list([]),
-		dict:from_list([{"hp", 1}]),
+		dict:from_list([{"type", "npc"}, {"hp", 1}]),
 		dict:from_list([{"hidden", 0}])
 	},
 
@@ -210,7 +210,7 @@ example_tables() ->
 	},
 	{initial_location,
 		#cid{service_name = hibari, id = 2},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 1, y = 2}
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 5, y = 1}
 	},
 	{initial_location,
 		#cid{service_name = hibari, id = 99990001},
@@ -245,7 +245,7 @@ example_tables() ->
 
 	{character,
 		#cid{service_name = testservice, id = 100001},
-		"GM Masa",
+		"alpha",
 		dict:from_list([{"sword", 1}]),
 		dict:from_list([{"hp", 12}]),
 		dict:from_list([{"hidden", 0}])

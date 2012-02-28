@@ -56,8 +56,8 @@ do_report(CidFrom, CidTo, DamTupple) ->
 
 
 make_reports(OidFrom, OidTo, DamTupple) ->
-	NewHp = mmoasp:getter(OidTo, "hp"),
-	Typ = mmoasp:getter(OidTo, "type"),
+	NewHp = char_kv:getter(OidTo, "hp"),
+	Typ = char_kv:getter(OidTo, "type"),
 	%%io:format("make_reports: calls proc_damage(~p, ~p, ~p,~p, ~p)~n", [OidFrom, OidTo, DamTupple, Typ, NewHp]),
 	proc_damage(OidFrom, OidTo, DamTupple, Typ, NewHp).
 
@@ -108,14 +108,14 @@ notice_result(CidFrom, CidTo, {fumble, Dam}, Radius) ->
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(OidTo, {ok, X}) ->
-	CurrHp = mmoasp:getter(OidTo, "hp"),
-	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = char_kv:getter(OidTo, "hp"),
+	char_kv:setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
 store_result(OidTo, {critical, X}) ->
-	CurrHp = mmoasp:getter(OidTo, "hp"),
-	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = char_kv:getter(OidTo, "hp"),
+	char_kv:setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
 	{fumble, 0}.
@@ -155,9 +155,9 @@ battle_observer_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
-	V1 = mmoasp:getter(Cid1, "hp"),
+	V1 = char_kv:getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
-	V2 = mmoasp:getter(Cid1, "hp"),
+	V2 = char_kv:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 2),
 
@@ -181,12 +181,12 @@ battle_observer_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
 
-	?assert(mmoasp:getter(Cid1, "type") == "pc"),
-	?assert(mmoasp:getter(Npcid1, "type") == "npc"),
+	?assert(char_kv:getter(Cid1, "type") == "pc"),
+	?assert(char_kv:getter(Npcid1, "type") == "npc"),
 
-	V1 = mmoasp:getter(Cid1, "hp"),
+	V1 = char_kv:getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
-	V2 = mmoasp:getter(Cid1, "hp"),
+	V2 = char_kv:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 9999),
 
@@ -218,9 +218,9 @@ battle_observer_pc_knockouted_test() ->
 store_result_ok_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 1}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {ok, 1}),
@@ -230,9 +230,9 @@ store_result_ok_1_test() ->
 store_result_ok_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {ok, 999}),
@@ -242,9 +242,9 @@ store_result_ok_999_test() ->
 store_result_ng_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ng, 0}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {ng, 0}),
@@ -254,9 +254,9 @@ store_result_ng_0_test() ->
 store_result_fumble_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {fumble, 0}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {fumble, 0}),
@@ -266,9 +266,9 @@ store_result_fumble_0_test() ->
 store_result_critical_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 1}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {critical, 1}),
@@ -278,9 +278,9 @@ store_result_critical_1_test() ->
 store_result_critical_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
@@ -290,15 +290,15 @@ store_result_critical_999_test() ->
 store_result_twice_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = char_kv:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
 
 	R2 = store_result(Npcid1, {ok, 1}),
-	V3 = mmoasp:getter(Npcid1, "hp"),
+	V3 = char_kv:getter(Npcid1, "hp"),
 
 	?assert(V2 - V3 == 1),
 	?assert(R2 == {ok, 1}),

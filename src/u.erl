@@ -102,7 +102,7 @@ kv_set(L, K, V) ->
 dkv_get(D, K) ->
 	case dict:find(K, D) of
 		{ok, V} -> V;
-		error -> exit({mmoasp_error,key_not_found})
+		error -> error({mmoasp_error,key_not_found})
 	end.
 
 dkv_set(D, K, V) ->

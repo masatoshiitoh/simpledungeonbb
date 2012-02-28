@@ -121,8 +121,8 @@ up_scenarios() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id=99990001}}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
+	id_password:logout(self(), Cid1, {127,0,0,1}),
+	id_password:logout(self(), Cid2, {127,0,0,1}),
 	npc:stop_npc(Npcid1),
 	mmoasp:stop(),
 	ok.
@@ -163,8 +163,8 @@ do_battle_unarmed_021() ->
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
-	[{R1, _}|_T1] = battle:single(Cid1, #cid{service_name = hibari, id=99990001}),
-	[{R2, _}|_T2] = battle:single(Cid2, #cid{service_name = hibari, id=99990001}),
+	[{R1, _}|_T1] = battle:single(Cid1, Npcid1),
+	[{R2, _}|_T2] = battle:single(Cid2, Npcid1),
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
@@ -177,7 +177,7 @@ do_battle_unarmed_022() ->
 
 	%% try unarmed battle.(Cid1 ok)
 	
-	[{R3, _}|_T3] = battle:single(Cid1, #cid{service_name = hibari, id=99990001}, "unarmed"),
+	[{R3, _}|_T3] = battle:single(Cid1, Npcid1, "unarmed"),
 	?assert( (R3 == ok) or (R3 == critical) ),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -188,7 +188,7 @@ do_battle_unarmed_023() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% try unarmed battle.(Cid2 fail (too far))
-	[{R4, _}|_T4] = battle:single(Cid2, #cid{service_name = hibari, id=99990001}, "unarmed"),
+	[{R4, _}|_T4] = battle:single(Cid2, Npcid1, "unarmed"),
 	?assert(R4 == ng),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -201,7 +201,7 @@ do_look_around() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(4 == mmoasp:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
+	?assert(4 == u:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
 
 	?assert(sets:from_list(["cid0001"])
 		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
