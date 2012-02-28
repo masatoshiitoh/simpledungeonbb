@@ -66,10 +66,21 @@ is_active(Cid) when is_record(Cid, cid) ->
 % make character online.
 %---------------------------------
 
+connect(Cid) -> 
+	case connect_impl(Cid) of
+		{failed, Cid, Reason} -> {failed, Cid, Reason};
+		{connected, Cid} ->
+			%% notice login information to nearby.
+			Name = character:get_name(Cid),
+			mmoasp:notice_login(Cid, {csummary, Cid, Name}, default:distance()),
+			{connected, Cid}
+	end.
+
+
 connect(Svid, Id) ->
 	connect(#cid{service_name = Svid, id = Id}).
 
-connect(Cid) when is_record(Cid, cid)->
+connect_impl(Cid) when is_record(Cid, cid)->
 	case is_active(Cid) of
 		true -> {failed, Cid, "character is in use"};
 		false -> mnesia:activity(transaction,
@@ -85,15 +96,21 @@ connect(Cid) when is_record(Cid, cid)->
 	end.
 
 start_character_impl(C) when is_record(C, character) ->
-	O = make_record(C),
+	O = make_record(C, initial_location),
 	Cid = C#character.cid,
 	Pid = character:start_child(Cid),
 
-	%% notice login information to nearby.
-	Name = character:get_name(Cid),
-	mmoasp:notice_login(Cid, {csummary, Cid, Name}, default:distance()),
-
 	set_pid(O, Pid).
+
+make_record(C, initial_location)
+	when is_record(C, character) ->
+	L = initial_location:get_one(C#character.cid),
+	make_record(C, L);
+
+make_record(C, L)
+	when is_record(C, character), is_record(L, location) ->
+	O = make_record(C),
+	O#online_character{map_id = L#location.map_id, location = L}.
 
 make_record(C) when is_record(C, character) ->
 	#online_character{
@@ -223,7 +240,7 @@ get_all_neighbors(Cid, R) ->
 
 
 connect_character_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 %%	{connected, Cid1} = connect(hibari,1),
 	?assert(Cid1 == u:gen_cid(hibari, 1)),
@@ -232,37 +249,37 @@ connect_character_1_test() ->
 	?assert(Cid1_2 == u:gen_cid(hibari, 1)),
 	?assert(Reason1_2 == "character is in use"),
 	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 connect_character_2_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	{failed, A, B} = connect(#cid{service_name = hibari, id = notexist}),
 	?assert(A == #cid{service_name = hibari, id = notexist}),
 	?assert(B == "character not exist"),
 	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 disconnect_character_1_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 %%	{connected, Cid} = connect(hibari,1),
 	?assert(disconnect(#cid{service_name = hibari, id = 1}) == ok),
 	?assert(disconnect(#cid{service_name = hibari, id = 1}) == {failed, u:gen_cid(hibari, 1), "character not exist"}),
 	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 disconnect_character_2_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	?assert(disconnect(#cid{service_name = hibari, id = 1}) == ok),
 	?assert(disconnect(#cid{service_name = hibari, id = 1}) == {failed, u:gen_cid(hibari, 1), "character not exist"}),
 	?assert(disconnect(#cid{service_name = hibari, id = notexist}) == {failed, u:gen_cid(hibari, notexist), "character not exist"}),
 	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 -endif.

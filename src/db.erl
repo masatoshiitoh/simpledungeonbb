@@ -51,17 +51,17 @@ get_new_id_for_service(Svid, IdType) ->
 -ifdef(TEST).
 
 access_new_id_01_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	?assert(get_new_id_for_service(testservice, cid) == 100003),
 	?assert(get_new_id_for_service(testservice, cid) == 100004),
 	?assert(get_new_id_for_service(testservice, cid) == 100005),
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 access_new_id_not_exist_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	?assertException(_,_, get_new_id_for_service(testservice, idname_not_exist) == 1),
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}),
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 -endif.
@@ -214,7 +214,7 @@ example_tables() ->
 	},
 	{initial_location,
 		#cid{service_name = hibari, id = 99990001},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 3, y = 3}
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 2, y = 1}
 	},
 
 	{id_password,
@@ -307,9 +307,9 @@ example_tables() ->
 %	{money, "cid0001", 1000, 15},
 %	{money, "cid0002", 2000, 0},
 
-%	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
-%	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
-%	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0},
+%	{supplies, u:make_new_id(),"cid0001", item_herb, 10, 0},
+%	{supplies, u:make_new_id(), "cid0002", item_herb, 5, 0},
+%	{supplies, u:make_new_id(), "cid0002", item_portion, 15, 0},
 
 %	{estate, item_sword01, "cid0001", false},
 %	{estate, item_sword02, "cid0001", false},

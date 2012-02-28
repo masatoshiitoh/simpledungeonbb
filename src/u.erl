@@ -131,6 +131,14 @@ distance({online_character, S1}, {online_character, S2})
 distance({online_character, S1}, {online_character, S2}) ->
 	infinity;
 
+distance(L1, L2)
+	when is_record(L1, location), is_record(L2, location),
+		L1#location.map_id =:= L2#location.map_id ->
+	distance({pos, L1#location.x, L1#location.y}, {pos, L2#location.x, L2#location.y});
+
+distance({location, _MapId1, _X1, _Y1}, {location, _MapId2, _X2, _Y2}) ->
+	infinity;
+
 distance({mapxy, Map1, X1, Y1}, {mapxy, Map2, X2, Y2}) when Map1 =:= Map2 ->
 	distance({pos, X1,Y1}, {pos, X2, Y2});
 
@@ -220,7 +228,7 @@ distance_1_online_character_test() ->
 	?assert(1.0 == distance({online_character, S1}, {online_character, S2})).
 
 distance_by_cid_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 %%	{connected, Cid1} = online_character:connect(hibari,1),
 %%	{connected, Cid2} = online_character:connect(hibari,2),
 	
@@ -233,7 +241,7 @@ distance_by_cid_test() ->
 		{cid, #cid{service_name = hibari, id = 2}}
 		)),
 
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2}).
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}).
 -endif.
 
 %% TEST list_to_hexstr

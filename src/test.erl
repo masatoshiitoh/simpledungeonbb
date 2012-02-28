@@ -146,13 +146,13 @@ do_battle_unarmed_01() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(1 == mmoasp:distance(
-		{session, mmoasp:get_session(Cid1)},
-		{session, mmoasp:get_session(#cid{service_name = hibari, id=99990001})})),
+	?assert(1.0 == u:distance(
+		{online_character, online_character:get_one(Cid1)},
+		{online_character, online_character:get_one(Npcid1)})),
 	
-	?assert(3 == mmoasp:distance(
-		{session, mmoasp:get_session(Cid2)},
-		{session, mmoasp:get_session(#cid{service_name = hibari, id=99990001})})),
+	?assert(3 == u:distance(
+		{online_character, online_character:get_one(Cid2)},
+		{online_character, online_character:get_one(Npcid1)})),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
