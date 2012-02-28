@@ -116,10 +116,8 @@ up_scenarios() ->
 	mmoasp:start(reset_tables),
 %	u:wait(100),
 	_NpcPid1 = npc:start_npc(#cid{service_name = hibari, id=99990001}),
-	{ok, Cid1, Token1}
-		= mmoasp:login(self(), id_password:make_login_id(hibari, "lid00001"), "password", {192,168,1,200}),
-	{ok, Cid2, Token2}
-		= mmoasp:login(self(), id_password:make_login_id(hibari, "lid00002"), "password", {192,168,1,201}),
+	{ok, Cid1, Token1} = id_password:login(self(), hibari, "lid00001", "password", {192,168,1,200}),
+	{ok, Cid2, Token2} = mmoasp:login(self(), id_password:make_login_id(hibari, "lid00002"), "password", {192,168,1,201}),
 	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id=99990001}}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->

@@ -42,7 +42,7 @@ getter(Svid, Id, Key) ->
 getter(Cid, Key) ->
 	F = fun() ->
 		case mnesia:read({character, Cid}) of
-			[] -> exit({mmoasp_error, character_not_found});	%% no match
+			[] -> error({mmoasp_error, character_not_found});	%% no match
 			[D] -> u:dkv_get(D#character.status, Key)
 		end
 	end,

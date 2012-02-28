@@ -64,11 +64,11 @@ update_password(Lid, OldPw, NewPw) ->
 
 %% login
 %%
-login(FromPid, Lid, Pw, Ipaddr) when is_record(Lid, login_id) ->
-	login(FromPid, Lid#login_id.service_name, Lid#login_id.id, Pw, Ipaddr).
+login(FromPid, Service, LocalId, Pw, Ipaddr) ->
+	login(FromPid, make_login_id(Service, LocalId), Pw, Ipaddr).
 
-login(FromPid, Service, Id, Pw, Ipaddr) ->
-	case check_id_and_password(Service, Id, Pw) of
+login(FromPid, Lid, Pw, Ipaddr) when is_record(Lid, login_id) ->
+	case check_id_and_password(Lid, Pw) of
 		failed ->
 			{ng, "Check your id and password"};
 		Cid ->
@@ -100,12 +100,12 @@ logout(FromPid, Service, LocalCid, Ipaddr) ->
 % test
 %-----------------------------------------------------------
 
--ifdef(TEST).
-
 make_login_id_test() ->
 	LI = make_login_id(hibari, 1),
 	?assert(LI == {login_id, hibari, 1}),
 	{end_of_run_tests}.
+
+-ifdef(TEST).
 
 check_id_and_password_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),
