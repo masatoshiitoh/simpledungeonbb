@@ -77,47 +77,47 @@ notice_results(OidFrom, OidTo, L, Radius) ->
 	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
 
 notice_result(CidFrom, CidTo, {killed, KilledCid}, Radius) ->
-	OL = online_characters:get_all_neighbors(CidTo, Radius),
+	OL = online_character:get_all_neighbors(CidTo, Radius),
 	[X#online_character.pid ! {event, {self(), event, CidFrom, CidTo, killed, KilledCid}}
 		|| X <- OL],
 	{killed, KilledCid};
 
-notice_result(CidFrom, CidTo, {ok, Dam}, Radius) ->
-	OL = online_characters:get_all_neighbors(CidTo, Radius),
+notice_result(CidFrom, CidTo, {ok, Dam}, Radius) when is_record(CidFrom, cid), is_record(CidTo, cid)->
+	OL = online_character:get_all_neighbors(CidTo, Radius),
 	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, ok, Dam}
 		|| X <- OL],
 	{ok, Dam};
 
-notice_result(CidFrom, CidTo, {ng, Dam}, Radius) ->
-	OL = online_characters:get_all_neighbors(CidTo, Radius),
+notice_result(CidFrom, CidTo, {ng, Dam}, Radius) when is_record(CidFrom, cid), is_record(CidTo, cid) ->
+	OL = online_character:get_all_neighbors(CidTo, Radius),
 	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, ng, Dam}
 		|| X <- OL],
 	{ng, Dam};
 
-notice_result(CidFrom, CidTo, {critical, Dam}, Radius) ->
-	OL = online_characters:get_all_neighbors(CidTo, Radius),
+notice_result(CidFrom, CidTo, {critical, Dam}, Radius)  when is_record(CidFrom, cid), is_record(CidTo, cid)->
+	OL = online_character:get_all_neighbors(CidTo, Radius),
 	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, critical, Dam}
 		|| X <- OL],
 	{critical, Dam};
 
-notice_result(CidFrom, CidTo, {fumble, Dam}, Radius) ->
-	OL = online_characters:get_all_neighbors(CidTo, Radius),
+notice_result(CidFrom, CidTo, {fumble, Dam}, Radius)  when is_record(CidFrom, cid), is_record(CidTo, cid)->
+	OL = online_character:get_all_neighbors(CidTo, Radius),
 	[X#online_character.pid ! {self(), attack, CidFrom, CidTo, fumble, Dam}
 		|| X <- OL],
 	{fumble, Dam}.
 
 %% store_result series returns {Result, Damage} tapple.
-store_result(OidTo, {ok, X}) ->
+store_result(OidTo, {ok, X})  when is_record(OidTo, cid) ->
 	CurrHp = char_kv:getter(OidTo, "hp"),
 	char_kv:setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
-store_result(_OidTo, {ng, 0}) ->
+store_result(OidTo, {ng, 0}) when is_record(OidTo, cid) ->
 	{ng, 0};
-store_result(OidTo, {critical, X}) ->
+store_result(OidTo, {critical, X}) when is_record(OidTo, cid) ->
 	CurrHp = char_kv:getter(OidTo, "hp"),
 	char_kv:setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
-store_result(_OidTo, {fumble, 0}) ->
+store_result(OidTo, {fumble, 0}) when is_record(OidTo, cid) ->
 	{fumble, 0}.
 
 %%===============================
