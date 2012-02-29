@@ -40,14 +40,17 @@
 
 start() ->
 	crypto:start(),
+	battle_observer:start_link(),
 	db:start().
 
 start(reset_tables) ->
 	crypto:start(),
+	battle_observer:start_link(),
 	db:start(reset_tables).
 
 stop() ->
 	db:stop(),
+	battle_observer:stop(),
 	crypto:stop().
 	
 change_schema() ->
@@ -383,7 +386,44 @@ do_change_password(Cid, From, Svid, Id, OldPw, NewPw, Ipaddr) ->
 	id_password:update_password(Lid, OldPw, NewPw).
 
 
+get_list_to_know(_From, Cid) ->
+	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
+	receive
+		{list_to_know, Actions, Stats, MovePaths} -> {list_to_know, Actions, Stats, MovePaths}
+		after 2000 -> {timeout, [], [], []}
+	end.
 
+
+
+-ifdef(TEST).
+
+get_list_to_know_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{list_to_know, AL, SL, ML} = get_list_to_know(self(), Cid1),
+	[A1 | AT] = AL,
+	
+	% io:format("get_list_to_know_test:~p~n", [A1]),
+	A1Type = u:kv_get(A1, type),
+	A1Cid = u:kv_get(A1, cid),
+	A1Name = u:kv_get(A1, name),
+	?assert(A1Type == "login"),
+	?assert(A1Cid == u:gen_cid(hibari,1)),
+	?assert(A1Name == "alpha"),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+get_list_to_know_none_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	{timeout, [], [], []} = get_list_to_know(self(), u:gen_cid(hibari,"cid_not_exist")),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
 
 
 
@@ -522,7 +562,7 @@ old_out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_param({post, A}),
 	_Token = param(Params, "token"),
 	send_message_by_cid(CidX, {self(), update_neighbor_status, default:distance()}),
-	{list_to_know, ListToKnow, NeighborStats, MovePaths} = old_get_list_to_know(self(), CidX),
+	{list_to_know, ListToKnow, NeighborStats, MovePaths} = get_list_to_know(self(), CidX),
 	mout:return_json(mout:struct_list_to_json(
 		[{struct, X} || X <- ListToKnow]
 		 ++
@@ -695,43 +735,6 @@ old_logout_missing_test() ->
 %-----------------------------------------------------------
 %% LIST to KNOW sender
 %-----------------------------------------------------------
-old_get_list_to_know(_From, Cid) ->
-	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
-	receive
-		{list_to_know, Actions, Stats, MovePaths} -> {list_to_know, Actions, Stats, MovePaths}
-		after 2000 -> {timeout, [], [], []}
-	end.
-
--ifdef(TEST).
-
-old_get_list_to_know_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	{list_to_know, AL, SL, ML} = old_get_list_to_know(self(), Cid1),
-	[A1 | AT] = AL,
-	
-	% io:format("get_list_to_know_test:~p~n", [A1]),
-	A1Type = u:kv_get(A1, type),
-	A1Cid = u:kv_get(A1, cid),
-	A1Name = u:kv_get(A1, name),
-	?assert(A1Type == "login"),
-	?assert(A1Cid == u:gen_cid(hibari,1)),
-	?assert(A1Name == "alpha"),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
-
-old_get_list_to_know_none_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	{timeout, [], [], []} = old_get_list_to_know(self(), u:gen_cid(hibari,"cid_not_exist")),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
--endif.
-
 
 %-----------------------------------------------------------
 % load and setup character for each login.

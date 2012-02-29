@@ -33,9 +33,9 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -ifdef(TEST).
-scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
+scenario_00_test()-> ok = mmoasp:change_schema().
 scenario_01_test()-> {end_of_run_tests}.
-scenario_02_test()-> {end_of_run_tests} = do_trades().
+%scenario_02_test()-> {end_of_run_tests} = do_trades().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
 scenario_05_test()-> {end_of_run_tests} = do_npc_move().
@@ -102,7 +102,7 @@ run_tests() ->
 
 	scenario_00_test(),
 	scenario_01_test(),
-	scenario_02_test(),
+%	scenario_02_test(),
 	scenario_03_test(),
 	scenario_04_test(),
 	scenario_07_test(),
@@ -273,7 +273,7 @@ do_stat() ->
 do_pc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	O = online_character:get_one(Cid1),
 	?assert(is_record(O, online_character)),
 	?assert(O#online_character.location ==
@@ -306,7 +306,7 @@ do_pc_move() ->
 	receive
 		after 1000 -> ok
 	end,
-	io:format("after stop npc ~p~n", [db:demo(session)]),
+%	io:format("after stop npc ~p~n", [db:demo(session)]),
 
 	{end_of_run_tests}.
 
@@ -314,7 +314,7 @@ do_pc_move() ->
 do_npc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	io:format("npc starts at ~p~n", [db:demo(online_character)]),
+%	io:format("npc starts at ~p~n", [db:demo(online_character)]),
 
 	O1 = online_character:get_one(Npcid1),
 	?assert(is_record(O1, online_character)),
@@ -324,14 +324,14 @@ do_npc_move() ->
 			x = 2,
 			y = 1}),
 	
-	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
 	io:format("NPC move to 2,2 ~p~n", [move:move({map_id, "hibari", 1}, Npcid1, {pos, 3,1})]),
 	receive
 		after 1100 -> ok
 	end,
-	io:format("Latest session ~p~n", [mmoasp:get_session(Npcid1)]),
+	io:format("Latest online_character ~p~n", [online_character:get_one(Npcid1)]),
 	
 	O2 = online_character:get_one(Npcid1),
 	?assert(is_record(O2, online_character)),
@@ -346,16 +346,16 @@ do_npc_move() ->
 	receive
 		after 1000 -> ok
 	end,
-	io:format("after stop npc ~p~n", [db:demo(session)]),
+%	io:format("after stop npc ~p~n", [db:demo(session)]),
 	{end_of_run_tests}.
 
 do_trades() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 
 	%% trade check.
-	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
+%	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 	mmoasp:start_trade(Cid1, Cid2),
 %%	io:format("trade started... ~p~n1: ~p~n2: ~p~n", [
 %%		db:demo(select_trade),
@@ -365,7 +365,7 @@ do_trades() ->
 	mmoasp:set_offer(Cid2, 0, [{item_herb, 2}],[item_shield01]),
 	mmoasp:confirm_trade(Cid1),
 	mmoasp:confirm_trade(Cid2),
-	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
+%	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -394,12 +394,12 @@ do_talk() ->
 do_setter() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% setter check.
-	mmoasp:setter(Cid1, "WindowSize", "123,55"),
-	mmoasp:setter(Cid2, "WindowSize", "99,160"),
-	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
+	char_kv:setter(Cid1, "WindowSize", "123,55"),
+	char_kv:setter(Cid2, "WindowSize", "99,160"),
+%	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.

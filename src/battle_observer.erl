@@ -317,7 +317,7 @@ notice_results_nil_test() ->
 	L2 = notice_results(Npcid1, Cid1, [], 30),
 	?assert(L2 == []),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -343,7 +343,7 @@ notice_results_1_test() ->
 	L2 = notice_results(Npcid1, Cid1, [{ok, 999}], 30),
 	?assert(L2 == [{ok, 999}]),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -369,7 +369,7 @@ notice_results_2_test() ->
 	L2 = notice_results(Npcid1, Cid1, [{ok, 7}, {ok, 13}], 30),
 	?assert(L2 == [{ok, 7}, {ok, 13}]),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
 		= mmoasp:get_list_to_know(self(), Cid1),

@@ -72,7 +72,8 @@ db_get_1_test() ->
 db_get_no_key_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	?assertExit({aborted, {mmoasp_error,key_not_found}}, getter(hibari, 1, "nosuchkey") == 12),
+%	?assertError({aborted, {mmoasp_error,key_not_found}}, getter(hibari, 1, "nosuchkey") == 12),
+	?assertException(_,_, getter(hibari, 1, "nosuchkey") == 12),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
