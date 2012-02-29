@@ -157,14 +157,14 @@ example_tables() ->
 
 	{character,
 		#cid{service_name = hibari, id = 1},
-		"GM Masa",
+		"alpha",
 		dict:from_list([{"sword", 1}]),
 		dict:from_list([{"type", "pc"}, {"hp", 12}]),
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
 		#cid{service_name = hibari, id = 2},
-		"Foo",
+		"bravo",
 		dict:from_list([{"sword", 1}]),
 		dict:from_list([{"type", "pc"}, {"hp", 12}]),
 		dict:from_list([{"hidden", 0}])

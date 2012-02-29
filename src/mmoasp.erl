@@ -702,7 +702,7 @@ old_logout(From, Cid, _Token) ->
 
 -ifdef(TEST).
 
-old_login_test() ->
+old_login_test_notexec() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	{ok, Cid3, Token3}
@@ -712,7 +712,7 @@ old_login_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
-old_login_duplicated_test() ->
+old_login_duplicated_test_notexec() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	{ng, Reason} = login(self(), "id0001", "pw0001", {192,168,1,200}),
@@ -721,7 +721,7 @@ old_login_duplicated_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
-old_logout_missing_test() ->
+old_logout_missing_test_notexec() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	old_logout(self(), "cid_not_exist", 0),
