@@ -30,10 +30,17 @@
 %%
 %% 'map based move' main api
 %%
-move({map_id, SvId, MapId}, Cid, DestPos) when is_record(DestPos, location) ->
+
+move(MapId, Cid, DestLocation)
+	when is_record(MapId, map_id),
+		is_record(DestLocation, location),
+		MapId == DestLocation#location.map_id ->
+	move(Cid, DestLocation).
+
+move(Cid, DestLoc) when is_record(DestLoc, location) ->
 	F = fun(X) ->
-		NowPos = X#online_character.location,
-		{ok, Result} = path_finder:lookup_path({map_id, SvId, MapId}, NowPos, DestPos),
+		NowLoc = X#online_character.location,
+		{ok, Result} = path_finder:lookup_path({pos, DestLoc#location.x, DestLoc#location.y}, NowLoc, DestLoc),
 		Result
 	end,
 	WayPoints = online_character:apply_online_character(Cid, F),

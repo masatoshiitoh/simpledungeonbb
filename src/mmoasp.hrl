@@ -53,12 +53,12 @@
 	%% (ex. email, phone, facebook id,....)
 
 -record(character,
-	{cid, name, inventory, status, hidden_parameters}).
+	{cid, type, name, inventory, status, hidden_parameters}).
 	%% inventory and status : you can store parameters.
 	%% hidden_parameters : storage for erlang code.
 
 -record(online_character,
-	{cid, map_id, location, last_update, pid, stream_pid}).
+	{cid, type, map_id, location, last_update, pid, stream_pid}).
 	%% session holds online characters.
 	%% map_id is included also in location. why? Help to select same map players.
 	%% expired sessions will be removed by remover service (we must make it).

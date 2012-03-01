@@ -161,7 +161,7 @@ battle_observer_01_test() ->
 
 	?assert(V1 - V2 == 2),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveList1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -190,7 +190,7 @@ battle_observer_pc_knockouted_test() ->
 
 	?assert(V1 - V2 == 9999),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveList1}
 		= mmoasp:get_list_to_know(self(), Cid1),

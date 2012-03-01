@@ -115,6 +115,7 @@ make_record(C, L)
 make_record(C) when is_record(C, character) ->
 	#online_character{
 		cid = C#character.cid,
+		type = C#character.type,
 		%map_id,
 		%location,
 		last_update = erlang:now(),
@@ -217,6 +218,17 @@ get_one(Svid, Id) ->
 
 get_one(Cid) when is_record(Cid, cid) ->
 	apply_online_character(Cid, fun(X) -> X end).
+
+get_players(Cid, R) when is_record(Cid, cid) ->
+	Me = get_one(Cid),
+	F = fun() ->
+		qlc:e(qlc:q([O || O <- mnesia:table(online_character),
+			O#online_character.type =:= pc,
+			O#online_character.map_id =:= Me#online_character.map_id,
+			u:distance(O#online_character.location, Me#online_character.location) =< R
+			]))
+	end,
+	mnesia:activity(transaction, F).
 
 get_all_neighbors(Svid, Id, R) ->
 	get_all_neighbors(u:gen_cid(Svid, Id), R).
