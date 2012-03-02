@@ -41,11 +41,13 @@
 start() ->
 	crypto:start(),
 	battle_observer:start_link(),
+	path_finder:start(),
 	db:start().
 
 start(reset_tables) ->
 	crypto:start(),
 	battle_observer:start_link(),
+	path_finder:start(),
 	db:start(reset_tables).
 
 stop() ->

@@ -37,10 +37,10 @@ move(MapId, Cid, DestLocation)
 		MapId == DestLocation#location.map_id ->
 	move(Cid, DestLocation).
 
-move(Cid, DestLoc) when is_record(DestLoc, location) ->
+move(Cid, DestLoc) when is_record(Cid, cid), is_record(DestLoc, location) ->
 	F = fun(X) ->
 		NowLoc = X#online_character.location,
-		{ok, Result} = path_finder:lookup_path({pos, DestLoc#location.x, DestLoc#location.y}, NowLoc, DestLoc),
+		{ok, Result} = path_finder:lookup_path(NowLoc, DestLoc),
 		Result
 	end,
 	WayPoints = online_character:apply_online_character(Cid, F),
@@ -58,7 +58,7 @@ move(Cid, DestLoc) when is_record(DestLoc, location) ->
 obsolete_move(Cid, DestPos) when is_record(DestPos, location) ->
 	F = fun(X) ->
 		NowPos = X#online_character.location,
-		{ok, Result} = path_finder:lookup_path({map_id, "hibari", 1}, NowPos, DestPos),
+		{ok, Result} = path_finder:lookup_path(NowPos, DestPos),
 		Result
 	end,
 	WayPoints = online_character:apply_online_character(Cid, F),

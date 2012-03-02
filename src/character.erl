@@ -55,6 +55,23 @@ get_name(Cid) when is_record(Cid, cid) ->
 		end
 	end).
 
+get_one(Cid) when is_record(Cid, cid) ->
+	mnesia:activity(transaction, fun() ->
+		case mnesia:read({character, Cid}) of
+			[] -> undefined;
+			[C] -> C
+		end
+	end).
+
+get_status(Cid) when is_record(Cid, cid) ->
+	get_status_impl(get_one(Cid)).
+
+get_status_impl(C) when is_record(C, character) ->
+	C#character.status;
+
+get_status_impl(undefined) ->
+	error({mmoasp_error, character_not_found}).
+
 % core loop -----------------------------------------------
 
 % process user operation.
@@ -85,8 +102,8 @@ loop(R, I) ->
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
 			NewStatDict =
-				[mmoasp:gen_stat_from_cdata(X)
-					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
+				[get_status(X)
+					|| X <- online_character:get_all_neighbors(R#task_env.cid, Radius)],
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		
 		{_From, talk, Talker, MessageBody, Mode} ->

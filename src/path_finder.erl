@@ -20,6 +20,7 @@
 
 
 -module(path_finder).
+-include("mmoasp.hrl").
 -behaviour(gen_server).
 -export([start/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -29,11 +30,14 @@
 start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()	-> gen_server:call(?MODULE, stop).
 
-lookup_path({map_id, SvId, MapId}, StartPos, DestPos) ->
-	gen_server:call(?MODULE, {lookup, {map_id, SvId, MapId}, StartPos, DestPos}).
+lookup_path(StartLoc, DestLoc)
+	when
+		is_record(StartLoc, location),
+		is_record(DestLoc, location) ->
+	gen_server:call(?MODULE, {lookup, StartLoc, DestLoc}).
 
 init([]) ->
-	MapId1 = {map_id, "hibari", 1},
+	MapId1 = {map_id, hibari, 1},
 	MapValue1 = make_entry_from_arraymap(path_finder:arraymap()),
 	{ok,
 		dict:from_list([{MapId1,MapValue1}])}.
@@ -52,8 +56,10 @@ make_entry_from_arraymap(ArrayMap) ->
 	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),	% dictionary for vertex - pos reference.
 	{map, Map, G, PList, VertexDict, RevDict}.
 
-handle_call({lookup, MapId, StartPos, DestPos}, _From, Maps) ->
-	{ok, {map, Map, G, PList, VertexDict, RevDict}} = dict:find(MapId, Maps),
+handle_call({lookup, StartLoc, DestLoc}, _From, Maps) when is_record(StartLoc, location), is_record(DestLoc, location) ->
+	{ok, {map, Map, G, PList, VertexDict, RevDict}} = dict:find(StartLoc#location.map_id, Maps),
+	StartPos = {pos, StartLoc#location.x, StartLoc#location.y},
+	DestPos = {pos, DestLoc#location.x, DestLoc#location.y},
 	{reply,
 		{ok,
 			pick_path(G, VertexDict, RevDict, StartPos, DestPos)},
