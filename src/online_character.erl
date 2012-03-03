@@ -183,11 +183,10 @@ setpos(Cid, Location) when is_record(Cid, cid), is_record(Location, location) ->
 	apply_online_character(Cid, F);
 
 setpos(Cid, {pos, PosX, PosY}) ->
-	F = fun(X) ->
-		O = mnesia:read({online_character, Cid}),
-		L = O#online_character.location,
+	F = fun(X) -> %% X hold single online_character record.
+		L = X#online_character.location,
 		NewL = L#location{x = PosX, y = PosY},
-		mnesia:write(O#online_character{location = NewL})
+		mnesia:write(X#online_character{location = NewL})
 	end,
 	apply_online_character(Cid, F).
 

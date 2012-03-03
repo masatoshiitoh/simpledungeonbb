@@ -297,16 +297,14 @@ do_pc_move() ->
 	receive
 		after 500 -> ok
 	end,
-	io:format("RE-order move to 1,2 ~p~n", [move:move(
-		Cid1, {pos, 1, 2}
-	)]),
+	io:format("RE-order move to 1,2 ~p~n", [move:move(Cid1, {pos, 1, 2})]),
 	receive
-		after 3000 -> ok
+		after 2400 -> ok
 	end,
 	
 	O1 = online_character:get_one(Cid1),
 	?assert(is_record(O1, online_character)),
-	?assert(O#online_character.location ==
+	?assert(O1#online_character.location ==
 		#location{
 			map_id = #map_id{service_name = hibari, id = 1},
 			x = 1,
