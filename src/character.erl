@@ -72,6 +72,10 @@ get_status_impl(C) when is_record(C, character) ->
 get_status_impl(undefined) ->
 	error({mmoasp_error, character_not_found}).
 
+move(Cid, {pos, X, Y}) when is_record(Cid, cid) ->
+	online_character:send_message_by_cid(Cid, {move, {pos, X, Y}}).
+
+
 % core loop -----------------------------------------------
 
 % process user operation.
@@ -95,7 +99,9 @@ loop(R, I) ->
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} -> move:mapmove_call(X,R,I);
+		{mapmove, X} ->
+			io:format("character: receive{mapmove,~p}~n", [X]),
+			move:mapmove_call(X,R,I);
 		{sensor, X} -> task:sensor_call(X,R,I);
 		{event, X} -> task:event_call(X,R,I);
 		

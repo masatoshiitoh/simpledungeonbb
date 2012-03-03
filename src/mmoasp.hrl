@@ -36,7 +36,15 @@
 
 
 
--record(task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined, move_path_dict = dict:new()}).
+-record(task_env, {cid,
+	event_queue,
+	stat_dict,
+	token,
+	utimer,
+	waypoints = [],
+	currpos = undefined,
+	move_path_dict = dict:new()}).
+
 -record(idle,  {since_last_op = 0, last_op = erlang:now()}).
 
 %% Mnesia table structure

@@ -30,8 +30,8 @@
 start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()	-> gen_server:call(?MODULE, stop).
 
-lookup_path(MapId, StartPos, DestPos) when is_record(MapId, map_id) ->
-	gen_server:call(?MODULE, {lookup, MapId, StartPos, DestPos}).
+lookup_path(MapId, {pos, X, Y}, {pos, DestX, DestY}) when is_record(MapId, map_id) ->
+	gen_server:call(?MODULE, {lookup, MapId, {pos, X, Y}, {pos, DestX, DestY}}).
 
 init([]) ->
 	MapId1 = u:gen_map_id(hibari, 1),

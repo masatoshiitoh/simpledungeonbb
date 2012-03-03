@@ -136,10 +136,7 @@ action(move, Req, Param) ->
 	Y = get_param_int(Param, "y"),
 	
 	session:check_and_call(Cid, Token, fun() ->
-		_Result = move:move(
-			Cid,
-			{pos, X, Y}
-			),%%% TODO Write {map_id,SV,MAPID} appropriately !!
+		_Result = move:move(Cid,{pos, X, Y}),
 		mout:return_json(mout:encode_json_array_with_result("ok",[]))
 	end);
 
@@ -398,7 +395,44 @@ get_list_to_know(_From, Cid) ->
 		after 2000 -> {timeout, [], [], []}
 	end.
 
+% *** charachter setup support functions. ***
 
+setup_player_initial_location(Cid) when is_record(Cid, cid) ->
+	L = initial_location:get_one(Cid),
+	online_character:setpos(Cid, L).
+
+add_online_character(Cid, Pid, _Type) when is_record(Cid, cid) ->
+	O = online_character:set_pid(online_character:make_record(Cid),Pid),
+	mnesia:activity(
+		transaction,
+		fun() -> mnesia:write(O) end).
+
+delete_online_character(Cid) when is_record(Cid, cid) ->
+	mnesia:transaction(
+		fun()-> mnesia:delete({online_character, Cid}) end).
+
+
+%-----------------------------------------------------------
+% Character Persistency
+%-----------------------------------------------------------
+
+%old_lookup_cdata(Cid) ->
+%	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
+%		[] -> void;
+%		[CData] -> CData
+%	end.
+%old_gen_stat_from_cdata(X) ->
+%	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
+
+lookup_cdata(Cid) ->
+	[].
+gen_stat_from_cdata(AttrList) ->
+	[{cid, 0}, {name, "dummy"}] ++ AttrList.
+
+
+%-----------------------------------------------------------
+% TEST
+%-----------------------------------------------------------
 
 -ifdef(TEST).
 
@@ -429,7 +463,6 @@ get_list_to_know_none_test() ->
 	{end_of_run_tests}.
 
 -endif.
-
 
 
 
@@ -469,20 +502,6 @@ old_make_params({get, A}) ->
 old_make_params({post, A}) ->
 	dict:from_list(yaws_api:parse_post(A)).
 
-%% GET version of login. This is only for test with web browser.
-%% This will be disabled soon.
-old_out(A, 'GET', ["service", SVID, "login"]) ->
-	Params = make_param({get, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = login(self(),id_password:make_login_id(SVID, Id), Pw, Ipaddr),
-	case Result of
-		{ok, Cid, Token} ->
-			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
-		{ng} ->
-			mout:return_html(mout:encode_json_array_with_result("failed", []))
-	end;
 
 
 %% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
@@ -533,33 +552,7 @@ old_out(A, 'POST', ["service", SVID, "subscribe"]) ->
 		{ng, Reason} ->
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
-%% Login
-%% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
-old_out(A, 'POST', ["service", SVID, "login"]) ->
-	Params = make_param({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = login(self(),id_password:make_login_id(SVID, Id), Pw, Ipaddr),
-	case Result of
-		{ok, Cid, Token} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
-		{ng, Reason} ->
-			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
-	end;
 
-%% Logout
-%% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
-old_out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
-	Params = make_param({post, A}),
-	Token = param(Params, "token"),
-	Result = old_logout(self(), CidX, Token),
-	case Result of
-		{ok, CidX} ->
-			mout:return_json(mout:encode_json_array_with_result("ok",[]));
-		{ng} ->
-			mout:return_json(mout:encode_json_array_with_result("failed",[]))
-	end;
 
 %% Get list to know (Your client calls this every xx sec.)
 %% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
@@ -576,29 +569,12 @@ old_out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 		 MovePaths
 		 ));
 
-%% Talk (open talk)
-%% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
-old_out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
-	Params = make_param({post, A}),
-	_Token = param(Params, "token"),
-	Talked = param(Params, "talked"),
-	Result = talk(open, CidX, Talked, default:distance()),
-	mout:return_json(json:encode({struct, [Result]}));
 
 %% Whisper (person to person talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
 old_out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
 	not_implemented;
 
-%% Move
-%% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
-old_out(A, 'POST', ["service", SVID, "move", CidX]) ->
-	Params = make_param({post, A}),
-	_Token = param(Params, "token"),
-	X = erlang:list_to_integer(param(Params, "x")),
-	Y = erlang:list_to_integer(param(Params, "y")),
-	_Result = move:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
-	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Attack
 old_out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
@@ -607,19 +583,6 @@ old_out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
 	_Result = battle:single(CidX, CidTo),
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
-%% Set attribute
-%% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
-old_out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
-	Params = make_param({get, A}),
-	Value = param(Params, "value"),
-	Token = param(Params, "token"),
-	Result = character:setter(Cid, Token, Key, Value),
-	case Result of
-		{ok, _K, _V} ->
-			{html, io_lib:format("KV Storage Setter OK. owner=~p, key=~p, value=~p<br>",[Cid, Key, Value])};
-		{ng} ->
-			{html, "request failed<br>"}
-	end;
 
 % Add New Non Player Character.
 old_out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
@@ -781,41 +744,6 @@ old_do_setdown_player(Cid, ExistingSession) ->
 		{atomic, ok} -> {ok, Cid};
 		Other -> Other
 	end.
-
-
-% *** charachter setup support functions. ***
-
-setup_player_initial_location(Cid) when is_record(Cid, cid) ->
-	L = initial_location:get_one(Cid),
-	online_character:setpos(Cid, L).
-
-add_online_character(Cid, Pid, _Type) when is_record(Cid, cid) ->
-	O = online_character:set_pid(online_character:make_record(Cid),Pid),
-	mnesia:activity(
-		transaction,
-		fun() -> mnesia:write(O) end).
-
-delete_online_character(Cid) when is_record(Cid, cid) ->
-	mnesia:transaction(
-		fun()-> mnesia:delete({online_character, Cid}) end).
-
-%-----------------------------------------------------------
-% Character Persistency
-%-----------------------------------------------------------
-
-%old_lookup_cdata(Cid) ->
-%	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
-%		[] -> void;
-%		[CData] -> CData
-%	end.
-%old_gen_stat_from_cdata(X) ->
-%	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-lookup_cdata(Cid) ->
-	[].
-gen_stat_from_cdata(AttrList) ->
-	[{cid, 0}, {name, "dummy"}] ++ AttrList.
-
 
 
 

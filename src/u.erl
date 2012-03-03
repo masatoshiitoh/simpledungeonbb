@@ -44,8 +44,11 @@
 make_new_id() ->
 	list_to_hexstr(erlang:binary_to_list(erlang:term_to_binary(erlang:make_ref()))).
 
-% token: session credential for web i/f.
-%-----------------------------------------------------------
+gen_map_and_pos(O) when is_record(O, online_character) ->
+	{map_and_pos,
+	O#online_character.map_id,
+	u:gen_pos(O#online_character.location)}.
+
 gen_token() ->
 	u:list_to_hexstr(erlang:binary_to_list(crypto:rand_bytes(16))).
 

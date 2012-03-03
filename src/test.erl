@@ -38,14 +38,14 @@ scenario_01_test()-> {end_of_run_tests}.
 %scenario_02_test()-> {end_of_run_tests} = do_trades().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
-scenario_05_test()-> {end_of_run_tests} = do_npc_move().
-scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
-scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_091_test()-> {end_of_run_tests} = do_battle_unarmed_01().
 scenario_0921_test()-> {end_of_run_tests} = do_battle_unarmed_021().
 scenario_0922_test()-> {end_of_run_tests} = do_battle_unarmed_022().
 scenario_0923_test()-> {end_of_run_tests} = do_battle_unarmed_023().
+scenario_05_test()-> {end_of_run_tests} = do_npc_move().
+scenario_06_test()-> {end_of_run_tests} = do_pc_move().
+scenario_08_test()-> {end_of_run_tests} = do_stat().
 
 check_record_test() ->
 	%% what is this test? why did I put a test for erlang module?
@@ -292,13 +292,13 @@ do_pc_move() ->
 	%% moving !
 	io:format("order move 1,3 to 3,3 ~p~n", [move:move(
 		Cid1,
-		u:gen_location(hibari, 1, 3, 3)
+		{pos,3, 3}
 		)]),
 	receive
 		after 500 -> ok
 	end,
 	io:format("RE-order move to 1,2 ~p~n", [move:move(
-		Cid1, u:gen_location(hibari, 1, 1, 2)
+		Cid1, {pos, 1, 2}
 	)]),
 	receive
 		after 3000 -> ok
@@ -342,7 +342,7 @@ do_npc_move() ->
 	io:format("NPC move to 2,2 ~p~n", [
 		move:move(
 		Npcid1,
-		u:gen_location(hibari, 1, 3, 1)
+		{pos, 3, 1}
 		)]),
 	receive
 		after 1100 -> ok

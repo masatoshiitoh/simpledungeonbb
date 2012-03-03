@@ -164,9 +164,15 @@ delete_record(O) when is_record(O, online_character) ->
 %-----------------------------------------------------------
 % character location updater
 %-----------------------------------------------------------
-setpos(Cid, MapId, {pos, PosX, PosY}) ->
+setpos(Cid, MapId, {pos, PosX, PosY}) when is_record(Cid, cid), is_record(MapId, map_id) ->
 	F = fun(X) ->
-		mnesia:write(X#online_character{location = {pos, PosX, PosY}, map_id = MapId})
+		mnesia:write(X#online_character{
+			location = u:gen_location(
+				MapId#map_id.service_name,
+				MapId#map_id.id,
+				PosX,
+				PosY)}
+				)
 	end,
 	apply_online_character(Cid, F).
 
@@ -249,6 +255,21 @@ get_all_neighbors(Cid, R) ->
 %%----------------------------------
 
 -ifdef(TEST).
+
+pc_setpos_normal_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	setpos(Cid1, {pos, 7, 9}),
+	
+	O = get_one(Cid1),
+	
+	Loc = O#online_character.location,
+	
+	?assert(7 == Loc#location.x),
+	?assert(9 == Loc#location.y),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
 
 
 connect_character_1_test() ->
