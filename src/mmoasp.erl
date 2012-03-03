@@ -136,7 +136,10 @@ action(move, Req, Param) ->
 	Y = get_param_int(Param, "y"),
 	
 	session:check_and_call(Cid, Token, fun() ->
-		_Result = move:move(Cid, {map_id, Req#request.service_name, 1}, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
+		_Result = move:move(
+			Cid,
+			{pos, X, Y}
+			),%%% TODO Write {map_id,SV,MAPID} appropriately !!
 		mout:return_json(mout:encode_json_array_with_result("ok",[]))
 	end);
 

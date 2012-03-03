@@ -62,6 +62,9 @@ gen_location(Service, LocalMapId, X, Y) ->
 		y = Y
 	}.
 
+gen_pos(Loc) when is_record(Loc, location) ->
+	{pos, Loc#location.x, Loc#location.y}.
+
 gen_map_id(Service, LocalMapId) ->
 	#map_id{
 		service_name = Service,

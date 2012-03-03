@@ -31,15 +31,11 @@
 %% 'map based move' main api
 %%
 
-move(MapId, Cid, DestLocation)
-	when is_record(MapId, map_id),
-		is_record(DestLocation, location),
-		MapId == DestLocation#location.map_id ->
-	move(Cid, DestLocation).
 
-move(Cid, DestLoc) when is_record(Cid, cid), is_record(DestLoc, location) ->
+move(Cid, {pos, X, Y}) when is_record(Cid, cid) ->
 	F = fun(X) ->
 		NowLoc = X#online_character.location,
+		DestLoc = NowLoc#location{x = X, y = Y},
 		{ok, Result} = path_finder:lookup_path(NowLoc, DestLoc),
 		Result
 	end,
@@ -52,7 +48,27 @@ move(Cid, DestLoc) when is_record(Cid, cid), is_record(DestLoc, location) ->
 				init_move(X#online_character.pid, Start, Path)
 			end,
 			online_character:apply_online_character(Cid, FS)
+	end;
+
+move(Cid, DestLoc) when is_record(Cid, cid), is_record(DestLoc, location) ->
+	F = fun(X) ->
+		NowLoc = X#online_character.location,
+		NowMap = X#online_character.map_id,
+		{ok, Result} = path_finder:lookup_path(NowMap, u:gen_pos(NowLoc), u:gen_pos(DestLoc)),
+		Result
+	end,
+	WayPoints = online_character:apply_online_character(Cid, F),
+	case WayPoints of
+		[] -> io:format("path unavailable.  no waypoints found.~n", []),
+			[];
+		[Start| Path] ->
+			FS = fun(X) ->
+				init_move(X#online_character.pid, Start, Path)
+			end,
+			online_character:apply_online_character(Cid, FS)
 	end.
+
+
 
 
 obsolete_move(Cid, DestPos) when is_record(DestPos, location) ->
@@ -96,8 +112,8 @@ set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I) ->
 %%
 
 mapmove_call({_From, init_move, CurrPos, WayPoints}, R, _I)
-	when R#task_env.waypoints == []
-		andalso R#task_env.currpos == undefined ->
+	when R#task_env.waypoints == [],
+		R#task_env.currpos == undefined ->
 	notice_move_list_to_neighbor(R#task_env.cid, [CurrPos | WayPoints]),
 	set_new_route_and_start_timer({_From, init_move, CurrPos, WayPoints}, R, _I);
 

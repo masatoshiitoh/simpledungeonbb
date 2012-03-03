@@ -30,14 +30,11 @@
 start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()	-> gen_server:call(?MODULE, stop).
 
-lookup_path(StartLoc, DestLoc)
-	when
-		is_record(StartLoc, location),
-		is_record(DestLoc, location) ->
-	gen_server:call(?MODULE, {lookup, StartLoc, DestLoc}).
+lookup_path(MapId, StartPos, DestPos) when is_record(MapId, map_id) ->
+	gen_server:call(?MODULE, {lookup, MapId, StartPos, DestPos}).
 
 init([]) ->
-	MapId1 = {map_id, hibari, 1},
+	MapId1 = u:gen_map_id(hibari, 1),
 	MapValue1 = make_entry_from_arraymap(path_finder:arraymap()),
 	{ok,
 		dict:from_list([{MapId1,MapValue1}])}.
@@ -56,10 +53,8 @@ make_entry_from_arraymap(ArrayMap) ->
 	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),	% dictionary for vertex - pos reference.
 	{map, Map, G, PList, VertexDict, RevDict}.
 
-handle_call({lookup, StartLoc, DestLoc}, _From, Maps) when is_record(StartLoc, location), is_record(DestLoc, location) ->
-	{ok, {map, Map, G, PList, VertexDict, RevDict}} = dict:find(StartLoc#location.map_id, Maps),
-	StartPos = {pos, StartLoc#location.x, StartLoc#location.y},
-	DestPos = {pos, DestLoc#location.x, DestLoc#location.y},
+handle_call({lookup, MapId, StartPos, DestPos}, _From, Maps) ->
+	{ok, {map, Map, G, PList, VertexDict, RevDict}} = dict:find(MapId, Maps),
 	{reply,
 		{ok,
 			pick_path(G, VertexDict, RevDict, StartPos, DestPos)},
