@@ -90,6 +90,7 @@ char_kv,
 default,
 online_character,
 mmoasp,
+list_to_know,
 test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
@@ -238,29 +239,30 @@ do_stat() ->
 		= mmoasp:get_list_to_know(self(), Cid2),
 
 	io:format("list to know for ~p: ~p~n",
-		[Cid1, {list_to_know, Actions1, Stats1}]),
+		[Cid1, {list_to_know, Actions1, Stats1, MoveInfo1}]),
 	io:format("list to know for ~p: ~p~n",
-		[Cid2, {list_to_know, Actions2, Stats2}]),
+		[Cid2, {list_to_know, Actions2, Stats2, MoveInfo2}]),
 
 	%% now, world has 2 characters "cid0001" and "cid0002",
 	%% and  1 npc (npc0001).
 	CidList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
+	io:format("list to know CidList1 = ~p~n", [CidList1]),
 	?assert(sets:from_list(CidList1)
 		== sets:from_list(
-			[u:gen_cid(hibari,1), u:gen_cid(hibari,2), u:gen_cid(hibari,99990001)])),
+			[{cid, 1}, {cid, 2}, {cid,99990001}])),
 
 	CidList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
 	?assert(sets:from_list(CidList2)
 		== sets:from_list(
-			[u:gen_cid(hibari,1), u:gen_cid(hibari,2), u:gen_cid(hibari,99990001)])),
+			[{cid, 1}, {cid, 2}, {cid,99990001}])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
 	?assert(sets:from_list(AList1)
-		== sets:from_list([u:gen_cid(hibari,1), u:gen_cid(hibari,2)])),
+		== sets:from_list([{cid,1}, {cid,2}])),
 	?assert(
 		sets:from_list(lists:flatten(
 			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))

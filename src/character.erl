@@ -67,7 +67,7 @@ get_status(Cid) when is_record(Cid, cid) ->
 	get_status_impl(get_one(Cid)).
 
 get_status_impl(C) when is_record(C, character) ->
-	C#character.status;
+	[{cid, C#character.cid}, {name, C#character.name}] ++ C#character.status;
 
 get_status_impl(undefined) ->
 	error({mmoasp_error, character_not_found}).

@@ -105,8 +105,7 @@ action(listtoknow, Req, Param) ->
 	Cid = gen_cid(Req),
 	Token = param(Param, "token"),
 	session:check_and_call(Cid, Token, fun() -> 
-		online_character:send_message_by_cid(Cid, {self(), update_neighbor_status, default:distance()}),
-		{list_to_know, ListToKnow, NeighborStats, MovePaths} = list_to_know:request(Cid),
+		{list_to_know, ListToKnow, NeighborStats, MovePaths} = list_to_know:get_one(Cid),
 		mout:return_json(mout:struct_list_to_json(
 			[{struct, X} || X <- ListToKnow]
 			++
@@ -389,11 +388,7 @@ do_change_password(Cid, From, Svid, Id, OldPw, NewPw, Ipaddr) ->
 
 
 get_list_to_know(_From, Cid) ->
-	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
-	receive
-		{list_to_know, Actions, Stats, MovePaths} -> {list_to_know, Actions, Stats, MovePaths}
-		after 1000 -> {timeout, [], [], []}
-	end.
+	list_to_know:get_one(Cid).
 
 % *** charachter setup support functions. ***
 
@@ -447,7 +442,7 @@ get_list_to_know_test() ->
 	A1Cid = u:kv_get(A1, cid),
 	A1Name = u:kv_get(A1, name),
 	?assert(A1Type == "login"),
-	?assert(A1Cid == u:gen_cid(hibari,1)),
+	?assert(A1Cid == 1),
 	?assert(A1Name == "alpha"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

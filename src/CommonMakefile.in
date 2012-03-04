@@ -42,6 +42,7 @@ objs = \
 	online_character.beam \
 	session.beam \
 	initial_location.beam \
+	list_to_know.beam \
 	u.beam
 
 .SUFFIXES: .erl .beam
@@ -71,6 +72,7 @@ online_character.beam :online_character.erl mmoasp.hrl
 session.beam :session.erl mmoasp.hrl
 initial_location.beam :initial_location.erl mmoasp.hrl
 id_password.beam :id_password.erl mmoasp.hrl
+list_to_know.beam :list_to_know.erl mmoasp.hrl
 
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)
