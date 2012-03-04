@@ -141,16 +141,16 @@ make_move_info(SenderCid, From, To) ->
 	{pos, FromX, FromY} = From,
 	{pos, ToX, ToY} = To,
 	Distance = u:distance(From, To),
-	[{type, "move"}, {cid, SenderCid},
+	[{type, "move"}, {cid, SenderCid#cid.id},
 				{from_x, FromX}, {from_y, FromY},
 				{to_x, ToX}, {to_y, ToY},
 				{duration, duration_millisec(Distance)}].
 
 make_move_list_info(SenderCid, []) ->
-	{struct,[{type, "move_list"}, {cid, SenderCid}, {move_path, {array,[]}}]};
+	{struct,[{type, "move_list"}, {cid, SenderCid#cid.id}, {move_path, {array,[]}}]};
 
 make_move_list_info(SenderCid, L) ->
-	{struct,[{type, "move_list"}, {cid, SenderCid},
+	{struct,[{type, "move_list"}, {cid, SenderCid#cid.id},
 				{move_path, {array, [{struct, X}|| X <- L]}}]}.
 
 duration_millisec(Distance) -> erlang:trunc(Distance * default:move_rate_millisec()).

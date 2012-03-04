@@ -116,7 +116,7 @@ loop(R, I) ->
 			%%	[{talk, Talker, MessageBody, Mode}]),
 			{task:add_event(R, 
 					[{type, "talk"},
-						{cid, Talker},
+						{cid, Talker#cid.id},
 						{content, MessageBody},
 						{mode, Mode}]),
 				task:mk_idle_update(I)};
@@ -126,8 +126,8 @@ loop(R, I) ->
 				[OidFrom, OidTo, Res, Dam]),
 			{task:add_event(R,
 					[{type, "attack"},
-						{cid, OidTo},
-						{attacker, OidFrom},
+						{cid, OidTo#cid.id},
+						{attacker, OidFrom#cid.id},
 						{result, atom_to_list(Res)},
 						{damage, Dam}]),
 				task:mk_idle_update(I)};
