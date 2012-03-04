@@ -457,7 +457,8 @@ get_list_to_know_test() ->
 get_list_to_know_none_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	{timeout, [], [], []} = get_list_to_know(self(), u:gen_cid(hibari,"cid_not_exist")),
+	?assertException(_, _, %% error, {aborted,{mmoasp_error,character_not_found}},
+		_Result = get_list_to_know(self(), u:gen_cid(hibari,"cid_not_exist"))),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
