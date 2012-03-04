@@ -199,11 +199,11 @@ battle_observer_pc_knockouted_test() ->
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
-		== test:sets_by_list([{attacker, Npcid1}])),
+		== test:sets_by_list([{attacker, Npcid1#cid.id}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, cid)
-		== test:sets_by_list([{cid, Cid1}])),
+		== test:sets_by_list([{cid, Cid1#cid.id}])),
 
 %%	io:format("battle_observer_pc_knockouted_test: sets_by_actions(type) ~p~n", [test:sets_by_actions(Actions1, type)]),
 	?assert(
