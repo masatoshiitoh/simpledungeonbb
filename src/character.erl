@@ -92,7 +92,7 @@ loop(R, I)
 	when I#idle.since_last_op > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
-	mmoasp:logout(self(), R#task_env.cid, R#task_env.token);
+	online_character:disconnect(R#task_env.cid);
 
 loop(R, I) ->
 	{NewR, NewI} = receive

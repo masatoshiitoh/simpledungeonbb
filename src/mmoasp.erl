@@ -119,8 +119,9 @@ action(listtoknow, Req, Param) ->
 action(talk, Req, Param) ->
 	Cid = gen_cid(Req),
 	Token = param(Param, "token"),
-	session:check_and_call(Cid, Token, fun() -> 
-		Result = talk:to_neighbors(Cid, param(Param, "talked"), default:distance()),
+	session:check_and_call(Cid, Token, fun() ->
+		Result = talk(open, Cid, param(Param, "talked"), default:distance()),
+		% Result = talk:to_neighbors(Cid, param(Param, "talked"), default:distance()),
 		mout:return_json(json:encode({struct, [Result]}))
 	end);
 
