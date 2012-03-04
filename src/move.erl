@@ -153,7 +153,7 @@ make_move_list_info(SenderCid, L) ->
 	{struct,[{type, "move_list"}, {cid, SenderCid},
 				{move_path, {array, [{struct, X}|| X <- L]}}]}.
 
-duration_millisec(Distance) -> erlang:trunc(Distance * 1000).
+duration_millisec(Distance) -> erlang:trunc(Distance * default:move_rate_millisec()).
 
 make_move_list(SenderCid, _CurrPos, L) ->
 	make_move_list([], SenderCid, _CurrPos, L).

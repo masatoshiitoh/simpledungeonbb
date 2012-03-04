@@ -99,16 +99,15 @@ loop(R, I) ->
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} ->
-			io:format("character: receive{mapmove,~p}~n", [X]),
-			move:mapmove_call(X,R,I);
+		{mapmove, X} -> move:mapmove_call(X,R,I);
 		{sensor, X} -> task:sensor_call(X,R,I);
 		{event, X} -> task:event_call(X,R,I);
 		
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
-			NewStatDict =
-				[get_status(X)
+%			io:format("update_neighbor_status retrieves ~p~n", [[X#online_character.cid
+%					|| X <- online_character:get_all_neighbors(R#task_env.cid, Radius)]]),
+			NewStatDict = [get_status(X#online_character.cid)
 					|| X <- online_character:get_all_neighbors(R#task_env.cid, Radius)],
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		

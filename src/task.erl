@@ -84,10 +84,11 @@ timer_call({_From, cancel_timer}, R, I) ->
 
 sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
-				task:get_elements(R#task_env.event_queue),
-				get_stats(R#task_env.stat_dict),
+				get_elements(R#task_env.event_queue),
+				get_status(R#task_env.stat_dict),
 				get_values(R#task_env.move_path_dict)
 				},
+
 %			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
 %			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),
 %			io:format("listtoknow: ~p MVPA ~p~n", [From, get_values(R#task_env.move_path_dict)]),
@@ -123,7 +124,7 @@ sensor_call({_From, notice_remove, SenderCid}, R, I) ->
 get_values(Dict) ->
 	[V || {_K,V} <- dict:to_list(Dict)].
 
-get_stats(L) -> L.
+get_status(L) -> [].
 
 add_event(R, Event) when is_record(R, task_env) ->
 	R#task_env{

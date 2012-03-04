@@ -164,31 +164,30 @@ delete_record(O) when is_record(O, online_character) ->
 %-----------------------------------------------------------
 % character location updater
 %-----------------------------------------------------------
-setpos(Cid, MapId, {pos, PosX, PosY}) when is_record(Cid, cid), is_record(MapId, map_id) ->
-	F = fun(X) ->
-		mnesia:write(X#online_character{
-			location = u:gen_location(
-				MapId#map_id.service_name,
-				MapId#map_id.id,
-				PosX,
-				PosY)}
-				)
-	end,
-	apply_online_character(Cid, F).
+setpos(Cid, MapId, {pos, PosX, PosY})
+	when is_record(Cid, cid),
+		is_record(MapId, map_id) ->
+	setpos(Cid,u:gen_location(
+		MapId#map_id.service_name,
+		MapId#map_id.id,
+		PosX,
+		PosY)).
 
-setpos(Cid, Location) when is_record(Cid, cid), is_record(Location, location) ->
-	F = fun(X) ->
-		mnesia:write(X#online_character{location = Location, map_id = Location#location.map_id})
-	end,
-	apply_online_character(Cid, F);
+setpos(Cid, Location)
+	when is_record(Cid, cid),
+		is_record(Location, location) ->
+	apply_online_character(Cid, fun(X) ->
+		mnesia:write(X#online_character{
+			location = Location,
+			map_id = Location#location.map_id})
+		end);
 
 setpos(Cid, {pos, PosX, PosY}) ->
-	F = fun(X) -> %% X hold single online_character record.
+	apply_online_character(Cid, fun(X) -> %% X hold single online_character record.
 		L = X#online_character.location,
 		NewL = L#location{x = PosX, y = PosY},
 		mnesia:write(X#online_character{location = NewL})
-	end,
-	apply_online_character(Cid, F).
+		end).
 
 %-----------------------------------------------------------
 % apply function to online characters

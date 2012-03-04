@@ -31,6 +31,7 @@
 
 -compile(export_all).
 
-distance() -> 1.0.
+distance() -> 10.0.
 expire_seconds() -> 30.
+move_rate_millisec() -> 500.
 

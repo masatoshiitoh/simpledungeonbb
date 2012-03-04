@@ -248,19 +248,19 @@ do_stat() ->
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
 	?assert(sets:from_list(CidList1)
 		== sets:from_list(
-			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, #cid{service_name = hibari, id=99990001}}])),
+			[u:gen_cid(hibari,1), u:gen_cid(hibari,2), u:gen_cid(hibari,99990001)])),
 
 	CidList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
 	?assert(sets:from_list(CidList2)
 		== sets:from_list(
-			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, #cid{service_name = hibari, id=99990001}}])),
+			[u:gen_cid(hibari,1), u:gen_cid(hibari,2), u:gen_cid(hibari,99990001)])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
 	?assert(sets:from_list(AList1)
-		== sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
+		== sets:from_list([u:gen_cid(hibari,1), u:gen_cid(hibari,2)])),
 	?assert(
 		sets:from_list(lists:flatten(
 			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
@@ -294,13 +294,10 @@ do_pc_move() ->
 		Cid1,
 		{pos,3, 3}
 		)]),
-	receive
-		after 500 -> ok
-	end,
+	u:wait(default:move_rate_millisec() * 1),
+
 	io:format("RE-order move to 1,2 ~p~n", [move:move(Cid1, {pos, 1, 2})]),
-	receive
-		after 2400 -> ok
-	end,
+	u:wait(default:move_rate_millisec() * 4),
 	
 	O1 = online_character:get_one(Cid1),
 	?assert(is_record(O1, online_character)),
@@ -310,12 +307,9 @@ do_pc_move() ->
 			x = 1,
 			y = 2}),
 	
-	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-	receive
-		after 1000 -> ok
-	end,
+%	u:wait(default:move_rate_millisec() * 1),
 %	io:format("after stop npc ~p~n", [db:demo(session)]),
 
 	{end_of_run_tests}.
@@ -342,9 +336,7 @@ do_npc_move() ->
 		Npcid1,
 		{pos, 3, 1}
 		)]),
-	receive
-		after 1100 -> ok
-	end,
+	u:wait(default:move_rate_millisec() * 2),
 	io:format("Latest online_character ~p~n", [online_character:get_one(Npcid1)]),
 	
 	O2 = online_character:get_one(Npcid1),
@@ -357,9 +349,7 @@ do_npc_move() ->
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-	receive
-		after 1000 -> ok
-	end,
+%	u:wait(default:move_rate_millisec() * 1),
 %	io:format("after stop npc ~p~n", [db:demo(session)]),
 	{end_of_run_tests}.
 

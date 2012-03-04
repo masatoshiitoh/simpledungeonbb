@@ -392,7 +392,7 @@ get_list_to_know(_From, Cid) ->
 	send_message_by_cid(Cid, {sensor, {self(), request_list_to_know}}),
 	receive
 		{list_to_know, Actions, Stats, MovePaths} -> {list_to_know, Actions, Stats, MovePaths}
-		after 2000 -> {timeout, [], [], []}
+		after 1000 -> {timeout, [], [], []}
 	end.
 
 % *** charachter setup support functions. ***
@@ -621,12 +621,6 @@ old_out(A) ->
 	out(A, Req, Path).
 
 
-old_param(ParamsDict, Key) ->
-	case dict:find(Key, ParamsDict) of
-		{ok, Value} -> Value;
-		error -> void
-	end.
-
 -ifdef(TEST).
 -endif.
 
@@ -650,100 +644,3 @@ old_get_player_character_template(Id, Pass) ->
 		{location, Cid, 1, {pos, 1,3}, offline, offline},
 		{money, Cid, 2000, 0}
 	].
-
-%-----------------------------------------------------------
-%% authorization.
-%-----------------------------------------------------------
-
-% caution!
-% login/4 cannot avoid failure caused by caller side problem.
-% such as...
-% > a = 1.
-% > a = mmoasp:login(.....).  <- a is already bound!
-%
-% in such case, requested character will be set to on-line, but no one can handle it.
-% Timeout mechanism will clear this situation.
-%
-old_logout(From, Cid, _Token) ->
-	old_setdown_player(Cid).
-
-
--ifdef(TEST).
-
-old_login_test_notexec() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	{ok, Cid3, Token3}
-		= login(self(), "id0003", "pw0003", {192,168,1,200}),
-	old_logout(self(), Cid3, Token1),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
-old_login_duplicated_test_notexec() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	{ng, Reason} = login(self(), "id0001", "pw0001", {192,168,1,200}),
-	?assert(Reason == "account is in use"),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
-old_logout_missing_test_notexec() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	
-	old_logout(self(), "cid_not_exist", 0),
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
--endif.
-
-
-%-----------------------------------------------------------
-%% LIST to KNOW sender
-%-----------------------------------------------------------
-
-%-----------------------------------------------------------
-% load and setup character for each login.
-%-----------------------------------------------------------
-
-old_setup_player(Cid) when is_record(Cid, cid)->
-	online_character:connect(Cid).
-
-old_do_setup_player(Cid, ExistingSession)
-	when ExistingSession == {ng, "no such character"} ->
-
-	R = setup_task_env(Cid),
-	%% start player character process.
-	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
-	add_online_character(Cid, Child, "pc"),
-	%% setup character states.
-	setup_player_initial_location(Cid),
-	%% notice login information to nearby.
-	Name = character:get_name(Cid),
-	notice_login(Cid, {csummary, Cid, Name}, default:distance()),
-	{ok, Cid, R#task_env.token};
-
-old_do_setup_player(Cid, ExistingSession) ->
-	{ng, "account is in use"}.
-
-
-old_setdown_player(Cid) ->
-	old_do_setdown_player(Cid, online_character:get_one(Cid)).
-
-old_do_setdown_player(Cid, ExistingSession)
-	when ExistingSession == {ng, "no such character"} ->
-		{ng, "no such character"};
-
-old_do_setdown_player(Cid, ExistingSession) ->
-	notice_logout(Cid, {csummary, Cid}, default:distance()),
-	character:stop_child(Cid),
-	online_character:stop_stream((online_character:get_one(Cid))#online_character.stream_pid),
-	case delete_online_character(Cid) of
-		{atomic, ok} -> {ok, Cid};
-		Other -> Other
-	end.
-
-
-
