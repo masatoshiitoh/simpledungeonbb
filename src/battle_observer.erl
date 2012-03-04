@@ -168,7 +168,7 @@ battle_observer_01_test() ->
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
-		== test:sets_by_list([{attacker, #cid{service_name = hibari, id=99990001}}])),
+		== test:sets_by_list([{attacker, 99990001}])),
 
 	?assert(
 		test:sets_by_actions(Actions1, type)
