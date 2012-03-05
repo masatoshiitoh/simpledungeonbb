@@ -174,7 +174,94 @@ action(get, Req, Param) ->
 			ng ->
 				{html, "request failed<br>"}
 		end
-	end).
+	end);
+
+%% Change Password.
+%% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
+action(change_password, Req, Param) ->
+	Svid = Req#request.service_name,
+	Id = param(Param, "id"),
+	Pw = param(Param, "password"),
+	NewPw = param(Param, "newpassword"),
+
+	make_boolean_json_result(
+		id_password:update_password(
+			id_password:make_login_id(Svid, Id),
+			Pw, NewPw));
+
+% create account.
+action(create_account, Req, Param) ->
+	Svid = Req#request.service_name,
+	Id = param(Param, "id"),
+	Pw = param(Param, "password"),
+	Ipaddr = Req#request.client_ip,
+
+	make_boolean_json_result(
+		old_create_account(self(), Svid, Id, Pw, Ipaddr));
+
+% Add New Non Player Character.
+action(startnpc, Req, Param) ->
+	Svid = Req#request.service_name,
+	Npcid = Req#request.id1,
+
+	npc:start_npc(u:gen_cid(Svid, Npcid)),
+	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", Npcid}])).
+
+%% Attack
+old_out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
+	Params = make_param({post, A}),
+	_Token = param(Params, "token"),
+	_Result = battle:single(CidX, CidTo),
+	mout:return_json(mout:encode_json_array_with_result("ok",[]));
+
+old_out(A, 'POST', ["service", _SVID, "ping"]) ->
+	Params = make_param({post, A}),
+	AdminId = param(Params, "admin_id"),
+	ConnectPhrase = param(Params, "connect_phrase"),
+	mout:return_json(
+		mout:encode_json_array_with_result(
+			"ok",
+			[{"status", ok},
+			{"admin_id", AdminId},
+			{"connect_phrase", ConnectPhrase}]));
+
+
+old_out(A, 'POST', ["service", SVID, "delete_account"]) ->
+	Params = make_param({post, A}),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = old_delete_account(self(), SVID, Id, Pw, Ipaddr),
+	case Result of
+		{atomic, ok} ->
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
+		{ng, Reason} ->
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+% Add New Player Character.
+old_out(A, 'POST', ["service", SVID, "subscribe"]) ->
+	Params = make_param({post, A}),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	Result = old_create_account(self(), SVID, Id, Pw, Ipaddr),
+	case Result of
+		{atomic, ok} ->
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
+		{ng, Reason} ->
+			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
+	end;
+
+%% sample for "catch all" handler.
+old_out(A, _Method, _Params) ->
+	io:format("out/3 general handler: A#arg.appmoddata = ~p~n"
+		"A#arg.appmod_prepath = ~p~n"
+		"A#arg.querydata = ~p~n",
+		[A#arg.appmoddata,
+		A#arg.appmod_prepath,
+		A#arg.querydata]),
+	{status, 404}.
 
 %% dispacher for RESTful service (caller out/3)
 out(A) ->
@@ -353,22 +440,6 @@ param_3_test() ->
 
 %% -------Salvaged code ------------
 
-%% Change Password.
-%% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
-updated_out(A, 'POST', ["service", SVID, "change_password"]) ->
-	Params = make_param({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	NewPw = param(Params, "newpassword"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = id_password:update_password(id_password:make_login_id(SVID, Id), Pw, NewPw),
-	case Result of
-		{atomic, ok} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
-		{ng, Reason} ->
-			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
-	end.
-
 
 setup_task_env(Cid) ->
 	#task_env{
@@ -408,22 +479,6 @@ delete_online_character(Cid) when is_record(Cid, cid) ->
 		fun()-> mnesia:delete({online_character, Cid}) end).
 
 
-%-----------------------------------------------------------
-% Character Persistency
-%-----------------------------------------------------------
-
-%old_lookup_cdata(Cid) ->
-%	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
-%		[] -> void;
-%		[CData] -> CData
-%	end.
-%old_gen_stat_from_cdata(X) ->
-%	[{cid, X#cdata.cid}, {name, X#cdata.name}] ++ X#cdata.attr.
-
-lookup_cdata(Cid) ->
-	[].
-gen_stat_from_cdata(AttrList) ->
-	[{cid, 0}, {name, "dummy"}] ++ AttrList.
 
 
 %-----------------------------------------------------------
@@ -465,161 +520,6 @@ get_list_to_know_none_test() ->
 
 %%----------------- Following are OLD CODE ---------------%%
 
-
-
-
-
-%-----------------------------------------------------------
-%% implement simple api for mmoasp.erl
-%-----------------------------------------------------------
-
-old_start() ->
-	battle_observer:start_link(),
-	db:start(reset_tables),
-	path_finder:start().
-
-old_start(reset_tables) ->
-	battle_observer:start_link(),
-	db:start(reset_tables),
-	path_finder:start().
-
-old_stop() ->
-	battle_observer:stop(),
-	path_finder:stop(),
-	db:stop().
-	
-old_change_schema() ->
-	db:drop_all(),
-	db:do_this_once(),
-	db:start(reset_tables).
-
-old_make_params({get, A}) ->
-	dict:from_list(yaws_api:parse_query(A));
-
-old_make_params({post, A}) ->
-	dict:from_list(yaws_api:parse_post(A)).
-
-
-
-%% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
-old_out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
-	spawn(character_stream, start, [CID,A#arg.pid]),
-	{streamcontent, "text/html", ""};
-
-% create account.
-old_out(A, 'POST', ["service", SVID, "create_account"]) ->
-	Params = make_param({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = old_create_account(self(), SVID, Id, Pw, Ipaddr),
-	case Result of
-		{atomic, ok} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
-		{ng, Reason} ->
-			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
-	end;
-
-
-% create account.
-old_out(A, 'POST', ["service", SVID, "delete_account"]) ->
-	Params = make_param({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = old_delete_account(self(), SVID, Id, Pw, Ipaddr),
-	case Result of
-		{atomic, ok} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
-		{ng, Reason} ->
-			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
-	end;
-
-
-% Add New Player Character.
-old_out(A, 'POST', ["service", SVID, "subscribe"]) ->
-	Params = make_param({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = old_create_account(self(), SVID, Id, Pw, Ipaddr),
-	case Result of
-		{atomic, ok} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
-		{ng, Reason} ->
-			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
-	end;
-
-
-%% Get list to know (Your client calls this every xx sec.)
-%% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
-old_out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
-	Params = make_param({post, A}),
-	_Token = param(Params, "token"),
-	send_message_by_cid(CidX, {self(), update_neighbor_status, default:distance()}),
-	{list_to_know, ListToKnow, NeighborStats, MovePaths} = get_list_to_know(self(), CidX),
-	mout:return_json(mout:struct_list_to_json(
-		[{struct, X} || X <- ListToKnow]
-		 ++
-		 [{struct, X} || X <- NeighborStats]
-		 ++
-		 MovePaths
-		 ));
-
-
-%% Whisper (person to person talk)
-%% Call "POST http://localhost:8001/service/hibari/talk/cid1234/hello"
-old_out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
-	not_implemented;
-
-
-%% Attack
-old_out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
-	Params = make_param({post, A}),
-	_Token = param(Params, "token"),
-	_Result = battle:single(CidX, CidTo),
-	mout:return_json(mout:encode_json_array_with_result("ok",[]));
-
-
-% Add New Non Player Character.
-old_out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
-	npc:start_npc(NpcidX),
-	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
-
-
-% Add New Non Player Character.
-old_out(A, 'POST', ["service", _SVID, "ping"]) ->
-	Params = make_param({post, A}),
-	AdminId = param(Params, "admin_id"),
-	ConnectPhrase = param(Params, "connect_phrase"),
-	mout:return_json(
-		mout:encode_json_array_with_result(
-			"ok",
-			[{"status", ok},
-			{"admin_id", AdminId},
-			{"connect_phrase", ConnectPhrase}]));
-
-
-%% sample for "catch all" handler.
-old_out(A, _Method, _Params) ->
-	io:format("out/3 general handler: A#arg.appmoddata = ~p~n"
-		"A#arg.appmod_prepath = ~p~n"
-		"A#arg.querydata = ~p~n",
-		[A#arg.appmoddata,
-		A#arg.appmod_prepath,
-		A#arg.querydata]),
-	{status, 404}.
-
-%% dispacher for RESTful service (caller out/3)
-old_out(A) ->
-	{http_request, Req, _params, _unknown} = A#arg.req,
-	Uri = yaws_api:request_url(A),
-	Path = string:tokens(Uri#url.path, "/"),
-	out(A, Req, Path).
-
-
--ifdef(TEST).
--endif.
 
 %-----------------------------------------------------------
 %% account management.
