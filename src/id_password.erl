@@ -33,6 +33,33 @@
 make_login_id(Svid, Id) ->
 	#login_id{service_name = Svid, id = Id}.
 
+add_one(Svid, Id, Pw) ->
+	add_one(make_login_id(Svid, Id), Pw).
+
+add_one(Lid, Pw) ->
+	add_one_impl(Lid, Pw, get_one(Lid)).
+
+add_one_impl(Lid, Pw, false) when is_record(Lid, login_id) ->
+	NewCid = character:add_one(),
+	mnesia:activity(transaction, fun() ->
+		mnesia:write(#id_password{
+			login_id = Lid,
+			password = Pw,
+			cid = NewCid}) end),
+	ok;
+
+add_one_impl(Lid, Pw, _) when is_record(Lid, login_id) ->
+	{failed, "Try another Id"}.
+
+get_one(Lid) when is_record(Lid, login_id) ->
+	case mnesia:activity(transaction, fun() ->
+		mnesia:read({id_password, Lid})
+		end) of
+		
+		[] -> false;
+		[A] -> A
+	end.
+
 get_one(Lid, Pw) when is_record(Lid, login_id) ->
 	case mnesia:activity(transaction, fun() ->
 		qlc:e(qlc:q([L || L <- mnesia:table(id_password),
@@ -100,12 +127,12 @@ logout(FromPid, Service, LocalCid, Ipaddr) ->
 % test
 %-----------------------------------------------------------
 
+-ifdef(TEST).
+
 make_login_id_test() ->
 	LI = make_login_id(hibari, 1),
 	?assert(LI == {login_id, hibari, 1}),
 	{end_of_run_tests}.
-
--ifdef(TEST).
 
 check_id_and_password_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2} = test:up_scenarios(),

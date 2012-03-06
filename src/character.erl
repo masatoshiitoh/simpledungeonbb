@@ -55,6 +55,11 @@ get_name(Cid) when is_record(Cid, cid) ->
 		end
 	end).
 
+
+%% on error, throw exception ( when this return, character must be made.)
+add_one() ->
+	0.
+
 get_one(Cid) when is_record(Cid, cid) ->
 	mnesia:activity(transaction, fun() ->
 		case mnesia:read({character, Cid}) of
