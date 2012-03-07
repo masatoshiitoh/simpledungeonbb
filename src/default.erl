@@ -34,4 +34,4 @@
 distance() -> 10.0.
 expire_seconds() -> 30.
 move_rate_millisec() -> 500.
-
+idbytes() -> 5.

@@ -55,10 +55,36 @@ get_name(Cid) when is_record(Cid, cid) ->
 		end
 	end).
 
-
+%% on success, returns cid record of new character.
 %% on error, throw exception ( when this return, character must be made.)
-add_one() ->
-	0.
+add_one(Svid) ->
+	Cid = mnesia:activity(transaction, fun() ->
+		add_one_transaction(Svid) end),
+	Cid.
+
+check_cid_used(Cid) when is_record(Cid, cid) ->
+	case mnesia:read({character, Cid}) of
+	[] -> %% new one. use this Cid !.
+		ok;
+	_ -> %% found something.
+		try_another
+	end.
+
+add_one_transaction(Svid) ->
+	Cid = u:gen_cid(Svid, u:gen_randint()),
+	add_one_transaction_impl(check_cid_used(Cid), Svid, Cid).
+
+add_one_transaction_impl(ok, _Svid, Cid) when is_record(Cid, cid) ->
+	mnesia:write(make_skelton(Cid)),
+	Cid;
+
+add_one_transaction_impl(try_another, Svid, Cid) when is_record(Cid, cid) ->
+	add_one_transaction(Svid).
+
+make_skelton(Cid) when is_record(Cid, cid) ->
+	#character{cid = Cid}.
+
+
 
 get_one(Cid) when is_record(Cid, cid) ->
 	mnesia:activity(transaction, fun() ->

@@ -52,6 +52,9 @@ gen_map_and_pos(O) when is_record(O, online_character) ->
 gen_token() ->
 	u:list_to_hexstr(erlang:binary_to_list(crypto:rand_bytes(16))).
 
+gen_randint() ->
+	u:binlist_to_int(erlang:binary_to_list(crypto:rand_bytes(default:idbytes()))).
+
 gen_cid(Svid, Id) ->
 	#cid{service_name = Svid, id = Id}.
 
@@ -121,6 +124,10 @@ dkv_set(D, K, V) ->
 list_to_hexstr(A) -> list_to_hexstr(A, []).
 list_to_hexstr([], Acc) -> lists:flatten(lists:reverse(Acc));
 list_to_hexstr([H|T], Acc) -> list_to_hexstr(T, io_lib:format("~2.16.0b", [H]) ++ Acc).
+
+binlist_to_int(A) -> binlist_to_int(A, 0).
+binlist_to_int([], Acc) -> Acc;
+binlist_to_int([H|T], Acc) -> binlist_to_int(T, H + (Acc * 256)).
 
 %-----------------------------------------------------------
 %% distance calcurator.
