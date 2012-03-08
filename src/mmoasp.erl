@@ -125,7 +125,6 @@ action(talk, Req, Param) ->
 		mout:return_json(json:encode({struct, [Result]}))
 	end);
 
-
 %% Move
 %% Callr "POST http://localhost:8001/service/hibari/move/1234  token=Token&x=3&y=3"
 action(move, Req, Param) ->

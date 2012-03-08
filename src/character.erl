@@ -64,10 +64,8 @@ add_one(Svid) ->
 
 check_cid_used(Cid) when is_record(Cid, cid) ->
 	case mnesia:read({character, Cid}) of
-	[] -> %% new one. use this Cid !.
-		ok;
-	_ -> %% found something.
-		try_another
+	[] ->	ok;				%% new one. use this Cid !.
+	_ ->	try_another		%% found something.
 	end.
 
 add_one_transaction(Svid) ->
@@ -75,16 +73,22 @@ add_one_transaction(Svid) ->
 	add_one_transaction_impl(check_cid_used(Cid), Svid, Cid).
 
 add_one_transaction_impl(ok, _Svid, Cid) when is_record(Cid, cid) ->
-	mnesia:write(make_skelton(Cid)),
+	mnesia:write(make_pc_skelton(Cid)),
+	mnesia:write(initial_location:make_zero(Cid)),
 	Cid;
 
 add_one_transaction_impl(try_another, Svid, Cid) when is_record(Cid, cid) ->
 	add_one_transaction(Svid).
 
-make_skelton(Cid) when is_record(Cid, cid) ->
-	#character{cid = Cid}.
-
-
+make_pc_skelton(Cid) when is_record(Cid, cid) ->
+	#character{
+		cid = Cid,
+		type = pc,
+		name = "",
+		inventory = dict:new(),
+		status = dict:new(),
+		hidden_parameters = dict:new()
+		}.
 
 get_one(Cid) when is_record(Cid, cid) ->
 	mnesia:activity(transaction, fun() ->

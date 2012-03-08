@@ -40,7 +40,7 @@ add_one(Lid, Pw) ->
 	add_one_impl(Lid, Pw, get_one(Lid)).
 
 add_one_impl(Lid, Pw, false) when is_record(Lid, login_id) ->
-	NewCid = character:add_one(),
+	NewCid = character:add_one(Lid#login_id.service_name),
 	mnesia:activity(transaction, fun() ->
 		mnesia:write(#id_password{
 			login_id = Lid,

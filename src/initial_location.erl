@@ -28,6 +28,13 @@
 
 -compile(export_all).
 
+make_zero(Cid) ->
+	#initial_location{
+		cid = Cid,
+		location = u:gen_location(Cid#cid.service_name,
+			0,
+			0,
+			0)}.
 
 get_one(Cid) when is_record(Cid, cid) ->
 	mnesia:activity(transaction, fun() ->
