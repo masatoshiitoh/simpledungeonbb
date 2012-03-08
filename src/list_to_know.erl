@@ -56,7 +56,7 @@ get_one_test() ->
 	A1Cid = u:kv_get(A1, cid),
 	A1Name = u:kv_get(A1, name),
 	?assert(A1Type == "login"),
-	?assert(A1Cid == 1),
+	?assert(A1Cid == "1"),
 	?assert(A1Name == "alpha"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
