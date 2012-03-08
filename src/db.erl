@@ -172,6 +172,22 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
+		#cid{service_name = hibari, id = 3},
+		pc,
+		"charlie",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"type", "pc"}, {"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
+	{character,
+		#cid{service_name = hibari, id = 4},
+		pc,
+		"delta",
+		dict:from_list([{"sword", 1}]),
+		dict:from_list([{"type", "pc"}, {"hp", 12}]),
+		dict:from_list([{"hidden", 0}])
+	},
+	{character,
 		#cid{service_name = hibari, id = 99990001},
 		npc,
 		"Slime",
@@ -216,21 +232,38 @@ example_tables() ->
 		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 5, y = 1}
 	},
 	{initial_location,
+		#cid{service_name = hibari, id = 3},
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 6, y = 1}
+	},
+	{initial_location,
+		#cid{service_name = hibari, id = 4},
+		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 7, y = 1}
+	},
+	{initial_location,
 		#cid{service_name = hibari, id = 99990001},
 		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 2, y = 1}
 	},
 
 	{id_password,
-		#login_id{service_name = hibari, id = "lid00001"},
-		"password",
+		#login_id{service_name = hibari, id = "id0001"},
+		"pw0001",
 		#cid{service_name = hibari, id = 1}
 	},
 	{id_password,
-		#login_id{service_name = hibari, id = "lid00002"},
-		"password",
+		#login_id{service_name = hibari, id = "id0002"},
+		"pw0002",
 		#cid{service_name = hibari, id = 2}
 	},
-
+	{id_password,
+		#login_id{service_name = hibari, id = "id0003"},
+		"pw0003",
+		#cid{service_name = hibari, id = 3}
+	},
+	{id_password,
+		#login_id{service_name = hibari, id = "id0004"},
+		"pw0004",
+		#cid{service_name = hibari, id = 4}
+	},
 %	{user_session, {global_uid, hibari, 1}, now(), "ToKEN"},
 
 %{user_character, {global_uid, hibari, 1}, {global_cid, hibari, 1}},
