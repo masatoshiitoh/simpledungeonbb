@@ -30,7 +30,6 @@
 start_child(Cid) when is_record(Cid, cid) ->
 	spawn(?MODULE, loop, [setup_task_env(Cid), task:mk_idle_reset()]).
 
-
 setup_task_env(Cid) ->
 	#task_env{
 		cid = Cid,
