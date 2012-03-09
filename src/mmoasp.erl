@@ -66,7 +66,7 @@ gen_cid(Req) when is_record(Req, request) ->
 make_boolean_json_result(A) ->
 	case A of
 		{ok, Cid, Token} when is_record(Cid, cid) ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, integer_to_list(u:local_cid(Cid))}, {token, Token}]));
+			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, u:local_cid(Cid)}, {token, Token}]));
 		ok ->
 			mout:return_json(mout:encode_json_array_with_result("ok",[]));
 		{failed, Reason} ->
