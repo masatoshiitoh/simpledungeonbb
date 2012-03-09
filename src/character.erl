@@ -68,7 +68,7 @@ check_cid_used(Cid) when is_record(Cid, cid) ->
 	end.
 
 add_one_transaction(Svid) ->
-	Cid = u:gen_cid(Svid, u:gen_randint()),
+	Cid = u:gen_cid(Svid, u:gen_randint_str()),
 	add_one_transaction_impl(check_cid_used(Cid), Svid, Cid).
 
 add_one_transaction_impl(ok, _Svid, Cid) when is_record(Cid, cid) ->

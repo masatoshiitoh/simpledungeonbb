@@ -52,6 +52,9 @@ gen_map_and_pos(O) when is_record(O, online_character) ->
 gen_token() ->
 	u:list_to_hexstr(erlang:binary_to_list(crypto:rand_bytes(16))).
 
+gen_randint_str() ->
+	integer_to_list(gen_randint()).
+
 gen_randint() ->
 	u:binlist_to_int(erlang:binary_to_list(crypto:rand_bytes(default:idbytes()))).
 
