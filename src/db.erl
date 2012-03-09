@@ -37,36 +37,6 @@
 %=======================
 
 
-get_new_id_for_service(Svid, IdType) ->
-	mnesia:activity(transaction,
-		fun() ->
-			[S] = mnesia:read({service, Svid}),
-			CurrId = u:kv_get(S#service.id_list, IdType),
-			mnesia:write(S#service{id_list = u:kv_set(S#service.id_list, IdType, CurrId + 1)}),
-			CurrId
-			end
-		).
-
-%%% TEST CODE ------------------------------------------ %%%
--ifdef(TEST).
-
-access_new_id_01_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	?assert(get_new_id_for_service(testservice, cid) == 100003),
-	?assert(get_new_id_for_service(testservice, cid) == 100004),
-	?assert(get_new_id_for_service(testservice, cid) == 100005),
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
-access_new_id_not_exist_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	?assertException(_,_, get_new_id_for_service(testservice, idname_not_exist) == 1),
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
--endif.
-
-
 %=======================
 % DB access layer.
 %=======================
@@ -149,14 +119,11 @@ example_tables() ->
 	%%io:format("decrypt_text(EncPass) = ~p~n", [decrypt_text(EncPass)]),
 	
 	[
-	{service, hibari, "defaultphrase",[{uid, 3},{cid, 3},{map_id, 2}], {{2013,1,1},{23,59,59}}},
-	{admin, #uid{service_name= hibari, id=1}, AdminPass, dict:from_list([{"email", Email}])},
-
-%	{user, {global_uid, hibari, 1}, hibari, "masatoshi", Pass, true, dict:new()},
-%	{user, {global_uid, hibari, 2}, hibari, "ufoo", Pass, true, dict:new()},
+	{service, hibari, "defaultphrase",[], {{2013,1,1},{23,59,59}}},
+	{admin, #uid{service_name= hibari, id="1"}, AdminPass, dict:from_list([{"email", Email}])},
 
 	{character,
-		#cid{service_name = hibari, id = 1},
+		#cid{service_name = hibari, id = "1"},
 		pc,
 		"alpha",
 		dict:from_list([{"sword", 1}]),
@@ -164,7 +131,7 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
-		#cid{service_name = hibari, id = 2},
+		#cid{service_name = hibari, id = "2"},
 		pc,
 		"bravo",
 		dict:from_list([{"sword", 1}]),
@@ -172,7 +139,7 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
-		#cid{service_name = hibari, id = 3},
+		#cid{service_name = hibari, id = "3"},
 		pc,
 		"charlie",
 		dict:from_list([{"sword", 1}]),
@@ -180,7 +147,7 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
-		#cid{service_name = hibari, id = 4},
+		#cid{service_name = hibari, id = "4"},
 		pc,
 		"delta",
 		dict:from_list([{"sword", 1}]),
@@ -188,7 +155,7 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
-		#cid{service_name = hibari, id = 99990001},
+		#cid{service_name = hibari, id = "99990001"},
 		npc,
 		"Slime",
 		dict:from_list([]),
@@ -196,91 +163,53 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 
-
-%	{online_character,
-%		#cid{service_name = hibari, id = 1},
-%		#map_id{service_name = hibari, id = 1},
-%		{pos, 1, 1},
-%		now(),
-%		dummypid
-%	},
-%	{online_character,
-%		#cid{service_name = hibari, id = 2},
-%		#map_id{service_name = hibari, id = 1},
-%		{pos, 1, 2},
-%		now(),
-%		dummypid
-%	},
-
-%	{session,
-%		#cid{service_name = hibari, id = 1},
-%		"ToKEN",
-%		session:make_expire()
-%	},
-%	{session,
-%		#cid{service_name = hibari, id = 2},
-%		"ToKEN",
-%		session:make_expire()
-%	},
-
 	{initial_location,
-		#cid{service_name = hibari, id = 1},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 1, y = 1}
+		#cid{service_name = hibari, id = "1"},
+		#location{map_id = #map_id{service_name = hibari, id = "1"}, x = 1, y = 1}
 	},
 	{initial_location,
-		#cid{service_name = hibari, id = 2},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 5, y = 1}
+		#cid{service_name = hibari, id = "2"},
+		#location{map_id = #map_id{service_name = hibari, id = "1"}, x = 5, y = 1}
 	},
 	{initial_location,
-		#cid{service_name = hibari, id = 3},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 6, y = 1}
+		#cid{service_name = hibari, id = "3"},
+		#location{map_id = #map_id{service_name = hibari, id = "1"}, x = 6, y = 1}
 	},
 	{initial_location,
-		#cid{service_name = hibari, id = 4},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 7, y = 1}
+		#cid{service_name = hibari, id = "4"},
+		#location{map_id = #map_id{service_name = hibari, id = "1"}, x = 7, y = 1}
 	},
 	{initial_location,
-		#cid{service_name = hibari, id = 99990001},
-		#location{map_id = #map_id{service_name = hibari, id = 1}, x = 2, y = 1}
+		#cid{service_name = hibari, id = "99990001"},
+		#location{map_id = #map_id{service_name = hibari, id = "1"}, x = 2, y = 1}
 	},
 
 	{id_password,
 		#login_id{service_name = hibari, id = "id0001"},
 		"pw0001",
-		#cid{service_name = hibari, id = 1}
+		#cid{service_name = hibari, id = "1"}
 	},
 	{id_password,
 		#login_id{service_name = hibari, id = "id0002"},
 		"pw0002",
-		#cid{service_name = hibari, id = 2}
+		#cid{service_name = hibari, id = "2"}
 	},
 	{id_password,
 		#login_id{service_name = hibari, id = "id0003"},
 		"pw0003",
-		#cid{service_name = hibari, id = 3}
+		#cid{service_name = hibari, id = "3"}
 	},
 	{id_password,
 		#login_id{service_name = hibari, id = "id0004"},
 		"pw0004",
-		#cid{service_name = hibari, id = 4}
+		#cid{service_name = hibari, id = "4"}
 	},
-%	{user_session, {global_uid, hibari, 1}, now(), "ToKEN"},
 
-%{user_character, {global_uid, hibari, 1}, {global_cid, hibari, 1}},
-%{user_character, {global_uid, hibari, 2}, {global_uid, hibari, 2}},
-
-	{service, testservice, "testservicephrase00", [{uid, 1003},{cid, 100003},{map_id, 2}], {{2011,12,31},{23,59,59}}},
-	{admin, #uid{service_name= testservice, id=1}, AdminPass, dict:from_list([{"email", Email}])},
-%	{user, {global_uid, testservice, 1001}, testservice, "testmasa", Pass, true, dict:new()},
-%	{user, {global_uid, testservice, 1002}, testservice, "testfoo", Pass, true, dict:new()},
-%	{character, {global_cid, testservice, 100001}, "GM TEST", dict:from_list([{"sword", 1}]), dict:from_list([{"hp", 12}])},
-%	{character, {global_cid, testservice, 100002}, "TEST CHAR", dict:from_list([{"sword", 1}]), dict:from_list([{"hp", 12}])},
-%	{session, {global_cid, testservice, 100001}, {global_map_id, testservice, 1}, {pos, 1, 1}, now(), "ToKEN", dummypid},
-%	{session, {global_cid, testservice, 100002}, {global_map_id, testservice, 1}, {pos, 1, 2}, now(), "ToKEN", dummypid}
-%	{user_session, {global_uid, testservice, 1001}, now(), "ToKEN"}
+	{service, testservice, "testservicephrase00", [], {{2011,12,31},{23,59,59}}},
+	{admin, #uid{service_name= testservice, id="1"}, AdminPass, dict:from_list([{"email", Email}])},
 
 	{character,
-		#cid{service_name = testservice, id = 100001},
+		#cid{service_name = testservice, id = "100001"},
 		pc,
 		"alpha",
 		dict:from_list([{"sword", 1}]),
@@ -288,7 +217,7 @@ example_tables() ->
 		dict:from_list([{"hidden", 0}])
 	},
 	{character,
-		#cid{service_name = testservice, id = 100002},
+		#cid{service_name = testservice, id = "100002"},
 		pc,
 		"Foo",
 		dict:from_list([{"sword", 1}]),
@@ -297,20 +226,20 @@ example_tables() ->
 	},
 
 	{online_character,
-		#cid{service_name = testservice, id = 100001},
+		#cid{service_name = testservice, id = "100001"},
 		pc,
-		#map_id{service_name = testservice, id = 1},
-		#location{ map_id = #map_id{service_name = testservice, id = 1},
+		#map_id{service_name = testservice, id = "1"},
+		#location{ map_id = #map_id{service_name = testservice, id = "1"},
 			x = 1, y = 1},
 		now(),
 		dummypid,
 		dummypid
 	},
 	{online_character,
-		#cid{service_name = testservice, id = 100002},
+		#cid{service_name = testservice, id = "100002"},
 		pc,
-		#map_id{service_name = testservice, id = 1},
-		#location{ map_id = #map_id{service_name = testservice, id = 1},
+		#map_id{service_name = testservice, id = "1"},
+		#location{ map_id = #map_id{service_name = testservice, id = "1"},
 			x = 1, y = 2},
 		now(),
 		dummypid,
@@ -318,12 +247,12 @@ example_tables() ->
 	},
 
 	{session,
-		#cid{service_name = testservice, id = 100001},
+		#cid{service_name = testservice, id = "100001"},
 		"ToKEN",
 		session:make_expire()
 	},
 	{session,
-		#cid{service_name = testservice, id = 100002},
+		#cid{service_name = testservice, id = "100002"},
 		"ToKEN",
 		session:make_expire()
 	},
@@ -331,30 +260,13 @@ example_tables() ->
 	{id_password,
 		#login_id{service_name = testservice, id = "test00001"},
 		"password",
-		#cid{service_name = testservice, id = 100001}
+		#cid{service_name = testservice, id = "100001"}
 	},
 	{id_password,
 		#login_id{service_name = testservice, id = "test00002"},
 		"password",
-		#cid{service_name = testservice, id = 100002}
+		#cid{service_name = testservice, id = "100002"}
 	}
-
-%{user_character, {global_uid, testservice, 1001}, {global_cid, testservice, 100001}},
-%{user_character, {global_uid, testservice, 1002}, {global_cid, testservice, 100002}},
-	
-	
-	%% inventory ( key colomn is cid.)
-%	{money, "cid0001", 1000, 15},
-%	{money, "cid0002", 2000, 0},
-
-%	{supplies, u:make_new_id(),"cid0001", item_herb, 10, 0},
-%	{supplies, u:make_new_id(), "cid0002", item_herb, 5, 0},
-%	{supplies, u:make_new_id(), "cid0002", item_portion, 15, 0},
-
-%	{estate, item_sword01, "cid0001", false},
-%	{estate, item_sword02, "cid0001", false},
-%	{estate, item_shield01, "cid0002", false}
-	
 
 	].
 

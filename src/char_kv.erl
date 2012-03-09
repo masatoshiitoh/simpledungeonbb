@@ -62,7 +62,7 @@ setter(Cid, Key, Value) ->
 db_get_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	V1 = getter(hibari, 1, "hp"),
+	V1 = getter(hibari, "1", "hp"),
 	?assert(V1 == 12),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -73,7 +73,7 @@ db_get_no_key_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 %	?assertError({aborted, {mmoasp_error,key_not_found}}, getter(hibari, 1, "nosuchkey") == 12),
-	?assertException(_,_, getter(hibari, 1, "nosuchkey") == 12),
+	?assertException(_,_, getter(hibari, "1", "nosuchkey") == 12),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -81,8 +81,8 @@ db_get_no_key_test() ->
 db_set_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	setter(hibari, 1, "hp", 2),
-	V1 = getter(hibari, 1, "hp"),
+	setter(hibari, "1", "hp", 2),
+	V1 = getter(hibari, "1", "hp"),
 	?assert(V1 == 2),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

@@ -116,10 +116,10 @@ run_tests() ->
 up_scenarios() ->
 	mmoasp:start(reset_tables),
 %	u:wait(100),
-	_NpcPid1 = npc:start_npc(#cid{service_name = hibari, id=99990001}),
+	_NpcPid1 = npc:start_npc(#cid{service_name = hibari, id="99990001"}),
 	{ok, Cid1, Token1} = id_password:login(self(), hibari, "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = mmoasp:login(self(), id_password:make_login_id(hibari, "id0002"), "pw0002", {192,168,1,201}),
-	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id=99990001}}.
+	{ok, Cid2, Token2} = id_password:login(self(), hibari, "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id="99990001"}}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
 	id_password:logout(self(), Cid1, {127,0,0,1}),
@@ -204,16 +204,16 @@ do_look_around() ->
 	%% look around test
 	?assert(4 == u:distance({online_character, online_character:get_one(Cid1)}, {online_character, online_character:get_one(Cid2)})),
 
-	?assert(sets:from_list([u:gen_cid(hibari,1), u:gen_cid(hibari, 99990001)])
+	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari, "99990001")])
 		== sets:from_list([X#online_character.cid || X <- online_character:get_all_neighbors(Cid1, 1)])),
 
-	?assert(sets:from_list([u:gen_cid(hibari,1), u:gen_cid(hibari,2), u:gen_cid(hibari, 99990001)])
+	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari,"2"), u:gen_cid(hibari, "99990001")])
 		== sets:from_list([X#online_character.cid || X <- online_character:get_all_neighbors(Cid1, 4)])),
 
-	?assert(sets:from_list([u:gen_cid(hibari,1)])
+	?assert(sets:from_list([u:gen_cid(hibari,"1")])
 		== sets:from_list([X#online_character.cid || X <- online_character:get_players(Cid1, 1)])),
 
-	?assert(sets:from_list([u:gen_cid(hibari,1), u:gen_cid(hibari,2)])
+	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari,"2")])
 		== sets:from_list([X#online_character.cid || X <- online_character:get_players(Cid1, 4)])),
 
 
@@ -250,19 +250,19 @@ do_stat() ->
 	io:format("list to know CidList1 = ~p~n", [CidList1]),
 	?assert(sets:from_list(CidList1)
 		== sets:from_list(
-			[{cid, 1}, {cid, 2}, {cid,99990001}])),
+			[{cid, "1"}, {cid, "2"}, {cid,"99990001"}])),
 
 	CidList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
 	?assert(sets:from_list(CidList2)
 		== sets:from_list(
-			[{cid, 1}, {cid, 2}, {cid,99990001}])),
+			[{cid, "1"}, {cid, "2"}, {cid,"99990001"}])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
 	?assert(sets:from_list(AList1)
-		== sets:from_list([{cid,1}, {cid,2}])),
+		== sets:from_list([{cid,"1"}, {cid,"2"}])),
 	?assert(
 		sets:from_list(lists:flatten(
 			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
@@ -287,7 +287,7 @@ do_pc_move() ->
 	?assert(is_record(O, online_character)),
 	?assert(O#online_character.location ==
 		#location{
-			map_id = #map_id{service_name = hibari, id = 1},
+			map_id = #map_id{service_name = hibari, id = "1"},
 			x = 1,
 			y = 1}),
 	
@@ -305,7 +305,7 @@ do_pc_move() ->
 	?assert(is_record(O1, online_character)),
 	?assert(O1#online_character.location ==
 		#location{
-			map_id = #map_id{service_name = hibari, id = 1},
+			map_id = #map_id{service_name = hibari, id = "1"},
 			x = 1,
 			y = 2}),
 	
@@ -326,7 +326,7 @@ do_npc_move() ->
 	?assert(is_record(O1, online_character)),
 	?assert(O1#online_character.location ==
 		#location{
-			map_id = #map_id{service_name = hibari, id = 1},
+			map_id = #map_id{service_name = hibari, id = "1"},
 			x = 2,
 			y = 1}),
 	
@@ -345,7 +345,7 @@ do_npc_move() ->
 	?assert(is_record(O2, online_character)),
 	?assert(O2#online_character.location ==
 		#location{
-			map_id = #map_id{service_name = hibari, id = 1},
+			map_id = #map_id{service_name = hibari, id = "1"},
 			x = 3,
 			y = 1}),
 	
@@ -359,7 +359,6 @@ do_trades() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 %	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-
 	%% trade check.
 %	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 	mmoasp:start_trade(Cid1, Cid2),

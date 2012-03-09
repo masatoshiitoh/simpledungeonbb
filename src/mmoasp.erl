@@ -197,16 +197,6 @@ action(change_password, Req, Param) ->
 			id_password:make_login_id(Svid, Id),
 			Pw, NewPw));
 
-% create account.
-action(create_account, Req, Param) ->
-	Svid = Req#request.service_name,
-	Id = param(Param, "id"),
-	Pw = param(Param, "password"),
-	Ipaddr = Req#request.client_ip,
-
-	make_boolean_json_result(
-		old_create_account(self(), Svid, Id, Pw, Ipaddr));
-
 % Add New Non Player Character.
 action(startnpc, Req, Param) ->
 	Svid = Req#request.service_name,
@@ -244,7 +234,7 @@ action(delete_account, Req, Param) ->
 	Pw = param(Param, "password"),
 	Ipaddr = Req#request.client_ip,
 	make_boolean_json_result(
-		old_delete_account(self(), Svid, Id, Pw, Ipaddr)).
+		id_password:delete_one(self(), Svid, Id, Pw, Ipaddr)).
 
 
 %% sample for "catch all" handler.
@@ -293,15 +283,15 @@ map_path_to_request(Path,A) ->
 				service_name = erlang:list_to_atom(ServiceIdStr),
 				action = erlang:list_to_atom(Action),
 				version = development,
-				id1 = erlang:list_to_integer(Id1)};
+				id1 = Id1};
 
 		["service", ServiceIdStr, Action, Id1, Id2] ->
 			X#request{
 				service_name = erlang:list_to_atom(ServiceIdStr),
 				action = erlang:list_to_atom(Action),
 				version = development,
-				id1 = erlang:list_to_integer(Id1),
-				id2 = erlang:list_to_integer(Id2)}	;
+				id1 = Id1,
+				id2 = Id2}	;
 
 		["v", VerIdStr, "service", ServiceIdStr, Action] ->
 			X#request{
@@ -314,15 +304,15 @@ map_path_to_request(Path,A) ->
 				service_name = erlang:list_to_atom(ServiceIdStr),
 				action = erlang:list_to_atom(Action),
 				version = erlang:list_to_atom(VerIdStr),
-				id1 = erlang:list_to_integer(Id1)};
+				id1 = Id1};
 
 		["v", VerIdStr, "service", ServiceIdStr, Action, Id1, Id2] ->
 			X#request{
 				service_name = erlang:list_to_atom(ServiceIdStr),
 				action = erlang:list_to_atom(Action),
 				version = erlang:list_to_atom(VerIdStr),
-				id1 = erlang:list_to_integer(Id1),
-				id2 = erlang:list_to_integer(Id2)}
+				id1 = Id1,
+				id2 = Id2}
 	end.
 	
 
@@ -492,7 +482,7 @@ get_list_to_know_test() ->
 	A1Cid = u:kv_get(A1, cid),
 	A1Name = u:kv_get(A1, name),
 	?assert(A1Type == "login"),
-	?assert(A1Cid == 1),
+	?assert(A1Cid == "1"),
 	?assert(A1Name == "alpha"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -512,26 +502,3 @@ get_list_to_know_none_test() ->
 
 
 
-%%----------------- Following are OLD CODE ---------------%%
-
-
-%-----------------------------------------------------------
-%% account management.
-%-----------------------------------------------------------
-
-old_delete_account(From, Svid, Id, Pw, Ipaddr) -> not_implemented.
-
-old_create_account(From, Svid, Id, Pw, Ipaddr) ->
-	mnesia:transaction(fun() ->
-			foreach(fun mnesia:write/1, old_get_player_character_template(Id, Pw))
-		end).
-
-old_get_player_character_template(Id, Pass) ->
-	Cid = "c" ++ Id,
-	Name = "name" ++ Id,
-	[
-		{auth_basic, Cid, Id, Pass},
-		{cdata, Cid, Name, [{"align", "neutral"}]},
-		{location, Cid, 1, {pos, 1,3}, offline, offline},
-		{money, Cid, 2000, 0}
-	].

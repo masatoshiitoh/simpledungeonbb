@@ -274,10 +274,10 @@ connect_character_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 %%	{connected, Cid1} = connect(hibari,1),
-	?assert(Cid1 == u:gen_cid(hibari, 1)),
+	?assert(Cid1 == u:gen_cid(hibari, "1")),
 
-	{failed, Cid1_2, Reason1_2} = connect(hibari,1),
-	?assert(Cid1_2 == u:gen_cid(hibari, 1)),
+	{failed, Cid1_2, Reason1_2} = connect(hibari,"1"),
+	?assert(Cid1_2 == u:gen_cid(hibari, "1")),
 	?assert(Reason1_2 == "character is in use"),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -297,8 +297,8 @@ disconnect_character_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 %%	{connected, Cid} = connect(hibari,1),
-	?assert(disconnect(#cid{service_name = hibari, id = 1}) == ok),
-	?assert(disconnect(#cid{service_name = hibari, id = 1}) == {failed, u:gen_cid(hibari, 1), "character not exist"}),
+	?assert(disconnect(#cid{service_name = hibari, id = "1"}) == ok),
+	?assert(disconnect(#cid{service_name = hibari, id = "1"}) == {failed, u:gen_cid(hibari, "1"), "character not exist"}),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -306,8 +306,8 @@ disconnect_character_1_test() ->
 disconnect_character_2_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-	?assert(disconnect(#cid{service_name = hibari, id = 1}) == ok),
-	?assert(disconnect(#cid{service_name = hibari, id = 1}) == {failed, u:gen_cid(hibari, 1), "character not exist"}),
+	?assert(disconnect(#cid{service_name = hibari, id = "1"}) == ok),
+	?assert(disconnect(#cid{service_name = hibari, id = "1"}) == {failed, u:gen_cid(hibari, "1"), "character not exist"}),
 	?assert(disconnect(#cid{service_name = hibari, id = notexist}) == {failed, u:gen_cid(hibari, notexist), "character not exist"}),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

@@ -232,13 +232,13 @@ distance_1_4_test() -> infinity = distance({mapxy, "edo", 3, 3}, {mapxy, "kyoto"
 
 distance_1_online_character_test() ->
 	S1 = #online_character{
-		cid = #cid{service_name = hibari, id = 1},
-		map_id = #map_id{service_name = hibari, id = 1},
+		cid = #cid{service_name = hibari, id = "1"},
+		map_id = #map_id{service_name = hibari, id = "1"},
 		location= {pos, 3, 3}},
 		
 	S2 = #online_character{
-		cid = #cid{service_name = hibari, id = 2},
-		map_id = #map_id{service_name = hibari, id = 1},
+		cid = #cid{service_name = hibari, id = "2"},
+		map_id = #map_id{service_name = hibari, id = "1"},
 		location= {pos, 3, 2}},
 	
 	?assert(1.0 == distance({online_character, S1}, {online_character, S2})).
@@ -249,12 +249,12 @@ distance_by_cid_test() ->
 %%	{connected, Cid2} = online_character:connect(hibari,2),
 	
 	%% SET LOCATION!!!!!
-	online_character:setpos(Cid1, #map_id{service_name=hibari, id=1}, {pos, 1, 1}),
-	online_character:setpos(Cid2, #map_id{service_name=hibari, id=1}, {pos, 1, 2}),
+	online_character:setpos(Cid1, #map_id{service_name=hibari, id="1"}, {pos, 1, 1}),
+	online_character:setpos(Cid2, #map_id{service_name=hibari, id="1"}, {pos, 1, 2}),
 
 	?assert(1.0 == distance(
-		{cid, #cid{service_name = hibari, id = 1}},
-		{cid, #cid{service_name = hibari, id = 2}}
+		{cid, #cid{service_name = hibari, id = "1"}},
+		{cid, #cid{service_name = hibari, id = "2"}}
 		)),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}).
@@ -277,6 +277,6 @@ cid_pair_nil_test() -> {cid_pair, nil, "2"} = cid_pair(nil, "2").
 
 -ifdef(TEST).
 gen_cid_test() ->
-	Cid = gen_cid(hibari, 1),
-	?assert(Cid == {cid, hibari, 1}).
+	Cid = gen_cid(hibari, "1"),
+	?assert(Cid == {cid, hibari, "1"}).
 -endif.
