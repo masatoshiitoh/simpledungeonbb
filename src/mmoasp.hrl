@@ -53,7 +53,7 @@
 	{service_name, conn_phrase, id_list, expire_date}).
 	%% conn_phrase is just for a fail-safe (typo service name, just so on.).
 	%% because conn_phrase is embedded in client program, and must be insecure.
-	%% id_list holds list like [{uid, 2}, {cid, 102}, {map_id, 21}]
+	%% id_list will be removed.
 
 -record(admin,
 	{uid, crypted_password, attributes}).

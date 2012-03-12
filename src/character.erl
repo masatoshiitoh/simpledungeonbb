@@ -30,7 +30,7 @@
 start_child(Cid) when is_record(Cid, cid) ->
 	spawn(?MODULE, loop, [setup_task_env(Cid), task:mk_idle_reset()]).
 
-setup_task_env(Cid) ->
+setup_task_env(Cid) when is_record(Cid, cid) ->
 	#task_env{
 		cid = Cid,
 		event_queue = queue:new(),
@@ -123,12 +123,17 @@ move(Cid, {pos, X, Y}) when is_record(Cid, cid) ->
 loop(undefined, _) -> ok;	%% exit loop.
 
 loop(R, I)
-	when I#idle.since_last_op > 300*1000*1000->
+	when is_record(R, task_env),
+		is_record(I, idle),
+		I#idle.since_last_op > 300*1000*1000 ->
 	
 	io:format("character: time out.~n"),
 	online_character:disconnect(R#task_env.cid);
 
-loop(R, I) ->
+loop(R, I)
+	when is_record(R, task_env),
+		is_record(I, idle) ->
+
 	{NewR, NewI} = receive
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
