@@ -32,6 +32,95 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
+
+
+
+%% ----- trial code. this will be moved into other module --------------
+
+%% call like,
+%%  Cid = add_one(cid, hibari).
+
+-ifdef(TEST).
+
+check_id_used_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	?assert(
+		mnesia:activity(transaction, fun() ->
+			check_id_used(cid, #cid{service_name = hibari, id = "1"}) end)
+		== try_another),
+	?assert(
+		mnesia:activity(transaction, fun() ->
+			check_id_used(cid, #cid{service_name = hibari, id = "notexist"}) end) 
+		== ok),
+
+
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+
+add_one_impl_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	?assert(
+		mnesia:activity(transaction, fun() ->
+			check_id_used(cid, #cid{service_name = hibari, id = "1"}) end)
+		== try_another),
+	?assert(
+		mnesia:activity(transaction, fun() ->
+			check_id_used(cid, #cid{service_name = hibari, id = "notexist"}) end) 
+		== ok),
+
+
+
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+-endif.
+
+
+add_one(IdType, Svid) ->
+     Id = mnesia:activity(transaction, fun() ->
+          add_one_transaction(IdType, Svid) end),
+     Id.
+
+get_table_name_by_id_type(cid) -> character.
+%get_table_name_by_id_type(map_id) -> map.
+
+check_id_used(IdType, Id) ->
+     case mnesia:read({get_table_name_by_id_type(IdType), Id}) of
+	     [] ->     ok;                    %% new one. use this Id !.
+	     _ ->     try_another          %% found something in Table.
+     end.
+
+add_one_transaction(IdType, Svid) ->
+     Id = {get_table_name_by_id_type(IdType), Svid, u:gen_randint_str()},
+     add_one_transaction_impl(check_id_used(IdType, Id), IdType, Svid, Id).
+
+add_one_transaction_impl(ok, IdType, _Svid, Id) ->
+     mnesia:write(make_skelton(IdType, Id)),
+     Id;
+
+add_one_transaction_impl(try_another, IdType, Svid, Id) ->
+     add_one_transaction(IdType, Svid).
+
+make_skelton(cid, Id) ->
+     mnesia:write(initial_location:make_zero(Id)),
+     #character{
+          cid = Id,
+          type = pc,
+          name = "",
+          inventory = dict:new(),
+          status = dict:new(),
+          hidden_parameters = dict:new()
+          }.
+
+
+%% -------------------------------------------------------------------
+
+
 -ifdef(TEST).
 scenario_00_test()-> ok = mmoasp:change_schema().
 scenario_01_test()-> {end_of_run_tests}.
