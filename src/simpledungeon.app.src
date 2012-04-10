@@ -5,7 +5,11 @@
   {modules, [
 		simpledungeon_app,
 		simpledungeon_sup,
-		simpledungeon, battle_observer, task, battle, throw, unarmed, admin, character, character_stream, db, mmoasp, morningcall, mout, move, npc, path_finder, test, trade, u, uauth, world, yaws_if]},
+		simpledungeon,
+battle_observer, task, battle, throw, unarmed, admin, character, 
+character_stream, db, mmoasp, morningcall, 
+mout, move, npc, path_finder, 
+test, trade, u, uauth, world, yaws_if]},
   {registered, []},
   {applications, [
                   kernel,

@@ -18,8 +18,10 @@
 %%  http://www.gnu.org/copyleft/gpl.html
 %%
 
-
 -module(online_character).
+-behaviour(gen_server).
+-define(SERVER, ?MODULE).
+
 -include("mmoasp.hrl").
 -import(lists, [foreach/2]).
 -include_lib("stdlib/include/qlc.hrl").
@@ -29,6 +31,114 @@
 -endif.
 
 -compile(export_all).
+
+%% ------------------------------------------------------------------
+%% API Function Exports
+%% ------------------------------------------------------------------
+
+-export([start_link/0]).
+
+-export([start_new_char/1, move/3, talk/3, force_fail/1]).
+
+%% ------------------------------------------------------------------
+%% gen_server Function Exports
+%% ------------------------------------------------------------------
+
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+         terminate/2, code_change/3]).
+
+%% ------------------------------------------------------------------
+%% API Function Definitions
+%% ------------------------------------------------------------------
+
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+start_new_char(Cid) ->
+	gen_server:call(?MODULE, {start_pc, Cid}).
+
+move(Cid, Token, {pos, X, Y}) ->
+	gen_server:call(?MODULE, {move, Cid, Token, {pos, X, Y}}).
+
+talk(Cid, Token, Talked) ->
+	gen_server:call(?MODULE, {talk, Cid, Token, Talked}).
+
+force_fail(Cid) ->
+	gen_server:call(?MODULE, {force_fail, Cid}).
+
+get_neighbors(Cid) ->
+	gen_server:call(?MODULE, {get_neighbors, Cid}).
+
+%% ------------------------------------------------------------------
+%% gen_server Function Definitions
+%% ------------------------------------------------------------------
+
+init(Args) ->
+    {ok, dict:new()}.
+
+handle_call({get_neighbors, Cid}, _From, State) ->
+	ListOfNeighbors = [],
+	{reply, ListOfNeighbors, State};
+
+handle_call({start_pc, Cid}, _From, State) ->
+	NewPcPid = start_pc_impl(Cid, dict:is_key(Cid, State), State),
+	{reply, ok, dict:append(Cid, NewPcPid, State)};
+
+handle_call({move, Cid, Token, {pos, X, Y}}, _From, State) ->
+	io:format("move called. ~p(~p) {pos, ~p, ~p}~n", [Cid,lookup_ref_by_cid(Cid, State), X, Y]),
+	
+	player_char:move(lookup_ref_by_cid(Cid, State), {pos, X, Y}),
+	{reply, ok, State};
+
+handle_call({talk, Cid, Token, Talked}, _From, State) ->
+	io:format("talk called. ~p ~p~n", [Cid, Talked]),
+	player_char:talk(lookup_ref_by_cid(Cid, State), Talked),
+	{reply, ok, State};
+
+handle_call({force_fail, Cid}, _From, State) ->
+	io:format("force_fail called. ~p ~n", [Cid]),
+	player_char:force_fail(lookup_ref_by_cid(Cid, State), fail_it),
+	{reply, ok, State}.
+
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
+handle_info(_Info, State) ->
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%% ------------------------------------------------------------------
+%% Internal Function Definitions
+%% ------------------------------------------------------------------
+
+start_pc_impl(Cid, IsCidExist, State) when IsCidExist =:= false ->
+	io:format("start_pc_impl (do path) called. ~p~n", [Cid]),
+    
+	ID = Cid,
+    StartFunc = {player_char, start_link, [Cid]},
+    Restart = transient,
+    Shutdown = brutal_kill,
+    Type = worker,
+    Modules = [player_char],
+    ChildSpecChar = {ID, StartFunc, Restart, Shutdown, Type, Modules},
+	
+	NewPcPid = supervisor:start_child(charpool_sup, ChildSpecChar),
+	
+	NewPcPid.
+
+lookup_ref_by_cid(Cid, State) ->
+	[{ok, Ref}|_T] = dict:fetch(Cid, State),
+	Ref.
+
+
+
+
+
 
 %----------------------------------------------------------------------
 % online_character module:

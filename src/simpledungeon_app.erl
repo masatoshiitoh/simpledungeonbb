@@ -1,4 +1,4 @@
--module(charpool_app).
+-module(simpledungeon_app).
 
 -behaviour(application).
 
@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    charpool_sup:start_link().
+    simpledungeon_sup:start_link().
 
 stop(_State) ->
     ok.
