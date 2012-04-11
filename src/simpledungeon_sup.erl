@@ -13,7 +13,6 @@
 
 %% Supervisor callbacks
 -export([init/1]).
--export([start_yaws/0]).
 
 %% Helper macro for declaring children of supervisor
 -define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
@@ -23,9 +22,6 @@
 %% ===================================================================
 
 start_link() ->
-	db:start(reset_tables),
-	start_yaws(),
-
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %% ===================================================================
@@ -37,30 +33,7 @@ init([]) ->
     CharPoolSup = ?CHILD(charpool_sup, supervisor),
     IdPassword = ?CHILD(id_password, worker),
     BattleObserver = ?CHILD(battle_observer, worker),
-    {ok, { {one_for_one, 5, 10}, [SimpleDungeon, CharPoolSup, IdPassword, BattleObserver]} }.
-
-start_yaws() ->
-	Id = "simpledungeon",
-
-	GconfList = [
-		{logdir, "./test/log"},
-		{ebin_dir, [".","../ebin"]},
-		{id, Id}],
-
-	Docroot = "../docroot",
-
-	SconfList = [
-		{port, 8002},
-		{listen, {0,0,0,0}},
-		{docroot, Docroot},
-		{appmods, [{"/service", mmoasp}]}
-	],
-
-	{ok, SCList, GC, ChildSpecs} =
-	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
-
-	[supervisor:start_child(?MODULE, Ch) || Ch <- ChildSpecs],
-
-	%% now configure Yaws
-	yaws_api:setconf(GC, SCList).
+    Ybed = ?CHILD(ybed, worker),
+    Mbed = ?CHILD(mbed, worker),
+    {ok, { {one_for_one, 5, 10}, [SimpleDungeon, CharPoolSup, IdPassword, BattleObserver, Ybed, Mbed]} }.
 
