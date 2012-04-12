@@ -3,13 +3,20 @@
   {description, ""},
   {vsn, "1"},
   {modules, [
-		simpledungeon_app,
-		simpledungeon_sup,
-		simpledungeon,
-battle_observer, task, battle, throw, unarmed, admin, character, 
-character_stream, db, mmoasp, morningcall, 
-mout, move, npc, path_finder, 
-test, trade, u, uauth, world, yaws_if]},
+
+admin,               battle,              battle_observer,
+character,           character_stream,    charpool_sup,
+char_kv,             db     ,             default,
+demo   ,             id_password    ,     initial_location,
+list_to_know    ,    mbed    ,            melee,
+mmoasp    ,          morningcall  ,       mout,
+move     ,           npc      ,           online_character,
+path_finder  ,       player_char  ,       session,
+simpledungeon,       simpledungeon_app  , simpledungeon_sup,
+task   ,             test     ,           throw,
+u          ,         unarmed         ,    ybed
+
+]},
   {registered, []},
   {applications, [
                   kernel,

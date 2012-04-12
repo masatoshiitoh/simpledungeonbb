@@ -34,6 +34,8 @@ init([]) ->
     IdPassword = ?CHILD(id_password, worker),
     BattleObserver = ?CHILD(battle_observer, worker),
     Ybed = ?CHILD(ybed, worker),
-    Mbed = ?CHILD(mbed, worker),
-    {ok, { {one_for_one, 5, 10}, [SimpleDungeon, CharPoolSup, IdPassword, BattleObserver, Ybed, Mbed]} }.
+%%    Mbed = ?CHILD(mbed, worker),
+    {ok, { {one_for_one, 5, 10}, [SimpleDungeon, CharPoolSup, IdPassword, BattleObserver, Ybed
+	%%, Mbed
+	]} }.
 
