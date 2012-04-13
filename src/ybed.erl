@@ -23,8 +23,13 @@
 start_link() ->
     {ok, spawn_link(?MODULE, run, [])}.
 
-
 run() ->
+	run(ybed_sup).
+
+run([]) ->
+	run(ybed_sup);
+
+run(SupRef) ->
 	Id = "simpledungeon",
 
 	GconfList = [
@@ -50,9 +55,9 @@ io:format("ybed: run: initialize~n", []),
 		%% yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
 	    yaws_api:embedded_start_conf(Docroot),
 
-io:format("ybed: run: embedded_start_conf ok~n", []),
+io:format("ybed: run: embedded_start_conf ok ~p~n", [ChildSpecs]),
 
-	[supervisor:start_child(?MODULE, Ch) || Ch <- ChildSpecs],
+	[supervisor:start_child(SupRef, Ch) || Ch <- ChildSpecs],
 io:format("ybed: run: start_child ok~n", []),
 
 	%% now configure Yaws
