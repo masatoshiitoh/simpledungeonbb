@@ -14,9 +14,10 @@ start() ->
 	start(undefined, undefined).
 
 start(_StartType, _StartArgs) ->
+    Result = simpledungeon_sup:start_link(),
 	unlink( spawn_link(db, start, [reset_tables])),
-	unlink( spawn_link(ybed, run, [])),
-    simpledungeon_sup:start_link().
+%%	unlink( spawn_link(ybed_sup, start_link, [])),
+	Result.
 
 stop(_State) ->
     ok.

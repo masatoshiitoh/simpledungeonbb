@@ -21,48 +21,46 @@
 %% ------------------------------------------------------------------
 
 start_link() ->
-    {ok, spawn_link(?MODULE, run, [])}.
+    {ok, spawn(?MODULE, run, [])}.
 
 run() ->
-	run(ybed_sup).
+	run(simpledungeon_sup).
 
 run([]) ->
-	run(ybed_sup);
+	run(simpledungeon_sup);
 
 run(SupRef) ->
 	Id = "simpledungeon",
-
 	GconfList = [
-		{logdir, "./test/log"},
-		{ebin_dir, [
-			".",
-			"../ebin",
-			"c:/opt/yaws/ebin"
-			]},
+%%		{logdir, "./test/log"},
+%%		{ebin_dir, [
+%%			".", "../ebin"
+%%			]},
 		{id, Id}],
 
 	Docroot = "../docroot",
 
 	SconfList = [
 		{port, 8002},
+		{servername, "mmoasp"},
 		{listen, {0,0,0,0}},
 		{docroot, Docroot},
-		{appmods, [
-			{"/service", mmoasp}]}
+		{appmods, [{"/service", mmoasp}]}
 	],
-io:format("ybed: run: initialize~n", []),
+io:format("ybed: run: embedded_start_conf ~p~n", [
 	{ok, SCList, GC, ChildSpecs} =
-		%% yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
-	    yaws_api:embedded_start_conf(Docroot),
+		yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id)
+]),
 
-io:format("ybed: run: embedded_start_conf ok ~p~n", [ChildSpecs]),
-
-	[supervisor:start_child(SupRef, Ch) || Ch <- ChildSpecs],
-io:format("ybed: run: start_child ok~n", []),
+io:format("ybed: run: start_child ok ~p~n", [
+	[supervisor:start_child(SupRef, Ch) || Ch <- ChildSpecs]
+]),
 
 	%% now configure Yaws
-	yaws_api:setconf(GC, SCList),
-io:format("ybed: run: setconf ok~n", []),
+	
+io:format("ybed: run: setconf ok ~p~n", [
+	yaws_api:setconf(GC, SCList)
+]),
 
 	{ok, self()}.
 
