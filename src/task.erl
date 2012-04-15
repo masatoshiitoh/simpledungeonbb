@@ -53,7 +53,7 @@
 %% for task utilities for PC/NPC
 
 system_call({From, stop_process}, R, _I) ->
-%%	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
+	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid},
 	{NewR = undefined, NewI = undefined}.

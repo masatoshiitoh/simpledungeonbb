@@ -38,6 +38,8 @@
 %% implement simple api for mmoasp.erl
 %-----------------------------------------------------------
 
+-ifdef(TEST).
+
 start() ->
 	crypto:start(),
 	battle_observer:start_link(),
@@ -54,7 +56,9 @@ stop() ->
 	db:stop(),
 	battle_observer:stop(),
 	crypto:stop().
-	
+
+-endif.
+
 change_schema() ->
 	db:stop(),
 	db:recreate_db_and_tables(),

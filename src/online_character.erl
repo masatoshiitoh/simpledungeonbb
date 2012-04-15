@@ -258,7 +258,7 @@ stop_character_impl(O) when is_record(O, online_character) ->
 	delete_record(O).
 
 stop_process(O) when is_record(O, online_character) ->
-	O#online_character.pid ! {logout, self()}.
+	O#online_character.pid ! {system, {self(), stop_process}}.
 
 stop_stream(Pid) when is_pid(Pid) ->
 	Pid ! {self(), stop}.
