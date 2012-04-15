@@ -223,7 +223,7 @@ repeat(F, X) ->
 	F(),
 	repeat(F, X - 1).
 
--endif.
+
 
 
 %
@@ -497,7 +497,7 @@ do_setter() ->
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
-
+-endif.
 
 sets_by_list(L) ->
 	sets:from_list(L).
