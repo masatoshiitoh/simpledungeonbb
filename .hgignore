@@ -1,0 +1,11 @@
+syntax: glob
+obj/
+bin/
+RCS/
+*.bak
+*.orig
+*~
+*.beam
+
+syntax: regexp
+.*\#.*\#$
