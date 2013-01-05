@@ -30,12 +30,12 @@
 
 %% for NPC implementation
 
-%start_npc(Npcid) ->
-%	case lookup_pid_by_npcid(Npcid) of
-%		void ->
-%			_Pid = setup_npc(Npcid);
-%		FoundPid -> FoundPid
-%	end.
+start_npc(Npcid) ->
+	case lookup_pid_by_npcid(Npcid) of
+		void ->
+			_Pid = setup_npc(Npcid);
+		FoundPid -> FoundPid
+	end.
 
 stop_npc(Npcid) ->
 	case lookup_pid_by_npcid(Npcid) of
@@ -46,7 +46,7 @@ stop_npc(Npcid) ->
 	end.
 
 remove_npc_from_db(Npcid) ->
-	mmoasp:notice_remove(Npcid, {csummary, Npcid}, default:distance()),
+	mmoasp:notice_remove(Npcid, {csummary, Npcid}, mmoasp:default_distance()),
 	case mnesia:transaction(fun() ->
 			mnesia:delete({session, Npcid})
 			end) of
@@ -58,8 +58,7 @@ remove_npc_from_db(Npcid) ->
 			AbortedWithReason
 	end.
 
-%setup_npc(Npcid)->
-start_npc(Npcid)->
+setup_npc(Npcid)->
 	R = #task_env{
 		cid = Npcid,
 		event_queue = queue:new(),
@@ -70,8 +69,8 @@ start_npc(Npcid)->
 	%% store session
 	mnesia:transaction(
 		fun() ->
-			Loc1 = initial_location:get_one(Npcid),
-			mnesia:write(#online_character{cid=Npcid, pid=Child, map_id=Loc1#location.map_id, location=Loc1}
+			[Loc1] = mnesia:read({location, Npcid}),
+			mnesia:write(#session{cid=Npcid, pid=Child, type="npc", map=Loc1#location.initmap, x=Loc1#location.initx,y=Loc1#location.inity}
 		) end), %% TEMPORARY IMPLEMENTATION!!
 
 	Child.
@@ -108,10 +107,16 @@ check_killed({_From, event, _OidFrom, _OidTo, killed, KilledOid}, R, _I)
 check_killed(_, R, I) -> 
 	{R, I}.
 
-db_get_npc_status(Cid) when is_record(Cid, cid) ->
-	C = online_character:apply_character(Cid, fun(X) -> X end),
-	C#character.status.
+%% dbtest() -> db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == "npc0002"])).
 
-lookup_pid_by_npcid(Npcid) when is_record(Npcid, cid) ->
-	O = online_character:get_one(Npcid),
-	O#online_character.pid.
+db_get_npcdata(Cid) ->
+	case db:do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid])) of
+		[] -> void;
+		[CData] -> CData
+	end.
+
+lookup_pid_by_npcid(Npcid) ->
+	case db:do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Npcid, X#session.type == "npc"])) of
+		[] -> void;
+		[X] -> X#session.pid
+	end.

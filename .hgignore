@@ -6,6 +6,9 @@ RCS/
 *.orig
 *~
 *.beam
+TEST*.xml
+Mnesia.*/
+log/
 
 syntax: regexp
 .*\#.*\#$

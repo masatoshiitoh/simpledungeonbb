@@ -26,19 +26,19 @@
 
 %% UNDER CONSTRUCTION !!!
 
-start(Cid, YawsPid) when is_record(Cid, cid) ->
-	O = online_character:get_one(Cid),
+start(Cid, YawsPid) ->
+	Sess = mmoasp:get_session(Cid),
 	% io:format("character_stream: start(~p) with pid ~p~n", [Sess#session.cid, Sess#session.pid]),
-	StreamPid = spawn(fun() -> loop(O, YawsPid) end),
-	F = fun() -> mnesia:write(O#online_character{stream_pid = StreamPid}) end,
-	mnesia:activity(transaction, F).
+	StreamPid = spawn(fun() -> loop(Sess, YawsPid) end),
+	F = fun() -> mnesia:write(Sess#session{stream_pid = StreamPid}) end,
+	mnesia:transaction(F).		
 
 % Sess: holds session type data that has character module process.
-loop(O, YawsPid) when is_record(O, online_character), is_pid(YawsPid) ->
+loop(Sess, YawsPid) ->
 	link(YawsPid),		% this 'link' works "process living checker".
 	
 	
-	{list_to_know, ListToKnow, NeighborStats, MovePaths} = mmoasp:get_list_to_know(self(), O#online_character.cid),
+	{list_to_know, ListToKnow, NeighborStats, MovePaths} = mmoasp:get_list_to_know(self(), Sess#session.cid),
 	send_list_to_stream(YawsPid, (mout:struct_list_to_json(
 		[{struct, X} || X <- ListToKnow]
 		 ++
@@ -48,9 +48,9 @@ loop(O, YawsPid) when is_record(O, online_character), is_pid(YawsPid) ->
 		 ))),
 	receive
 		{_From, stop} ->
-			io:format("character_stream: stop(~p)~n", [O]),
+			io:format("character_stream: stop(~p)~n", [Sess]),
 			yaws_api:stream_chunk_end(YawsPid)
-		after 500 -> loop(O, YawsPid) % wait 500ms and back to loop top.
+		after 500 -> loop(Sess, YawsPid) % wait 500ms and back to loop top.
 	end.
 
 send_list_to_stream(YawsPid, L) ->

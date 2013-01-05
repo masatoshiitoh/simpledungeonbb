@@ -32,109 +32,20 @@
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
-
-
-
-%% ----- trial code. this will be moved into other module --------------
-
-%% call like,
-%%  Cid = add_one(cid, hibari).
-
 -ifdef(TEST).
-
-check_id_used_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-
-	?assert(
-		mnesia:activity(transaction, fun() ->
-			check_id_used(cid, #cid{service_name = hibari, id = "1"}) end)
-		== try_another),
-	?assert(
-		mnesia:activity(transaction, fun() ->
-			check_id_used(cid, #cid{service_name = hibari, id = "notexist"}) end) 
-		== ok),
-
-
-
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
-
-
-add_one_impl_test() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-
-	?assert(
-		mnesia:activity(transaction, fun() ->
-			check_id_used(cid, #cid{service_name = hibari, id = "1"}) end)
-		== try_another),
-	?assert(
-		mnesia:activity(transaction, fun() ->
-			check_id_used(cid, #cid{service_name = hibari, id = "notexist"}) end) 
-		== ok),
-
-
-
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
--endif.
-
-
-add_one(IdType, Svid) ->
-     Id = mnesia:activity(transaction, fun() ->
-          add_one_transaction(IdType, Svid) end),
-     Id.
-
-get_table_name_by_id_type(cid) -> character.
-%get_table_name_by_id_type(map_id) -> map.
-
-check_id_used(IdType, Id) ->
-     case mnesia:read({get_table_name_by_id_type(IdType), Id}) of
-	     [] ->     ok;                    %% new one. use this Id !.
-	     _ ->     try_another          %% found something in Table.
-     end.
-
-add_one_transaction(IdType, Svid) ->
-     Id = {get_table_name_by_id_type(IdType), Svid, u:gen_randint_str()},
-     add_one_transaction_impl(check_id_used(IdType, Id), IdType, Svid, Id).
-
-add_one_transaction_impl(ok, IdType, _Svid, Id) ->
-     mnesia:write(make_skelton(IdType, Id)),
-     Id;
-
-add_one_transaction_impl(try_another, IdType, Svid, Id) ->
-     add_one_transaction(IdType, Svid).
-
-make_skelton(cid, Id) ->
-     mnesia:write(initial_location:make_zero(Id)),
-     #character{
-          cid = Id,
-          type = pc,
-          name = "",
-          inventory = dict:new(),
-          status = dict:new(),
-          hidden_parameters = dict:new()
-          }.
-
-
-%% -------------------------------------------------------------------
-
-
--ifdef(TEST).
-scenario_00_test()-> ok = mmoasp:change_schema().
-scenario_01_test()-> {end_of_run_tests}.
-%scenario_02_test()-> {end_of_run_tests} = do_trades().
+scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
+scenario_01_test()-> {end_of_run_tests} = check_session_data().
+scenario_02_test()-> {end_of_run_tests} = do_trades().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
+scenario_05_test()-> {end_of_run_tests} = do_npc_move().
+scenario_06_test()-> {end_of_run_tests} = do_pc_move().
 scenario_07_test()-> {end_of_run_tests} = do_look_around().
+scenario_08_test()-> {end_of_run_tests} = do_stat().
 scenario_091_test()-> {end_of_run_tests} = do_battle_unarmed_01().
 scenario_0921_test()-> {end_of_run_tests} = do_battle_unarmed_021().
 scenario_0922_test()-> {end_of_run_tests} = do_battle_unarmed_022().
 scenario_0923_test()-> {end_of_run_tests} = do_battle_unarmed_023().
-scenario_05_test()-> {end_of_run_tests} = do_npc_move().
-scenario_06_test()-> {end_of_run_tests} = do_pc_move().
-scenario_08_test()-> {end_of_run_tests} = do_stat().
 
 check_record_test() ->
 	%% what is this test? why did I put a test for erlang module?
@@ -160,6 +71,7 @@ character_stream,
 db,
 %%demo,
 %%melee,
+mmoasp,
 morningcall,
 mout,
 move,
@@ -168,18 +80,13 @@ path_finder,
 simpledungeon,
 task,
 throw,
-%%trade,
+trade,
 u,
 %%uauth,
 unarmed,
 %%world,
 battle,
 battle_observer,
-char_kv,
-default,
-online_character,
-mmoasp,
-list_to_know,
 test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
@@ -192,7 +99,7 @@ run_tests() ->
 
 	scenario_00_test(),
 	scenario_01_test(),
-%	scenario_02_test(),
+	scenario_02_test(),
 	scenario_03_test(),
 	scenario_04_test(),
 	scenario_07_test(),
@@ -205,14 +112,16 @@ run_tests() ->
 up_scenarios() ->
 	mmoasp:start(reset_tables),
 %	u:wait(100),
-	_NpcPid1 = npc:start_npc(#cid{service_name = hibari, id="99990001"}),
-	{ok, Cid1, Token1} = id_password:login(self(), hibari, "id0001", "pw0001", {192,168,1,200}),
-	{ok, Cid2, Token2} = id_password:login(self(), hibari, "id0002", "pw0002", {192,168,1,201}),
-	{scenarios, Cid1, Token1, Cid2, Token2, #cid{service_name = hibari, id="99990001"}}.
+	_NpcPid1 = npc:start_npc("npc0001"),
+	{ok, Cid1, Token1}
+		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+	{ok, Cid2, Token2}
+		= mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+	{scenarios, Cid1, Token1, Cid2, Token2, "npc0001"}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
-	id_password:logout(self(), Cid1, {127,0,0,1}),
-	id_password:logout(self(), Cid2, {127,0,0,1}),
+	mmoasp:logout(self(), Cid1, Token1),
+	mmoasp:logout(self(), Cid2, Token2),
 	npc:stop_npc(Npcid1),
 	mmoasp:stop(),
 	ok.
@@ -223,7 +132,7 @@ repeat(F, X) ->
 	F(),
 	repeat(F, X - 1).
 
-
+-endif.
 
 
 %
@@ -236,13 +145,13 @@ do_battle_unarmed_01() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(1.0 == u:distance(
-		{online_character, online_character:get_one(Cid1)},
-		{online_character, online_character:get_one(Npcid1)})),
+	?assert(1 == mmoasp:distance(
+		{session, mmoasp:get_session(Cid1)},
+		{session, mmoasp:get_session("npc0001")})),
 	
-	?assert(3 == u:distance(
-		{online_character, online_character:get_one(Cid2)},
-		{online_character, online_character:get_one(Npcid1)})),
+	?assert(3 == mmoasp:distance(
+		{session, mmoasp:get_session(Cid2)},
+		{session, mmoasp:get_session("npc0001")})),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -253,8 +162,8 @@ do_battle_unarmed_021() ->
 
 	%% try unarmed battle.(Cid1 ok / Cid2 fail (too far))
 	
-	[{R1, _}|_T1] = battle:single(Cid1, Npcid1),
-	[{R2, _}|_T2] = battle:single(Cid2, Npcid1),
+	[{R1, _}|_T1] = battle:single(Cid1, "npc0001"),
+	[{R2, _}|_T2] = battle:single(Cid2, "npc0001"),
 	?assert(R1 == ok),
 	?assert(R2 == ng),
 
@@ -267,7 +176,7 @@ do_battle_unarmed_022() ->
 
 	%% try unarmed battle.(Cid1 ok)
 	
-	[{R3, _}|_T3] = battle:single(Cid1, Npcid1, "unarmed"),
+	[{R3, _}|_T3] = battle:single(Cid1, "npc0001", "unarmed"),
 	?assert( (R3 == ok) or (R3 == critical) ),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -278,7 +187,7 @@ do_battle_unarmed_023() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% try unarmed battle.(Cid2 fail (too far))
-	[{R4, _}|_T4] = battle:single(Cid2, Npcid1, "unarmed"),
+	[{R4, _}|_T4] = battle:single(Cid2, "npc0001", "unarmed"),
 	?assert(R4 == ng),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -291,20 +200,13 @@ do_look_around() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(4 == u:distance({online_character, online_character:get_one(Cid1)}, {online_character, online_character:get_one(Cid2)})),
+	?assert(4 == mmoasp:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
 
-	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari, "99990001")])
-		== sets:from_list([X#online_character.cid || X <- online_character:get_all_neighbors(Cid1, 1)])),
+	?assert(sets:from_list(["cid0001"])
+		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
 
-	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari,"2"), u:gen_cid(hibari, "99990001")])
-		== sets:from_list([X#online_character.cid || X <- online_character:get_all_neighbors(Cid1, 4)])),
-
-	?assert(sets:from_list([u:gen_cid(hibari,"1")])
-		== sets:from_list([X#online_character.cid || X <- online_character:get_players(Cid1, 1)])),
-
-	?assert(sets:from_list([u:gen_cid(hibari,"1"), u:gen_cid(hibari,"2")])
-		== sets:from_list([X#online_character.cid || X <- online_character:get_players(Cid1, 4)])),
-
+	?assert(sets:from_list(["cid0001", "cid0002"])
+		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -314,12 +216,14 @@ do_stat() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% update neighbor stat.
-	online_character:send_message_by_cid(Cid1, {self(), update_neighbor_status, 10}),
-	online_character:send_message_by_cid(Cid2, {self(), update_neighbor_status, 10}),
+	X1 = mmoasp:get_session(Cid1),
+	X1#session.pid ! {self(), update_neighbor_status, 10},
+	X2 = mmoasp:get_session(Cid2),
+	X2#session.pid ! {self(), update_neighbor_status, 10},
 
 	% io:format("update request has sent.~n", []),
 
-	u:wait(200),
+	mmoasp:wait(200),
 
 	{list_to_know, Actions1, Stats1, MoveInfo1}
 		= mmoasp:get_list_to_know(self(), Cid1),
@@ -328,30 +232,29 @@ do_stat() ->
 		= mmoasp:get_list_to_know(self(), Cid2),
 
 	io:format("list to know for ~p: ~p~n",
-		[Cid1, {list_to_know, Actions1, Stats1, MoveInfo1}]),
+		[Cid1, {list_to_know, Actions1, Stats1}]),
 	io:format("list to know for ~p: ~p~n",
-		[Cid2, {list_to_know, Actions2, Stats2, MoveInfo2}]),
+		[Cid2, {list_to_know, Actions2, Stats2}]),
 
 	%% now, world has 2 characters "cid0001" and "cid0002",
 	%% and  1 npc (npc0001).
 	CidList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats1]),
-	io:format("list to know CidList1 = ~p~n", [CidList1]),
 	?assert(sets:from_list(CidList1)
 		== sets:from_list(
-			[{cid, "1"}, {cid, "2"}, {cid,"99990001"}])),
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
 
 	CidList2 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Stats2]),
 	?assert(sets:from_list(CidList2)
 		== sets:from_list(
-			[{cid, "1"}, {cid, "2"}, {cid,"99990001"}])),
+			[{cid, "cid0001"}, {cid, "cid0002"}, {cid, "npc0001"}])),
 
 	%% "cid0001" knows "cid0001" and "cid0002" login.
 	AList1 = lists:flatten(
 		[[{K, V} || {K, V} <- ST, K == cid] || ST <- Actions1]),
 	?assert(sets:from_list(AList1)
-		== sets:from_list([{cid,"1"}, {cid,"2"}])),
+		== sets:from_list([{cid, "cid0001"}, {cid, "cid0002"}])),
 	?assert(
 		sets:from_list(lists:flatten(
 			[[{K, V} || {K, V} <- ST, K == type] || ST <- Actions1]))
@@ -371,37 +274,36 @@ do_stat() ->
 do_pc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-	O = online_character:get_one(Cid1),
-	?assert(is_record(O, online_character)),
-	?assert(O#online_character.location ==
-		#location{
-			map_id = #map_id{service_name = hibari, id = "1"},
-			x = 1,
-			y = 1}),
+	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+	S0 = mmoasp:get_session(Cid1),
+	?assert(is_record(S0, session)),
+	?assert(S0#session.x == 1),
+	?assert(S0#session.y == 1),
+	?assert(S0#session.map == 1),
 	
 	%% moving !
-	io:format("order move 1,3 to 3,3 ~p~n", [move:move(
-		Cid1,
-		{pos,3, 3}
-		)]),
-	u:wait(default:move_rate_millisec() * 1),
-
-	io:format("RE-order move to 1,2 ~p~n", [move:move(Cid1, {pos, 1, 2})]),
-	u:wait(default:move_rate_millisec() * 4),
+	io:format("order move 1,3 to 3,3 ~p~n", [move:move({map_id, "hibari", 1}, Cid1, {pos, 3,3})]),
+	receive
+		after 500 -> ok
+	end,
+	io:format("RE-order move to 1,2 ~p~n", [move:move({map_id, "hibari", 1}, Cid1, {pos, 1,2})]),
+	receive
+		after 3000 -> ok
+	end,
 	
-	O1 = online_character:get_one(Cid1),
-	?assert(is_record(O1, online_character)),
-	?assert(O1#online_character.location ==
-		#location{
-			map_id = #map_id{service_name = hibari, id = "1"},
-			x = 1,
-			y = 2}),
+	
+	S1 = mmoasp:get_session(Cid1),
+	?assert(is_record(S1, session)),
+	?assert(S1#session.x == 1),
+	?assert(S1#session.y == 2),
+	?assert(S1#session.map == 1),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-%	u:wait(default:move_rate_millisec() * 1),
-%	io:format("after stop npc ~p~n", [db:demo(session)]),
+	receive
+		after 1000 -> ok
+	end,
+	io:format("after stop npc ~p~n", [db:demo(session)]),
 
 	{end_of_run_tests}.
 
@@ -409,47 +311,76 @@ do_pc_move() ->
 do_npc_move() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-%	io:format("npc starts at ~p~n", [db:demo(online_character)]),
-
-	O1 = online_character:get_one(Npcid1),
-	?assert(is_record(O1, online_character)),
-	?assert(O1#online_character.location ==
-		#location{
-			map_id = #map_id{service_name = hibari, id = "1"},
-			x = 2,
-			y = 1}),
+	io:format("npc starts at ~p~n", [db:demo(session)]),
+	S0 = mmoasp:get_session(Npcid1),
+	?assert(S0#session.x == 2),
+	?assert(S0#session.y == 1),
+	?assert(S0#session.map == 1),
 	
-%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
-	io:format("NPC move to 2,2 ~p~n", [
-		move:move(
-		Npcid1,
-		{pos, 3, 1}
-		)]),
-	u:wait(default:move_rate_millisec() * 2),
-	io:format("Latest online_character ~p~n", [online_character:get_one(Npcid1)]),
+	io:format("NPC move to 2,2 ~p~n", [move:move({map_id, "hibari", 1}, Npcid1, {pos, 3,1})]),
+	receive
+		after 1100 -> ok
+	end,
+	io:format("Latest session ~p~n", [mmoasp:get_session(Npcid1)]),
 	
-	O2 = online_character:get_one(Npcid1),
-	?assert(is_record(O2, online_character)),
-	?assert(O2#online_character.location ==
-		#location{
-			map_id = #map_id{service_name = hibari, id = "1"},
-			x = 3,
-			y = 1}),
+	S1 = mmoasp:get_session(Npcid1),
+	?assert(S1#session.x == 3),
+	?assert(S1#session.y == 1),
+	?assert(S1#session.map == 1),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 
-%	u:wait(default:move_rate_millisec() * 1),
-%	io:format("after stop npc ~p~n", [db:demo(session)]),
+	receive
+		after 1000 -> ok
+	end,
+	io:format("after stop npc ~p~n", [db:demo(session)]),
+	{end_of_run_tests}.
+
+
+
+% NOT working as test (just only work.).
+check_session_data() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+
+	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
+%%	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
+	
+	Me = mmoasp:get_session(Cid1),
+	F = fun() ->
+		qlc:e(qlc:q(
+			[_NewCData = CData#cdata{ attr = CData#cdata.attr ++ [
+					{"x", Sess#session.x},{"y", Sess#session.y},{"z", Sess#session.z},{"map", Sess#session.map}
+				]}
+				|| Sess <- mnesia:table(session),
+				%%	Loc#location.cid =/= Cid,
+				mmoasp:distance({session, Sess}, {session, Me}) < 10,
+				CData <- mnesia:table(cdata),	
+				CData#cdata.cid == Sess#session.cid]))
+	end,
+	io:format("check internal, get_neighbor_char_cdata ~p~n", [case mnesia:transaction(F) of
+		{atomic, Result} -> Result;
+		Other -> Other
+	end]),
+
+	%% at this point, X cauase badrecord error on mmoasp:gen_stat_from_cdata. because gen_stat_from_cdata requires cdata record.
+	io:format("gen_stat_from_cdata of X: ~p~n", [[mmoasp:gen_stat_from_cdata(A) || A <- X]]),
+
+
+	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
 do_trades() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+
 	%% trade check.
-%	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
+	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 	mmoasp:start_trade(Cid1, Cid2),
 %%	io:format("trade started... ~p~n1: ~p~n2: ~p~n", [
 %%		db:demo(select_trade),
@@ -459,7 +390,7 @@ do_trades() ->
 	mmoasp:set_offer(Cid2, 0, [{item_herb, 2}],[item_shield01]),
 	mmoasp:confirm_trade(Cid1),
 	mmoasp:confirm_trade(Cid2),
-%	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
+	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
 
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
@@ -488,16 +419,16 @@ do_talk() ->
 do_setter() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
-%	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
+	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% setter check.
-	char_kv:setter(Cid1, "WindowSize", "123,55"),
-	char_kv:setter(Cid2, "WindowSize", "99,160"),
-%	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
+	mmoasp:setter(Cid1, "WindowSize", "123,55"),
+	mmoasp:setter(Cid2, "WindowSize", "99,160"),
+	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
--endif.
+
 
 sets_by_list(L) ->
 	sets:from_list(L).

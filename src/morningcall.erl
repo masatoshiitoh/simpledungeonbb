@@ -61,7 +61,7 @@ new() ->
 	dict:new().
 
 add(After, Fun, DJobs) ->
-	Id = u:make_new_id(),
+	Id = mmoasp:make_new_id(),
 	case timer:send_after(After, {timer, {goodmorning, Id}}) of
 		{ok, TRef} ->
 			io:format("added with id ~p~n", [Id]),

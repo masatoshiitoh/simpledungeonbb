@@ -18,61 +18,75 @@
 %%  http://www.gnu.org/copyleft/gpl.html
 %%
 
+
 -module(simpledungeon).
--behaviour(gen_server).
--define(SERVER, ?MODULE).
+-behavior(supervisor).
 
-%%
-%%
-%% main logic module for simple dungeon.
-%%
-%%
+-include("yaws.hrl").
+-include("yaws_api.hrl").
 
+%%-----------------------------------
 
-%% ------------------------------------------------------------------
-%% API Function Exports
-%% ------------------------------------------------------------------
+-export([start/0]).
+%%-export([start/1]).
+%%-export([start/2]).
+-export([init/1]).
+-export([start_yaws/0]).
 
--export([start_link/0]).
+start() ->
+	%% start supervisor, local registerd (name is ?MODULE),
+	%% callback is on ?MODULE
+	{ok, Pid} = supervisor:start_link({local,?MODULE},?MODULE,[]),
+	unlink(Pid),
+	%% start database.
+	db:start(reset_tables),
+	start_yaws(),
+	Pid.
 
-%% ------------------------------------------------------------------
-%% gen_server Function Exports
-%% ------------------------------------------------------------------
+%%start(_) -> start().
+%%start(_Type, Args) -> start(Args).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+init(_Args) ->
+    ChildSpec = [path_finder(), battle_observer()],
+    {ok, {{one_for_one, 10, 60},ChildSpec}}.
 
-%% ------------------------------------------------------------------
-%% API Function Definitions
-%% ------------------------------------------------------------------
+start_yaws() ->
+	Id = "simpledungeon",
+	GconfList = [
+		{logdir, "./test/log"},
+		{ebin_dir, [".","../ebin"]},
+		{id, Id}],
+	Docroot = "../docroot",
+	SconfList = [
+		{port, 8002},
+		{listen, {0,0,0,0}},
+		{docroot, Docroot},
+		{appmods, [{"/service", mmoasp}]}
+	],
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+	{ok, SCList, GC, ChildSpecs} =
+	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
 
-%% ------------------------------------------------------------------
-%% gen_server Function Definitions
-%% ------------------------------------------------------------------
+%%	[supervisor:start_child({local,?MODULE}, Ch) || Ch <- ChildSpecs], %% this code causes crash.
+	[supervisor:start_child(?MODULE, Ch) || Ch <- ChildSpecs],
+	%% now configure Yaws
+	yaws_api:setconf(GC, SCList).
 
-init(Args) ->
-    {ok, Args}.
+path_finder() ->
+    ID = path_finder,
+    StartFunc = {path_finder, start, []},
+    Restart = permanent,
+    Shutdown = brutal_kill,
+    Type = worker,
+    Modules = [path_finder],
+    _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
-handle_call(_Request, _From, State) ->
-    {reply, ok, State}.
-
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%% ------------------------------------------------------------------
-%% Internal Function Definitions
-%% ------------------------------------------------------------------
-
+battle_observer() ->
+    ID = battle_observer,
+    StartFunc = {battle_observer, start_link, []},
+    Restart = permanent,
+    Shutdown = brutal_kill,
+    Type = worker,
+    Modules = [battle_observer],
+    _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 

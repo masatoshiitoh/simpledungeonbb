@@ -27,11 +27,11 @@ INSTALL = MOVE
 RM = DEL
 REMOVEDIR = RD /Q /S
 COPY = COPY
-YAWS_EBINDIR = C:\opt\yaws\ebin
+YAWS_EBINDIR = C:\yaws19\ebin
 
 ERLC = erlc
 ## ERLCFLAGS = -o $(DESTDIR)
-ERLCFLAGS = -DTEST -pa "C:/Opt/Yaws/ebin" -I "C:/Opt/Yaws/include"
+ERLCFLAGS = -DTEST -pa "C:/Yaws19/ebin" -I "C:/Yaws19/include"
 
 
 !include CommonMakefile.in

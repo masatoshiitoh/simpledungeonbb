@@ -1,1 +1,0 @@
-erl -pa C:\opt\yaws\ebin

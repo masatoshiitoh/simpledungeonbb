@@ -28,7 +28,7 @@ use JSON;
 
 # This is a 'simple dungeon' api caller library.
 
-my $base_url = "http://simpledungeons.com:8002";
+my $base_url = "http://localhost:8002";
 
 my $sv = "hibari";
 my $cid;

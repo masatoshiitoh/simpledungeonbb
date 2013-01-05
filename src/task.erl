@@ -53,7 +53,7 @@
 %% for task utilities for PC/NPC
 
 system_call({From, stop_process}, R, _I) ->
-	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
+%%	io:format("~p: proc stop by stop_process message.~n", [R#task_env.cid]),
 	morningcall:cancel_all(R#task_env.utimer),
 	From ! {ok, R#task_env.cid},
 	{NewR = undefined, NewI = undefined}.
@@ -68,9 +68,9 @@ event_call({_From, event, OidFrom, OidTo, Event, EventOwner}, R, I) ->
 %	io:format("character: ~p had event ~p~n", [EventOwner, Event]),
 	{add_event(R,
 		[{type, erlang:atom_to_list(Event)},
-			{cid, EventOwner#cid.id},
-			{from_cid, OidFrom#cid.id},
-			{to_cid, OidTo#cid.id}]),
+			{cid, EventOwner},
+			{from_cid, OidFrom},
+			{to_cid, OidTo}]),
 		mk_idle_update(I)}.
 
 %% TIMER
@@ -83,18 +83,23 @@ timer_call({_From, cancel_timer}, R, I) ->
 	{R#task_env{utimer = NewUTimer}, mk_idle_update(I)}.
 
 sensor_call({From, request_list_to_know}, R, _I) ->
-	Actions = get_elements(R#task_env.event_queue),
-	Stats = get_stats(R#task_env.cid),
-	MovePaths = get_values(R#task_env.move_path_dict),
-	From ! #list_to_know{actions = Actions, stats = Stats, move_paths = MovePaths},
-	{R#task_env{event_queue = queue:new(), move_path_dict = dict:new()}, task:mk_idle_reset()};
+			From ! {list_to_know,
+				task:get_elements(R#task_env.event_queue),
+				get_stats(R#task_env.stat_dict),
+				get_values(R#task_env.move_path_dict)
+				},
+%			io:format("listtoknow: ~p L2KN ~p~n", [From, task:get_elements(R#task_env.event_queue)]),
+%			io:format("listtoknow: ~p STAT ~p~n", [From, get_stats(R#task_env.stat_dict)]),
+%			io:format("listtoknow: ~p MVPA ~p~n", [From, get_values(R#task_env.move_path_dict)]),
+			
+			{R#task_env{event_queue = queue:new(), move_path_dict = dict:new()}, task:mk_idle_reset()};
 
 sensor_call({_From, notice_login, SenderCid, Name}, R, I) ->
 			%%io:format("character: get others login. ~p~n",
 			%%	[{notice_login, Name} ]),
 			{task:add_event(R,
 					[{type, "login"},
-						{cid, SenderCid#cid.id},
+						{cid, SenderCid},
 						{name, Name}]),
 				task:mk_idle_update(I)};
 			
@@ -102,14 +107,14 @@ sensor_call({_From, notice_logout, SenderCid}, R, I) ->
 			%%io:format("character: get others logout. ~p~n",
 			%%	[{notice_logout, Cid} ]),
 			{task:add_event(R,
-					[{type, "logout"}, {cid, SenderCid#cid.id}]),
+					[{type, "logout"}, {cid, SenderCid}]),
 				task:mk_idle_update(I)};
 			
 sensor_call({_From, notice_remove, SenderCid}, R, I) ->
 			%%io:format("character: get others removed. ~p~n",
 			%%	[{notice_remove, Cid} ]),
 			{task:add_event(R,
-					[{type, "remove"}, {cid, SenderCid#cid.id}]),
+					[{type, "remove"}, {cid, SenderCid}]),
 				task:mk_idle_update(I)}.
 
 
@@ -118,30 +123,14 @@ sensor_call({_From, notice_remove, SenderCid}, R, I) ->
 get_values(Dict) ->
 	[V || {_K,V} <- dict:to_list(Dict)].
 
-
-make_stat_entry(O) when is_record(O, online_character) ->
-
-	LocalCid = (O#online_character.cid)#cid.id,
-	X = (O#online_character.location)#location.x,
-	Y = (O#online_character.location)#location.y,
-
-	C = character:get_one(O#online_character.cid),
-	Name = C#character.name,
-	AttrList = dict:to_list(C#character.status),
-
-	[{cid, LocalCid}, {name, Name}, {x, X}, {y, Y}] ++ AttrList.
-
-
-get_stats(Cid) when is_record(Cid, cid) ->
-	Neighbors = online_character:get_all_neighbors(Cid, default:distance()),
-	[ make_stat_entry(X) || X <- Neighbors ].
+get_stats(L) -> L.
 
 add_event(R, Event) when is_record(R, task_env) ->
 	R#task_env{
 		event_queue = add_element(Event, R#task_env.event_queue)
 	}.
 
-add_element(X, Q) -> queue:in([{id, u:make_new_id()}] ++ X,Q).
+add_element(X, Q) -> queue:in([{id, mmoasp:make_new_id()}] ++ X,Q).
 get_elements(Q) -> queue:to_list(Q).
 
 mk_idle_reset() -> #idle{}.

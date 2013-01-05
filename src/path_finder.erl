@@ -20,7 +20,6 @@
 
 
 -module(path_finder).
--include("mmoasp.hrl").
 -behaviour(gen_server).
 -export([start/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -30,11 +29,11 @@
 start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()	-> gen_server:call(?MODULE, stop).
 
-lookup_path(MapId, {pos, X, Y}, {pos, DestX, DestY}) when is_record(MapId, map_id) ->
-	gen_server:call(?MODULE, {lookup, MapId, {pos, X, Y}, {pos, DestX, DestY}}).
+lookup_path({map_id, SvId, MapId}, StartPos, DestPos) ->
+	gen_server:call(?MODULE, {lookup, {map_id, SvId, MapId}, StartPos, DestPos}).
 
 init([]) ->
-	MapId1 = u:gen_map_id(hibari, "1"),
+	MapId1 = {map_id, "hibari", 1},
 	MapValue1 = make_entry_from_arraymap(path_finder:arraymap()),
 	{ok,
 		dict:from_list([{MapId1,MapValue1}])}.

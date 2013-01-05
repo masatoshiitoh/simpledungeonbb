@@ -26,89 +26,13 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 % API: sends message to child
+whoareyou(Cid) ->
+	mmoasp:apply_session(Cid,
+		fun(X) -> X#session.pid ! {test, {self(), whoareyou}} end).
 
-start_child(Cid) when is_record(Cid, cid) ->
-	spawn(?MODULE, loop, [setup_task_env(Cid), task:mk_idle_reset()]).
-
-setup_task_env(Cid) when is_record(Cid, cid) ->
-	#task_env{
-		cid = Cid,
-		event_queue = queue:new(),
-		stat_dict = [],
-		token = u:gen_token(),
-		utimer =  morningcall:new()}.
-
-whoareyou(Cid) when is_record(Cid, cid) ->
-	mmoasp:apply_online_character(Cid,
-		fun(X) -> X#online_character.pid ! {test, {self(), whoareyou}} end).
-
-stop_child(Cid) when is_record(Cid, cid)->
-	mmoasp:apply_online_character(Cid,
-		fun(X) -> X#online_character.pid ! {system, {self(), stop_process}} end).
-
-get_name(Cid) when is_record(Cid, cid) ->
-	mnesia:activity(transaction, fun() ->
-		case mnesia:read({character, Cid}) of
-		[] -> undefined;
-		[C] -> C#character.name
-		end
-	end).
-
-%% on success, returns cid record of new character.
-%% on error, throw exception ( when this return, character must be made.)
-add_one(Svid) ->
-	Cid = mnesia:activity(transaction, fun() ->
-		add_one_transaction(Svid) end),
-	Cid.
-
-check_cid_used(Cid) when is_record(Cid, cid) ->
-	case mnesia:read({character, Cid}) of
-	[] ->	ok;				%% new one. use this Cid !.
-	_ ->	try_another		%% found something.
-	end.
-
-add_one_transaction(Svid) ->
-	Cid = u:gen_cid(Svid, u:gen_randint_str()),
-	add_one_transaction_impl(check_cid_used(Cid), Svid, Cid).
-
-add_one_transaction_impl(ok, _Svid, Cid) when is_record(Cid, cid) ->
-	mnesia:write(make_pc_skelton(Cid)),
-	mnesia:write(initial_location:make_zero(Cid)),
-	Cid;
-
-add_one_transaction_impl(try_another, Svid, Cid) when is_record(Cid, cid) ->
-	add_one_transaction(Svid).
-
-make_pc_skelton(Cid) when is_record(Cid, cid) ->
-	#character{
-		cid = Cid,
-		type = pc,
-		name = "",
-		inventory = dict:new(),
-		status = dict:new(),
-		hidden_parameters = dict:new()
-		}.
-
-get_one(Cid) when is_record(Cid, cid) ->
-	mnesia:activity(transaction, fun() ->
-		case mnesia:read({character, Cid}) of
-			[] -> undefined;
-			[C] -> C
-		end
-	end).
-
-get_status(Cid) when is_record(Cid, cid) ->
-	get_status_impl(get_one(Cid)).
-
-get_status_impl(C) when is_record(C, character) ->
-	[{cid, C#character.cid}, {name, C#character.name}] ++ C#character.status;
-
-get_status_impl(undefined) ->
-	error({mmoasp_error, character_not_found}).
-
-move(Cid, {pos, X, Y}) when is_record(Cid, cid) ->
-	online_character:send_message_by_cid(Cid, {move, {pos, X, Y}}).
-
+stop_child(Cid) ->
+	mmoasp:apply_session(Cid,
+		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
 
 % core loop -----------------------------------------------
 
@@ -123,17 +47,12 @@ move(Cid, {pos, X, Y}) when is_record(Cid, cid) ->
 loop(undefined, _) -> ok;	%% exit loop.
 
 loop(R, I)
-	when is_record(R, task_env),
-		is_record(I, idle),
-		I#idle.since_last_op > 300*1000*1000 ->
+	when I#idle.since_last_op > 300*1000*1000->
 	
 	io:format("character: time out.~n"),
-	online_character:disconnect(R#task_env.cid);
+	mmoasp:logout(self(), R#task_env.cid, R#task_env.token);
 
-loop(R, I)
-	when is_record(R, task_env),
-		is_record(I, idle) ->
-
+loop(R, I) ->
 	{NewR, NewI} = receive
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
@@ -144,10 +63,9 @@ loop(R, I)
 		
 		%% update neighbor characters' status.
 		{_From, update_neighbor_status, Radius} ->
-%			io:format("update_neighbor_status retrieves ~p~n", [[X#online_character.cid
-%					|| X <- online_character:get_all_neighbors(R#task_env.cid, Radius)]]),
-			NewStatDict = [get_status(X#online_character.cid)
-					|| X <- online_character:get_all_neighbors(R#task_env.cid, Radius)],
+			NewStatDict =
+				[mmoasp:gen_stat_from_cdata(X)
+					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		
 		{_From, talk, Talker, MessageBody, Mode} ->
@@ -155,7 +73,7 @@ loop(R, I)
 			%%	[{talk, Talker, MessageBody, Mode}]),
 			{task:add_event(R, 
 					[{type, "talk"},
-						{cid, Talker#cid.id},
+						{cid, Talker},
 						{content, MessageBody},
 						{mode, Mode}]),
 				task:mk_idle_update(I)};
@@ -165,8 +83,8 @@ loop(R, I)
 				[OidFrom, OidTo, Res, Dam]),
 			{task:add_event(R,
 					[{type, "attack"},
-						{cid, OidTo#cid.id},
-						{attacker, OidFrom#cid.id},
+						{cid, OidTo},
+						{attacker, OidFrom},
 						{result, atom_to_list(Res)},
 						{damage, Dam}]),
 				task:mk_idle_update(I)};

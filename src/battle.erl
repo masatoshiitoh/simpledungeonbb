@@ -122,7 +122,7 @@ battle_02_test() ->
 		[[{K, V} || {K, V} <- ST, K == to_cid] || ST <- Actions1]),
 	io:format("battle_02_test:~p~n", [AList1]),
 	[LH1 | _LT1] = AList1,
-	?assert(sets:from_list([LH1]) == sets:from_list([{to_cid, Npcid1#cid.id}])),
+	?assert(sets:from_list([LH1]) == sets:from_list([{to_cid, Npcid1}])),
 
 	%% 2-1-2: Type:
 	AList2 = lists:flatten(
