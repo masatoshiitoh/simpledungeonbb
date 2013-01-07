@@ -62,11 +62,11 @@ access_cdata_01_test() ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies, estate], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies], 30000).
 
 start(reset_tables) ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies, estate], 30000),
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies], 30000),
 	reset_tables().
 
 stop() ->
@@ -90,7 +90,6 @@ reset_tables() ->
 	mnesia:clear_table(session),
 	mnesia:clear_table(money),
 	mnesia:clear_table(supplies),
-	mnesia:clear_table(estate),
 	mnesia:clear_table(location),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
@@ -112,7 +111,6 @@ do_this_once() ->
 	mnesia:create_table(session,	[{attributes, record_info(fields, session)}]),
 	mnesia:create_table(money,		[{attributes, record_info(fields, money)}]),
 	mnesia:create_table(supplies,	[{attributes, record_info(fields, supplies)}, {index, [cid, item_id]}]),
-	mnesia:create_table(estate,		[{attributes, record_info(fields, estate)}, {index, [cid]}]),
 
 	mnesia:create_table(location,	[{attributes, record_info(fields, location)}]),
 
@@ -144,9 +142,8 @@ demo(inventory, Cid) ->
 	F = fun() ->
 		Money = qlc:e(qlc:q([X || X <- mnesia:table(money), X#money.cid == Cid])),
 		Supplies = qlc:e(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid])),
-		Estate = qlc:e(qlc:q([X || X <- mnesia:table(estate), X#estate.cid == Cid])),
 	
-		#inventory{cid = Cid, money = Money, supplies = Supplies, estate = Estate}
+		#inventory{cid = Cid, money = Money, supplies = Supplies}
 	end,
 	mnesia:transaction(F).
 
@@ -192,12 +189,8 @@ example_tables() ->
 
 	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
 	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
-	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0},
+	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0}
 
-	{estate, item_sword01, "cid0001", false},
-	{estate, item_sword02, "cid0001", false},
-	{estate, item_shield01, "cid0002", false}
-	
 
 	].
 

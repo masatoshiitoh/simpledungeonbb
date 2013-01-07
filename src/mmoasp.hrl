@@ -52,13 +52,12 @@
 % ** MMO style inventory: you can lookup them by character id **
 -record(money,	{cid,  amount, offer}).
 -record(supplies,	{id, cid, item_id, amount, offer}).
--record(estate,	{item_id, cid, is_offer}).
 -record(neighbors, {cid, list, updated}).
 
 %% item master table.
 %-record(m_item,		{id, data}).
 
 %% Just records. Not for Mnesia
--record(inventory, {cid, money, supplies, estate}).
+-record(inventory, {cid, money, supplies}).
 
 
