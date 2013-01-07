@@ -27,7 +27,7 @@ objs = \
 	character_stream.beam db.beam  \
 	morningcall.beam mout.beam \
 	move.beam npc.beam path_finder.beam \
-	test.beam trade.beam \
+	test.beam \
 	mmoasp.beam \
 	u.beam
 
@@ -50,7 +50,6 @@ npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl
 task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
-trade.beam :trade.erl mmoasp.hrl
 mmoasp.beam :mmoasp.erl mmoasp.hrl
 u.beam :u.erl mmoasp.hrl
 

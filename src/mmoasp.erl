@@ -295,8 +295,7 @@ get_player_character_template(Id, Pass) ->
 	[
 		{auth_basic, Cid, Id, Pass},
 		{cdata, Cid, Name, [{"align", "neutral"}]},
-		{location, Cid, 1, {pos, 1,3}, offline, offline},
-		{money, Cid, 2000, 0}
+		{location, Cid, 1, {pos, 1,3}, offline, offline}
 	].
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
@@ -413,17 +412,6 @@ get_list_to_know_none_test() ->
 -endif.
 
 %-----------------------------------------------------------
-% Trade APIs.
-%   Tid is cid_pair tuple.
-% start_trade returns CidPair. use it for trade id (Tid).
-%-----------------------------------------------------------
-start_trade(Cid1,Cid2) -> trade:db_start_trade(Cid1, Cid2).
-set_offer(Cid, Money, Supplies, Estates) -> trade:db_set_offer(Cid, Money, Supplies, Estates).
-get_offer(Cid) -> trade:db_get_offer(Cid).
-cancel_trade(Cid) -> trade:db_cancel_trade(Cid).
-confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
-
-%-----------------------------------------------------------
 % Talk APIs.
 % chat mode: open/whisper/group
 %-----------------------------------------------------------
@@ -505,7 +493,6 @@ do_setup_player(Cid, ExistingSession)
 	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
 	add_session(Cid, Child, "pc"),
 	%% setup character states.
-	init_trade(Cid),
 	setup_player_initial_location(Cid),
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
@@ -526,7 +513,6 @@ do_setdown_player(Cid, ExistingSession)
 do_setdown_player(Cid, ExistingSession) ->
 	notice_logout(Cid, {csummary, Cid}, default_distance()),
 	character:stop_child(Cid),
-	cancel_trade(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
 	case delete_session(Cid) of
 		{atomic, ok} -> {ok, Cid};
@@ -554,10 +540,6 @@ delete_session(Cid) ->
 	mnesia:transaction(
 		fun()-> mnesia:delete({session, Cid}) end).
 
-init_trade(Cid) ->
-	mnesia:transaction(
-		fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
-
 setup_task_env(Cid) ->
 	#task_env{
 		cid = Cid,
@@ -582,7 +564,7 @@ gen_stat_from_cdata(X) ->
 % caution !!
 % Following getter/2 and setter/2 are dangerous to open to web interfaces.
 % DO NOT OPEN them as web i/f to set gaming parameters
-% (like hit point or money) from remote.
+% (like hit point) from remote.
 getter(Cid, Key) ->
 	F = fun() ->
 		case mnesia:read({cdata, Cid}) of

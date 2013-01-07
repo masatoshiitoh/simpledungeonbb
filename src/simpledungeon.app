@@ -1,7 +1,7 @@
 {application,simpledungeon,
  [{description,"simpledungeon MMO server"},
   {vsn,"0.01"},
-  {modules,[simpledungeon, battle_observer, task, battle, throw, unarmed, admin, character, character_stream, db, mmoasp, morningcall, mout, move, npc, path_finder, test, trade, u, uauth, world, yaws_if]},
+  {modules,[simpledungeon, battle_observer, task, battle, throw, unarmed, admin, character, character_stream, db, mmoasp, morningcall, mout, move, npc, path_finder, test, u, uauth, world, yaws_if]},
   {registered, []},
   {mod,{simpledungeon,[]}},
   {env, [
