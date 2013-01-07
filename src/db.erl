@@ -62,11 +62,11 @@ access_cdata_01_test() ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, supplies], 30000).
 
 start(reset_tables) ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies], 30000),
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, supplies], 30000),
 	reset_tables().
 
 stop() ->
@@ -88,7 +88,6 @@ reset_tables() ->
 	mnesia:clear_table(id_next),
 	mnesia:clear_table(cdata),
 	mnesia:clear_table(session),
-	mnesia:clear_table(money),
 	mnesia:clear_table(supplies),
 	mnesia:clear_table(location),
 	mnesia:transaction(fun() ->
@@ -109,7 +108,6 @@ do_this_once() ->
 	mnesia:create_table(id_next,	[{attributes, record_info(fields, id_next)}]),
 	mnesia:create_table(cdata,		[{attributes, record_info(fields, cdata)}]),
 	mnesia:create_table(session,	[{attributes, record_info(fields, session)}]),
-	mnesia:create_table(money,		[{attributes, record_info(fields, money)}]),
 	mnesia:create_table(supplies,	[{attributes, record_info(fields, supplies)}, {index, [cid, item_id]}]),
 
 	mnesia:create_table(location,	[{attributes, record_info(fields, location)}]),
@@ -140,10 +138,9 @@ demo(location, Cid) ->
 
 demo(inventory, Cid) ->
 	F = fun() ->
-		Money = qlc:e(qlc:q([X || X <- mnesia:table(money), X#money.cid == Cid])),
 		Supplies = qlc:e(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid])),
 	
-		#inventory{cid = Cid, money = Money, supplies = Supplies}
+		#inventory{cid = Cid, supplies = Supplies}
 	end,
 	mnesia:transaction(F).
 
@@ -184,8 +181,6 @@ example_tables() ->
 	{location,"npc0004", 1, 5, 5, 0},
 	
 	%% inventory ( key colomn is cid.)
-	{money, "cid0001", 1000, 15},
-	{money, "cid0002", 2000, 0},
 
 	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
 	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},

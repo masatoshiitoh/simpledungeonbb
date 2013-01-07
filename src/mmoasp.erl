@@ -295,8 +295,7 @@ get_player_character_template(Id, Pass) ->
 	[
 		{auth_basic, Cid, Id, Pass},
 		{cdata, Cid, Name, [{"align", "neutral"}]},
-		{location, Cid, 1, {pos, 1,3}, offline, offline},
-		{money, Cid, 2000, 0}
+		{location, Cid, 1, {pos, 1,3}, offline, offline}
 	].
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
@@ -565,7 +564,7 @@ gen_stat_from_cdata(X) ->
 % caution !!
 % Following getter/2 and setter/2 are dangerous to open to web interfaces.
 % DO NOT OPEN them as web i/f to set gaming parameters
-% (like hit point or money) from remote.
+% (like hit point) from remote.
 getter(Cid, Key) ->
 	F = fun() ->
 		case mnesia:read({cdata, Cid}) of

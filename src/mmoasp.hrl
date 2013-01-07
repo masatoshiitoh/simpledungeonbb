@@ -50,7 +50,6 @@
 %-record(friends, {cid, list}).
 
 % ** MMO style inventory: you can lookup them by character id **
--record(money,	{cid,  amount, offer}).
 -record(supplies,	{id, cid, item_id, amount, offer}).
 -record(neighbors, {cid, list, updated}).
 
@@ -58,6 +57,6 @@
 %-record(m_item,		{id, data}).
 
 %% Just records. Not for Mnesia
--record(inventory, {cid, money, supplies}).
+-record(inventory, {cid, supplies}).
 
 

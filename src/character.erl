@@ -69,8 +69,6 @@ loop(R, I) ->
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		
 		{_From, talk, Talker, MessageBody, Mode} ->
-			%%io:format("character: get chat. ~p~n",
-			%%	[{talk, Talker, MessageBody, Mode}]),
 			{task:add_event(R, 
 					[{type, "talk"},
 						{cid, Talker},
@@ -79,8 +77,6 @@ loop(R, I) ->
 				task:mk_idle_update(I)};
 
 		{_From, attack, OidFrom, OidTo, Res, Dam} ->
-			io:format("character: ~p hits ~p. (~p, ~p)~n",
-				[OidFrom, OidTo, Res, Dam]),
 			{task:add_event(R,
 					[{type, "attack"},
 						{cid, OidTo},
