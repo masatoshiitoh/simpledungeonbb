@@ -35,7 +35,6 @@
 -ifdef(TEST).
 scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
 scenario_01_test()-> {end_of_run_tests} = check_session_data().
-scenario_02_test()-> {end_of_run_tests} = do_trades().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
 scenario_05_test()-> {end_of_run_tests} = do_npc_move().
@@ -99,7 +98,6 @@ run_tests() ->
 
 	scenario_00_test(),
 	scenario_01_test(),
-	scenario_02_test(),
 	scenario_03_test(),
 	scenario_04_test(),
 	scenario_07_test(),
@@ -373,29 +371,6 @@ check_session_data() ->
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
-
-do_trades() ->
-	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-
-	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
-
-	%% trade check.
-	io:format("before :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
-	mmoasp:start_trade(Cid1, Cid2),
-%%	io:format("trade started... ~p~n1: ~p~n2: ~p~n", [
-%%		db:demo(select_trade),
-%%		db:demo(u_trade, Cid1),
-%%		db:demo(u_trade, Cid2)]),
-	mmoasp:set_offer(Cid1, 112, [],[]),
-	mmoasp:set_offer(Cid2, 0, [{item_herb, 2}],[item_shield01]),
-	mmoasp:confirm_trade(Cid1),
-	mmoasp:confirm_trade(Cid2),
-	io:format("after :~n 1: ~p~n 2: ~p~n", [db:demo(inventory, Cid1),db:demo(inventory, Cid2)]),
-
-	
-	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
-	{end_of_run_tests}.
-
 
 do_talk() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),

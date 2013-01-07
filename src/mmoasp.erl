@@ -413,17 +413,6 @@ get_list_to_know_none_test() ->
 -endif.
 
 %-----------------------------------------------------------
-% Trade APIs.
-%   Tid is cid_pair tuple.
-% start_trade returns CidPair. use it for trade id (Tid).
-%-----------------------------------------------------------
-start_trade(Cid1,Cid2) -> trade:db_start_trade(Cid1, Cid2).
-set_offer(Cid, Money, Supplies, Estates) -> trade:db_set_offer(Cid, Money, Supplies, Estates).
-get_offer(Cid) -> trade:db_get_offer(Cid).
-cancel_trade(Cid) -> trade:db_cancel_trade(Cid).
-confirm_trade(Cid) -> trade:db_confirm_trade(Cid).
-
-%-----------------------------------------------------------
 % Talk APIs.
 % chat mode: open/whisper/group
 %-----------------------------------------------------------
@@ -526,7 +515,6 @@ do_setdown_player(Cid, ExistingSession)
 do_setdown_player(Cid, ExistingSession) ->
 	notice_logout(Cid, {csummary, Cid}, default_distance()),
 	character:stop_child(Cid),
-	cancel_trade(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
 	case delete_session(Cid) of
 		{atomic, ok} -> {ok, Cid};
