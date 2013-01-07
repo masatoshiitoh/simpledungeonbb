@@ -62,11 +62,11 @@ access_cdata_01_test() ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, supplies], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location], 30000).
 
 start(reset_tables) ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, supplies], 30000),
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location], 30000),
 	reset_tables().
 
 stop() ->
@@ -88,7 +88,6 @@ reset_tables() ->
 	mnesia:clear_table(id_next),
 	mnesia:clear_table(cdata),
 	mnesia:clear_table(session),
-	mnesia:clear_table(supplies),
 	mnesia:clear_table(location),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
@@ -108,7 +107,6 @@ do_this_once() ->
 	mnesia:create_table(id_next,	[{attributes, record_info(fields, id_next)}]),
 	mnesia:create_table(cdata,		[{attributes, record_info(fields, cdata)}]),
 	mnesia:create_table(session,	[{attributes, record_info(fields, session)}]),
-	mnesia:create_table(supplies,	[{attributes, record_info(fields, supplies)}, {index, [cid, item_id]}]),
 
 	mnesia:create_table(location,	[{attributes, record_info(fields, location)}]),
 
@@ -130,19 +128,8 @@ demo(cdata, Cid) ->
 demo(session, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(session), X#session.cid == Cid]));
 
-demo(supplies, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid]));
-
 demo(location, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]));
-
-demo(inventory, Cid) ->
-	F = fun() ->
-		Supplies = qlc:e(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid])),
-	
-		#inventory{cid = Cid, supplies = Supplies}
-	end,
-	mnesia:transaction(F).
+	do(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid])).
 
 example_tables() ->
 	[
@@ -178,14 +165,7 @@ example_tables() ->
 	{location,"npc0001", 1, 2, 1, 0},
 	{location,"npc0002", 1, 4, 1, 0},
 	{location,"npc0003", 1, 4, 4, 0},
-	{location,"npc0004", 1, 5, 5, 0},
+	{location,"npc0004", 1, 5, 5, 0}
 	
-	%% inventory ( key colomn is cid.)
-
-	{supplies, mmoasp:make_new_id(),"cid0001", item_herb, 10, 0},
-	{supplies, mmoasp:make_new_id(), "cid0002", item_herb, 5, 0},
-	{supplies, mmoasp:make_new_id(), "cid0002", item_portion, 15, 0}
-
-
 	].
 

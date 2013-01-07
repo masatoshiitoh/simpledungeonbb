@@ -45,18 +45,5 @@
 % ** Base **
 -record(private_kv,	{cid, attr}).	%% private (hidden from other player) information(last window position, shortcut...
 
-%-record(level, {cid, lv, exp}).
-%-record(skill, {cid, list, rest_exp, used_exp}).
-%-record(friends, {cid, list}).
-
-% ** MMO style inventory: you can lookup them by character id **
--record(supplies,	{id, cid, item_id, amount, offer}).
 -record(neighbors, {cid, list, updated}).
-
-%% item master table.
-%-record(m_item,		{id, data}).
-
-%% Just records. Not for Mnesia
--record(inventory, {cid, supplies}).
-
 
