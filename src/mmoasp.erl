@@ -494,7 +494,6 @@ do_setup_player(Cid, ExistingSession)
 	Child = spawn(fun() -> character:loop(R, task:mk_idle_reset()) end),
 	add_session(Cid, Child, "pc"),
 	%% setup character states.
-	init_trade(Cid),
 	setup_player_initial_location(Cid),
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
@@ -541,10 +540,6 @@ add_session(Cid, Pid, Type) ->
 delete_session(Cid) ->
 	mnesia:transaction(
 		fun()-> mnesia:delete({session, Cid}) end).
-
-init_trade(Cid) ->
-	mnesia:transaction(
-		fun() -> mnesia:write(#u_trade{cid=Cid, tid=void}) end).
 
 setup_task_env(Cid) ->
 	#task_env{

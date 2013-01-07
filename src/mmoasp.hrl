@@ -53,8 +53,6 @@
 -record(money,	{cid,  amount, offer}).
 -record(supplies,	{id, cid, item_id, amount, offer}).
 -record(estate,	{item_id, cid, is_offer}).
--record(trade,	{id, confirm_l, confirm_r}).
--record(u_trade, {cid, tid}).
 -record(neighbors, {cid, list, updated}).
 
 %% item master table.

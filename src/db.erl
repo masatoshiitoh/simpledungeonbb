@@ -62,11 +62,11 @@ access_cdata_01_test() ->
 
 start() ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000).
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies, estate], 30000).
 
 start(reset_tables) ->
 	mnesia:start(),
-	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, trade, session, location, money, supplies, estate], 30000),
+	mnesia:wait_for_tables([service, auth_basic, id_next, cdata, session, location, money, supplies, estate], 30000),
 	reset_tables().
 
 stop() ->
@@ -92,8 +92,6 @@ reset_tables() ->
 	mnesia:clear_table(supplies),
 	mnesia:clear_table(estate),
 	mnesia:clear_table(location),
-	mnesia:clear_table(trade),
-	mnesia:clear_table(u_trade),
 	mnesia:transaction(fun() ->
 			foreach(fun mnesia:write/1, example_tables())
 		end).
@@ -117,8 +115,6 @@ do_this_once() ->
 	mnesia:create_table(estate,		[{attributes, record_info(fields, estate)}, {index, [cid]}]),
 
 	mnesia:create_table(location,	[{attributes, record_info(fields, location)}]),
-	mnesia:create_table(trade,		[{attributes, record_info(fields, trade)}]),
-	mnesia:create_table(u_trade,	[{attributes, record_info(fields, u_trade)}]),
 
 	mnesia:stop().
 
@@ -130,10 +126,7 @@ demo(session) ->
 	do(qlc:q([X || X <- mnesia:table(session)]));
 
 demo(select_auth) ->
-	do(qlc:q([X || X <- mnesia:table(auth_basic)]));
-
-demo(select_trade) ->
-	do(qlc:q([X || X <- mnesia:table(trade)])).
+	do(qlc:q([X || X <- mnesia:table(auth_basic)])).
 
 demo(cdata, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(cdata), X#cdata.cid == Cid]));
@@ -143,9 +136,6 @@ demo(session, Cid) ->
 
 demo(supplies, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(supplies), X#supplies.cid == Cid]));
-
-demo(u_trade, Cid) ->
-	do(qlc:q([X || X <- mnesia:table(u_trade), X#u_trade.cid == Cid]));
 
 demo(location, Cid) ->
 	do(qlc:q([X || X <- mnesia:table(location), X#location.cid == Cid]));
