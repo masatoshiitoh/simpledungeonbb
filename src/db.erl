@@ -83,7 +83,6 @@ strip_transaction_result(A) -> A.
 
 reset_tables() ->
 	mnesia:clear_table(service),
-	mnesia:clear_table(admin_session),
 	mnesia:clear_table(auth_basic),
 	mnesia:clear_table(id_next),
 	mnesia:clear_table(cdata),
@@ -102,7 +101,6 @@ do_this_once() ->
 	mnesia:start(),
 
 	mnesia:create_table(service,	[{attributes, record_info(fields, service)}]),
-	mnesia:create_table(admin_session,	[{attributes, record_info(fields, admin_session)}]),
 	mnesia:create_table(auth_basic,	[{attributes, record_info(fields, auth_basic)}]),
 	mnesia:create_table(id_next,	[{attributes, record_info(fields, id_next)}]),
 	mnesia:create_table(cdata,		[{attributes, record_info(fields, cdata)}]),

@@ -35,7 +35,6 @@
 
 % ** Admin **
 -record(service, {svid, adm_id, adm_pass, expire}).
--record(admin_session, {key, svid, adm_id, token, last_op_time}).
 
 -record(id_next, {svid, next}).  %% Holds next CID. Increment when getter called.
 
