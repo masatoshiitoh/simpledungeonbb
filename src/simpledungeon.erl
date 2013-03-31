@@ -39,6 +39,7 @@ start() ->
 	{ok, Pid} = supervisor:start_link({local,?MODULE},?MODULE,[]),
 	unlink(Pid),
 	%% start database.
+	mmoasp:change_schema(),
 	db:start(reset_tables),
 	start_yaws(),
 	Pid.
