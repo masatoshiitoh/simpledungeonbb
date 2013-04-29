@@ -29,6 +29,7 @@ objs = \
 	move.beam npc.beam path_finder.beam \
 	test.beam \
 	mmoasp.beam \
+	con_yaws.beam \
 	u.beam
 
 .SUFFIXES: .erl .beam
@@ -51,6 +52,7 @@ path_finder.beam : path_finder.erl mmoasp.hrl
 task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
 mmoasp.beam :mmoasp.erl mmoasp.hrl
+con_yaws.beam :con_yaws.erl mmoasp.hrl
 u.beam :u.erl mmoasp.hrl
 
 install : $(objs)

@@ -62,7 +62,7 @@ start_yaws() ->
 		{port, 8002},
 		{listen, {0,0,0,0}},
 		{docroot, Docroot},
-		{appmods, [{"/service", mmoasp}]}
+		{appmods, [{"/service", con_yaws}]}
 	],
 
 	{ok, SCList, GC, ChildSpecs} =

@@ -34,6 +34,9 @@ stop_child(Cid) ->
 	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
 
+setter(Cid, Token, Key, Value) ->
+	mmoasp:setter(Cid, Key, Value).
+
 % core loop -----------------------------------------------
 
 % process user operation.
