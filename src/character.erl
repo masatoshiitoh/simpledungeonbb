@@ -68,7 +68,7 @@ loop(R, I) ->
 		{_From, update_neighbor_status, Radius} ->
 			NewStatDict =
 				[mmoasp:gen_stat_from_cdata(X)
-					|| X <- mmoasp:get_neighbor_char_cdata(R#task_env.cid, Radius)],
+					|| X <- map2d:get_neighbor_char_cdata(R#task_env.cid, Radius)],
 			{R#task_env{stat_dict = NewStatDict}, task:mk_idle_update(I)};
 		
 		{_From, talk, Talker, MessageBody, Mode} ->

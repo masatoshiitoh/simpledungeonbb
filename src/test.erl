@@ -64,12 +64,9 @@ run_tests_with_log()
 		eunit:test(
 		[
 		
-%%admin,
 character,
 character_stream,
 db,
-%%demo,
-%%melee,
 mmoasp,
 morningcall,
 mout,
@@ -80,11 +77,12 @@ simpledungeon,
 task,
 throw,
 u,
-%%uauth,
 unarmed,
-%%world,
 battle,
 battle_observer,
+con_yaws,
+map2d,
+sd_api,
 test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).
@@ -111,14 +109,14 @@ up_scenarios() ->
 %	u:wait(100),
 	_NpcPid1 = npc:start_npc("npc0001"),
 	{ok, Cid1, Token1}
-		= mmoasp:login(self(), "id0001", "pw0001", {192,168,1,200}),
+		= sd_api:login(self(), "id0001", "pw0001", {192,168,1,200}),
 	{ok, Cid2, Token2}
-		= mmoasp:login(self(), "id0002", "pw0002", {192,168,1,201}),
+		= sd_api:login(self(), "id0002", "pw0002", {192,168,1,201}),
 	{scenarios, Cid1, Token1, Cid2, Token2, "npc0001"}.
 
 down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}) ->
-	mmoasp:logout(self(), Cid1, Token1),
-	mmoasp:logout(self(), Cid2, Token2),
+	sd_api:logout(self(), Cid1, Token1),
+	sd_api:logout(self(), Cid2, Token2),
 	npc:stop_npc(Npcid1),
 	mmoasp:stop(),
 	ok.
@@ -142,11 +140,11 @@ do_battle_unarmed_01() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(1 == mmoasp:distance(
+	?assert(1 == map2d:distance(
 		{session, mmoasp:get_session(Cid1)},
 		{session, mmoasp:get_session("npc0001")})),
 	
-	?assert(3 == mmoasp:distance(
+	?assert(3 == map2d:distance(
 		{session, mmoasp:get_session(Cid2)},
 		{session, mmoasp:get_session("npc0001")})),
 
@@ -197,13 +195,13 @@ do_look_around() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
 	%% look around test
-	?assert(4 == mmoasp:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
+	?assert(4 == map2d:distance({session, mmoasp:get_session(Cid1)}, {session, mmoasp:get_session(Cid2)})),
 
 	?assert(sets:from_list(["cid0001"])
-		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 1)])),
+		== sets:from_list([X#session.cid || X <- map2d:get_neighbor_char_sessions(Cid1, 1)])),
 
 	?assert(sets:from_list(["cid0001", "cid0002"])
-		== sets:from_list([X#session.cid || X <- mmoasp:get_neighbor_char_sessions(Cid1, 4)])),
+		== sets:from_list([X#session.cid || X <- map2d:get_neighbor_char_sessions(Cid1, 4)])),
 
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -220,13 +218,13 @@ do_stat() ->
 
 	% io:format("update request has sent.~n", []),
 
-	mmoasp:wait(200),
+	u:wait(200),
 
 	{list_to_know, Actions1, Stats1, MoveInfo1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 	
 	{list_to_know, Actions2, Stats2, MoveInfo2}
-		= mmoasp:get_list_to_know(self(), Cid2),
+		= sd_api:get_list_to_know(self(), Cid2),
 
 	io:format("list to know for ~p: ~p~n",
 		[Cid1, {list_to_know, Actions1, Stats1}]),
@@ -342,7 +340,7 @@ do_npc_move() ->
 check_session_data() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	X = mmoasp:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
+	X = map2d:get_neighbor_char_cdata(Cid1, 10),%% at this point, X is #cdata.attr .
 %%	io:format("neighbor_char_cdata of ~p: ~p~n", [Cid1, X]),
 	
 	Me = mmoasp:get_session(Cid1),
@@ -353,7 +351,7 @@ check_session_data() ->
 				]}
 				|| Sess <- mnesia:table(session),
 				%%	Loc#location.cid =/= Cid,
-				mmoasp:distance({session, Sess}, {session, Me}) < 10,
+				map2d:distance({session, Sess}, {session, Me}) < 10,
 				CData <- mnesia:table(cdata),	
 				CData#cdata.cid == Sess#session.cid]))
 	end,
@@ -366,7 +364,7 @@ check_session_data() ->
 	io:format("gen_stat_from_cdata of X: ~p~n", [[mmoasp:gen_stat_from_cdata(A) || A <- X]]),
 
 
-	io:format("mmoasp:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, mmoasp:get_neighbor_char_cdata(Cid1, 10)]),
+	io:format("map2d:get_neighbor_char_cdata of ~p: ~p~n", [Cid1, map2d:get_neighbor_char_cdata(Cid1, 10)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
@@ -375,15 +373,15 @@ do_talk() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	
 	%% talk check
-	mmoasp:talk(open,Cid2, "hello all from cid 1234!!! ", 100),
-	mmoasp:talk(open,Cid2, "will not appear this message!!! ", 100),
-	mmoasp:talk(whisper,Cid2, Cid1, "hello cid 1 from cid 1234, with love :-)"),
-	mmoasp:talk(whisper,Cid2, Cid1, "talk, line 2"),
+	sd_api:talk(open,Cid2, "hello all from cid 1234!!! ", 100),
+	sd_api:talk(open,Cid2, "will not appear this message!!! ", 100),
+	sd_api:talk(whisper,Cid2, Cid1, "hello cid 1 from cid 1234, with love :-)"),
+	sd_api:talk(whisper,Cid2, Cid1, "talk, line 2"),
 
 	
-	{list_to_know, _A1, _S1, _M1} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _A1, _S1, _M1} = sd_api:get_list_to_know(self(), Cid1),
 	%io:format("list_to_json with ~p: ~p~n", [Cid1, mout:list_to_json(A1 ++ S1)]),
-	{list_to_know, _A2, _S2, _m2} = mmoasp:get_list_to_know(self(), Cid2),
+	{list_to_know, _A2, _S2, _m2} = sd_api:get_list_to_know(self(), Cid2),
 	%io:format("list_to_json with ~p: ~p~n", [Cid2, mout:list_to_json(A2 ++ S2)]),
 
 	
@@ -396,8 +394,8 @@ do_setter() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% setter check.
-	mmoasp:setter(Cid1, "WindowSize", "123,55"),
-	mmoasp:setter(Cid2, "WindowSize", "99,160"),
+	sd_api:setter(Cid1, "WindowSize", "123,55"),
+	sd_api:setter(Cid2, "WindowSize", "99,160"),
 	io:format("setter :~n 1: ~p~n 2: ~p~n", [db:demo(cdata, Cid1),db:demo(cdata, Cid2)]),
 	
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),

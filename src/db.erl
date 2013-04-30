@@ -38,7 +38,7 @@
 
 access_cdata(Cid, Key) ->
 	{atomic, Cdata} = mmoasp:apply_cdata(Cid, fun(X) -> X end),
-	mmoasp:kv_get(Cdata#cdata.attr, Key).
+	u:kv_get(Cdata#cdata.attr, Key).
 
 
 

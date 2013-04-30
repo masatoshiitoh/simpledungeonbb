@@ -103,7 +103,7 @@ battle_01_test() ->
 
 battle_02_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	mmoasp:get_list_to_know(self(), Cid1),	%% reset list_to_know queue.
+	sd_api:get_list_to_know(self(), Cid1),	%% reset list_to_know queue.
 
 	%% 1: DO ATTACK
 	L1 = single(Cid1, Npcid1),
@@ -115,7 +115,7 @@ battle_02_test() ->
 	
 	%% 2-1: Get List to Know.
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 	
 	%% 2-1-1: Attacked Cid check: (check list head only.)
 	AList1 = lists:flatten(

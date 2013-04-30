@@ -56,8 +56,8 @@ do_report(CidFrom, CidTo, DamTupple) ->
 
 
 make_reports(OidFrom, OidTo, DamTupple) ->
-	NewHp = mmoasp:getter(OidTo, "hp"),
-	Typ = mmoasp:getter(OidTo, "type"),
+	NewHp = sd_api:getter(OidTo, "hp"),
+	Typ = sd_api:getter(OidTo, "type"),
 	%%io:format("make_reports: calls proc_damage(~p, ~p, ~p,~p, ~p)~n", [OidFrom, OidTo, DamTupple, Typ, NewHp]),
 	proc_damage(OidFrom, OidTo, DamTupple, Typ, NewHp).
 
@@ -77,45 +77,45 @@ notice_results(OidFrom, OidTo, L, Radius) ->
 	[notice_result(OidFrom, OidTo, X, Radius) || X <- L].
 
 notice_result(OidFrom, OidTo, {killed, KilledOid}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	Sessions = map2d:get_all_neighbor_sessions(OidTo, Radius),
 	[X#session.pid ! {event, {self(), event, OidFrom, OidTo, killed, KilledOid}}
 		|| X <- Sessions],
 	{killed, KilledOid};
 
 notice_result(OidFrom, OidTo, {ok, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	Sessions = map2d:get_all_neighbor_sessions(OidTo, Radius),
 	[X#session.pid ! {self(), attack, OidFrom, OidTo, ok, Dam}
 		|| X <- Sessions],
 	{ok, Dam};
 
 notice_result(OidFrom, OidTo, {ng, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	Sessions = map2d:get_all_neighbor_sessions(OidTo, Radius),
 	[X#session.pid ! {self(), attack, OidFrom, OidTo, ng, Dam}
 		|| X <- Sessions],
 	{ng, Dam};
 
 notice_result(OidFrom, OidTo, {critical, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	Sessions = map2d:get_all_neighbor_sessions(OidTo, Radius),
 	[X#session.pid ! {self(), attack, OidFrom, OidTo, critical, Dam}
 		|| X <- Sessions],
 	{critical, Dam};
 
 notice_result(OidFrom, OidTo, {fumble, Dam}, Radius) ->
-	Sessions = mmoasp:get_all_neighbor_sessions(OidTo, Radius),
+	Sessions = map2d:get_all_neighbor_sessions(OidTo, Radius),
 	[X#session.pid ! {self(), attack, OidFrom, OidTo, fumble, Dam}
 		|| X <- Sessions],
 	{fumble, Dam}.
 
 %% store_result series returns {Result, Damage} tapple.
 store_result(OidTo, {ok, X}) ->
-	CurrHp = mmoasp:getter(OidTo, "hp"),
-	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = sd_api:getter(OidTo, "hp"),
+	sd_api:setter(OidTo, "hp", (CurrHp - X)),
 	{ok, X};
 store_result(_OidTo, {ng, 0}) ->
 	{ng, 0};
 store_result(OidTo, {critical, X}) ->
-	CurrHp = mmoasp:getter(OidTo, "hp"),
-	mmoasp:setter(OidTo, "hp", (CurrHp - X)),
+	CurrHp = sd_api:getter(OidTo, "hp"),
+	sd_api:setter(OidTo, "hp", (CurrHp - X)),
 	{critical, X};
 store_result(_OidTo, {fumble, 0}) ->
 	{fumble, 0}.
@@ -153,18 +153,18 @@ code_change(_OldVsn, N, _Extra) -> {ok, N}.
 
 battle_observer_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
-	V1 = mmoasp:getter(Cid1, "hp"),
+	V1 = sd_api:getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
-	V2 = mmoasp:getter(Cid1, "hp"),
+	V2 = sd_api:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 2),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveList1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
@@ -179,21 +179,21 @@ battle_observer_01_test() ->
 
 battle_observer_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
-	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
-	?assert(mmoasp:getter(Cid1, "type") == "pc"),
-	?assert(mmoasp:getter(Npcid1, "type") == "npc"),
+	?assert(sd_api:getter(Cid1, "type") == "pc"),
+	?assert(sd_api:getter(Npcid1, "type") == "npc"),
 
-	V1 = mmoasp:getter(Cid1, "hp"),
+	V1 = sd_api:getter(Cid1, "hp"),
 	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
-	V2 = mmoasp:getter(Cid1, "hp"),
+	V2 = sd_api:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 9999),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveList1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 
 %%	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
 
@@ -218,9 +218,9 @@ battle_observer_pc_knockouted_test() ->
 store_result_ok_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 1}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {ok, 1}),
@@ -230,9 +230,9 @@ store_result_ok_1_test() ->
 store_result_ok_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ok, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {ok, 999}),
@@ -242,9 +242,9 @@ store_result_ok_999_test() ->
 store_result_ng_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {ng, 0}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {ng, 0}),
@@ -254,9 +254,9 @@ store_result_ng_0_test() ->
 store_result_fumble_0_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {fumble, 0}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 0),
 	?assert(R1 == {fumble, 0}),
@@ -266,9 +266,9 @@ store_result_fumble_0_test() ->
 store_result_critical_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 1}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 1),
 	?assert(R1 == {critical, 1}),
@@ -278,9 +278,9 @@ store_result_critical_1_test() ->
 store_result_critical_999_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
@@ -290,15 +290,15 @@ store_result_critical_999_test() ->
 store_result_twice_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	V1 = mmoasp:getter(Npcid1, "hp"),
+	V1 = sd_api:getter(Npcid1, "hp"),
 	R1 = store_result(Npcid1, {critical, 999}),
-	V2 = mmoasp:getter(Npcid1, "hp"),
+	V2 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V1 - V2 == 999),
 	?assert(R1 == {critical, 999}),
 
 	R2 = store_result(Npcid1, {ok, 1}),
-	V3 = mmoasp:getter(Npcid1, "hp"),
+	V3 = sd_api:getter(Npcid1, "hp"),
 
 	?assert(V2 - V3 == 1),
 	?assert(R2 == {ok, 1}),
@@ -312,15 +312,15 @@ store_result_twice_test() ->
 notice_results_nil_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [], 30),
 	?assert(L2 == []),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {list_to_know, Actions1, Stats1}]),
 
@@ -338,15 +338,15 @@ notice_results_nil_test() ->
 notice_results_1_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [{ok, 999}], 30),
 	?assert(L2 == [{ok, 999}]),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {list_to_know, Actions1, Stats1}]),
 
@@ -364,15 +364,15 @@ notice_results_1_test() ->
 notice_results_2_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 
-	{list_to_know, _, _, _} = mmoasp:get_list_to_know(self(), Cid1),
+	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
 	L2 = notice_results(Npcid1, Cid1, [{ok, 7}, {ok, 13}], 30),
 	?assert(L2 == [{ok, 7}, {ok, 13}]),
 
-	mmoasp:wait(20),
+	u:wait(20),
 
 	{list_to_know, Actions1, _Stats1, _MoveInfo1}
-		= mmoasp:get_list_to_know(self(), Cid1),
+		= sd_api:get_list_to_know(self(), Cid1),
 %%	io:format("list to know for ~p: ~p~n",
 %%		[Cid1, {list_to_know, Actions1, Stats1}]),
 

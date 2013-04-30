@@ -38,7 +38,7 @@ out(A, 'GET', ["service", _SVID, "login"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:login(self(), Id, Pw, Ipaddr),
+	Result = sd_api:login(self(), Id, Pw, Ipaddr),
 	case Result of
 		{ok, Cid, Token} ->
 			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
@@ -58,7 +58,7 @@ out(A, 'POST', ["service", SVID, "create_account"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:create_account(self(), SVID, Id, Pw, Ipaddr),
+	Result = sd_api:create_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -73,7 +73,7 @@ out(A, 'POST', ["service", SVID, "delete_account"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:delete_account(self(), SVID, Id, Pw, Ipaddr),
+	Result = sd_api:delete_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -88,7 +88,7 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:create_account(self(), SVID, Id, Pw, Ipaddr),
+	Result = sd_api:create_account(self(), SVID, Id, Pw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -104,7 +104,7 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 	Pw = param(Params, "password"),
 	NewPw = param(Params, "newpassword"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:change_password(self(), SVID, Id, Pw, NewPw, Ipaddr),
+	Result = sd_api:change_password(self(), SVID, Id, Pw, NewPw, Ipaddr),
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
@@ -119,7 +119,7 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
-	Result = mmoasp:login(self(),Id, Pw, Ipaddr),
+	Result = sd_api:login(self(),Id, Pw, Ipaddr),
 	case Result of
 		{ok, Cid, Token} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
@@ -132,7 +132,7 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 	Params = make_params({post, A}),
 	Token = param(Params, "token"),
-	Result = mmoasp:logout(self(), CidX, Token),
+	Result = sd_api:logout(self(), CidX, Token),
 	case Result of
 		{ok, CidX} ->
 			mout:return_json(mout:encode_json_array_with_result("ok",[]));
@@ -145,8 +145,8 @@ out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
-	mmoasp:send_message_by_cid(CidX, {self(), update_neighbor_status, mmoasp:default_distance()}),
-	{list_to_know, ListToKnow, NeighborStats, MovePaths} = mmoasp:get_list_to_know(self(), CidX),
+	mmoasp:send_message_by_cid(CidX, {self(), update_neighbor_status, map2d:default_distance()}),
+	{list_to_know, ListToKnow, NeighborStats, MovePaths} = sd_api:get_list_to_know(self(), CidX),
 	mout:return_json(mout:struct_list_to_json(
 		[{struct, X} || X <- ListToKnow]
 		 ++
@@ -161,7 +161,7 @@ out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
-	Result = mmoasp:talk(open, CidX, Talked, mmoasp:default_distance()),
+	Result = sd_api:talk(open, CidX, Talked, map2d:default_distance()),
 	mout:return_json(json:encode({struct, [Result]}));
 
 %% Whisper (person to person talk)

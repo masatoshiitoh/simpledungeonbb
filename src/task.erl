@@ -130,7 +130,7 @@ add_event(R, Event) when is_record(R, task_env) ->
 		event_queue = add_element(Event, R#task_env.event_queue)
 	}.
 
-add_element(X, Q) -> queue:in([{id, mmoasp:make_new_id()}] ++ X,Q).
+add_element(X, Q) -> queue:in([{id, u:make_new_id()}] ++ X,Q).
 get_elements(Q) -> queue:to_list(Q).
 
 mk_idle_reset() -> #idle{}.

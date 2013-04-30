@@ -110,7 +110,7 @@ mapmove_call({_From, move}, R, I) ->
 	CurrPos = R#task_env.currpos,
 	WayPoints = R#task_env.waypoints,
 
-	mmoasp:setpos(R#task_env.cid, CurrPos),
+	map2d:setpos(R#task_env.cid, CurrPos),
 	case WayPoints of
 		[] ->
 			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
@@ -122,9 +122,9 @@ mapmove_call({_From, move}, R, I) ->
 			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 			{pos, _X, _Y} = CurrPos,
 			
-			Distance = mmoasp:distance(CurrPos, H),
+			Distance = map2d:distance(CurrPos, H),
 			Duration = duration_millisec(Distance),
-			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, Duration}, mmoasp:default_distance()),
+			mmoasp:notice_move(R#task_env.cid, {transition, CurrPos, H, Duration}, map2d:default_distance()),
 			SelfPid = self(),
 			F = fun() ->
 				SelfPid ! {mapmove, {SelfPid, move}}
@@ -157,7 +157,7 @@ mapmove_call({_From, notice_move, SenderCid, From, To, Duration}, R, I) ->
 make_move_info(SenderCid, From, To) ->
 	{pos, FromX, FromY} = From,
 	{pos, ToX, ToY} = To,
-	Distance = mmoasp:distance(From, To),
+	Distance = map2d:distance(From, To),
 	[{type, "move"}, {cid, SenderCid},
 				{from_x, FromX}, {from_y, FromY},
 				{to_x, ToX}, {to_y, ToY},
@@ -184,4 +184,4 @@ make_move_list(Acc, SenderCid, CurrPos, [H|T] ) ->
 notice_move_list_to_neighbor(SenderCid, RawWaypoints) ->
 	[Start|L] = RawWaypoints,
 	MoveList = make_move_list(SenderCid, Start, L),
-	mmoasp:notice_move_list(SenderCid, {transition_list, MoveList}, mmoasp:default_distance()).
+	mmoasp:notice_move_list(SenderCid, {transition_list, MoveList}, map2d:default_distance()).

@@ -20,40 +20,51 @@
 
 program = simpledungeon
 objs = \
-	simpledungeon.beam \
-	battle_observer.beam task.beam \
-	battle.beam throw.beam \
-	unarmed.beam character.beam \
-	character_stream.beam db.beam  \
-	morningcall.beam mout.beam \
-	move.beam npc.beam path_finder.beam \
-	test.beam \
-	mmoasp.beam \
+	battle.beam \
+	battle_observer.beam \
+	character.beam \
+	character_stream.beam \
 	con_yaws.beam \
-	u.beam
+	db.beam \
+	map2d.beam \
+	mmoasp.beam \
+	morningcall.beam \
+	mout.beam \
+	move.beam \
+	npc.beam \
+	path_finder.beam \
+	sd_api.beam \
+	simpledungeon.beam \
+	task.beam \
+	test.beam \
+	throw.beam \
+	u.beam \
+	unarmed.beam
 
 .SUFFIXES: .erl .beam
 
 all : $(objs)
 
-simpledungeon.beam : simpledungeon.erl
-battle_observer.beam : battle_observer.erl mmoasp.hrl
-unarmed.beam : unarmed.erl mmoasp.hrl
 battle.beam : battle.erl mmoasp.hrl
-throw.beam : throw.erl mmoasp.hrl
+battle_observer.beam : battle_observer.erl mmoasp.hrl
 character.beam : character.erl mmoasp.hrl
 character_stream.beam : character_stream.erl mmoasp.hrl
+con_yaws.beam :con_yaws.erl mmoasp.hrl
 db.beam : db.erl mmoasp.hrl
+map2d.beam :map2d.erl mmoasp.hrl map2d.hrl
+mmoasp.beam :mmoasp.erl mmoasp.hrl
 morningcall.beam : morningcall.erl mmoasp.hrl
 mout.beam : mout.erl mmoasp.hrl
 move.beam : move.erl mmoasp.hrl
 npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl
+sd_api.beam : sd_api.erl sd_api.hrl mmoasp.hrl
+simpledungeon.beam : simpledungeon.erl
 task.beam : task.erl mmoasp.hrl
 test.beam : test.erl mmoasp.hrl
-mmoasp.beam :mmoasp.erl mmoasp.hrl
-con_yaws.beam :con_yaws.erl mmoasp.hrl
+throw.beam : throw.erl mmoasp.hrl
 u.beam :u.erl mmoasp.hrl
+unarmed.beam : unarmed.erl mmoasp.hrl
 
 install : $(objs)
 	$(COPY) *.beam $(DESTDIR)
