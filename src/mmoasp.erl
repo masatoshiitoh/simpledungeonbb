@@ -20,6 +20,14 @@
 
 
 -module(mmoasp).
+
+-export([start/0, start/1, stop/0]).
+-export([do_login/3, setdown_player/1, auth_get_cid/1]).
+-export([get_session/1, apply_initial_location/2, apply_session/2, apply_cdata/2]).
+-export([notice_remove/3, notice_move/3, notice_move_list/3,notice_login/3,notice_logout/3]).
+-export([send_message_by_cid/2]).
+-export([gen_stat_from_cdata/1]).
+
 -include("mmoasp.hrl").
 -import(lists, [foreach/2]).
 -include_lib("stdlib/include/qlc.hrl").
@@ -27,10 +35,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
-
-
--compile(export_all).
 
 %-----------------------------------------------------------
 %% implement simple api for mmoasp.erl
@@ -51,11 +55,6 @@ stop() ->
 	path_finder:stop(),
 	db:stop().
 	
-change_schema() ->
-	db:drop_all(),
-	db:do_this_once(),
-	db:start(reset_tables).
-
 
 -ifdef(TEST).
 -endif.
@@ -88,14 +87,6 @@ do_login(Id, Pw, Cid) when Cid == void ->
 
 do_login(Id, Pw, Cid) ->
 	setup_player(Cid).
-
-
-talk_to(Pid, Sender, MessageBody, Mode) ->
-	Pid ! {self(), talk, Sender, MessageBody, Mode}.
-
-%talk(group, SenderCid, GroupId, MessageBody) ->
-%	[talk_to(X#state.pid, SenderCid, MessageBody, open)
-%		|| X <- get_group_char_states(GroupId)].
 
 %-----------------------------------------------------------
 % notice functions.

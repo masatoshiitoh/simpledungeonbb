@@ -21,7 +21,7 @@
 
 -module(character_stream).
 -include_lib("mmoasp.hrl").
--compile(export_all).
+%-compile(export_all).
 
 
 %% UNDER CONSTRUCTION !!!

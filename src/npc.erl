@@ -20,9 +20,7 @@
 
 
 -module(npc).
--compile(export_all).
-
-%-import(lists, [foreach/2]).
+-export([start_npc/1, stop_npc/1, loop/2]).
 
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").

@@ -21,6 +21,8 @@
 
 -module(unarmed).
 
+-export([calc/2]).
+
 %% this module is for Unarmed fight.
 
 -ifdef(TEST).
@@ -28,7 +30,7 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--compile(export_all).
+%-compile(export_all).
 
 %% do not throw dice.
 fixed_calc(
@@ -91,7 +93,7 @@ trim_negative(N) -> N.
 %%% TEST CODE ------------------------------------------ %%%
 -ifdef(TEST).
 fixed_000_test() ->
-	mmoasp:change_schema().
+	db:change_schema().
 
 fixed_calc_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),

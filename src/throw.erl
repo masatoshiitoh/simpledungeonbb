@@ -21,6 +21,8 @@
 
 -module(throw).
 
+-export([dice/1, result/1]).
+
 %% this module is for throwing dice.
 
 -ifdef(TEST).
@@ -28,7 +30,6 @@
 -endif.
 
 -include_lib("mmoasp.hrl").
--compile(export_all).
 
 -ifdef(TEST).
 

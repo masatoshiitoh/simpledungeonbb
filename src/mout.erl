@@ -20,9 +20,9 @@
 
 
 -module(mout).
+-export([encode_json_array_with_result/2, return_html/1, return_json/1, object_list_to_json/1, struct_list_to_json/1]).
+
 -include("yaws_api.hrl").
--export([encode_json_array_with_result/2, return_html/1, return_json/1, object_list_to_json/1]).
--compile(export_all).
 
 %% mout.erl :
 %% MMOASP Module - JSON output support.

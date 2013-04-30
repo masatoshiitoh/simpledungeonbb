@@ -20,6 +20,12 @@
 
 
 -module(map2d).
+
+-export([setup_player_initial_location/1]).
+-export([distance/2, default_distance/0]).
+-export([get_neighbor_char_sessions/2, get_all_neighbor_sessions/2, get_neighbor_char_cdata/2]).
+-export([setpos/2]).
+
 -include("mmoasp.hrl").
 -include("map2d.hrl").
 -import(lists, [foreach/2]).
@@ -28,10 +34,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
-
-
--compile(export_all).
 
 %-----------------------------------------------------------
 % sessions by location.

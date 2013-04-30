@@ -25,8 +25,8 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
-
--compile(export_all).
+-export([mk_idle_reset/0, mk_idle_update/1]).
+-export([add_event/2, system_call/3, sensor_call/3, event_call/3, timer_call/3]).
 
 -include_lib("mmoasp.hrl").
 
@@ -84,7 +84,7 @@ timer_call({_From, cancel_timer}, R, I) ->
 
 sensor_call({From, request_list_to_know}, R, _I) ->
 			From ! {list_to_know,
-				task:get_elements(R#task_env.event_queue),
+				get_elements(R#task_env.event_queue),
 				get_stats(R#task_env.stat_dict),
 				get_values(R#task_env.move_path_dict)
 				},
@@ -97,7 +97,7 @@ sensor_call({From, request_list_to_know}, R, _I) ->
 sensor_call({_From, notice_login, SenderCid, Name}, R, I) ->
 			%%io:format("character: get others login. ~p~n",
 			%%	[{notice_login, Name} ]),
-			{task:add_event(R,
+			{add_event(R,
 					[{type, "login"},
 						{cid, SenderCid},
 						{name, Name}]),
@@ -106,14 +106,14 @@ sensor_call({_From, notice_login, SenderCid, Name}, R, I) ->
 sensor_call({_From, notice_logout, SenderCid}, R, I) ->
 			%%io:format("character: get others logout. ~p~n",
 			%%	[{notice_logout, Cid} ]),
-			{task:add_event(R,
+			{add_event(R,
 					[{type, "logout"}, {cid, SenderCid}]),
 				task:mk_idle_update(I)};
 			
 sensor_call({_From, notice_remove, SenderCid}, R, I) ->
 			%%io:format("character: get others removed. ~p~n",
 			%%	[{notice_remove, Cid} ]),
-			{task:add_event(R,
+			{add_event(R,
 					[{type, "remove"}, {cid, SenderCid}]),
 				task:mk_idle_update(I)}.
 

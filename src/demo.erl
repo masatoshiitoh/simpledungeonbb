@@ -20,7 +20,7 @@
 
 
 -module(demo).
--compile(export_all).
+%-compile(export_all).
 
 json_test() ->	
 	L = test_data(),

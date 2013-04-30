@@ -21,9 +21,11 @@
 
 -module(path_finder).
 -behaviour(gen_server).
--export([start/0]).
+
+-export([make_map_from_arraymap/1, arraymap/0]).
+-export([lookup_path/3]).
+-export([start/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--compile(export_all).
 
 
 start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -34,7 +36,7 @@ lookup_path({map_id, SvId, MapId}, StartPos, DestPos) ->
 
 init([]) ->
 	MapId1 = {map_id, "hibari", 1},
-	MapValue1 = make_entry_from_arraymap(path_finder:arraymap()),
+	MapValue1 = make_entry_from_arraymap(arraymap()),
 	{ok,
 		dict:from_list([{MapId1,MapValue1}])}.
 
@@ -45,10 +47,10 @@ init([]) ->
 
 make_entry_from_arraymap(ArrayMap) ->
 	G = digraph:new(),	% setup digraph.
-	Map = path_finder:make_map_from_arraymap(ArrayMap),	% Make an array holds map tupples.
-	{G, PList } = path_finder:make_all_vertex(Map,G),	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
+	Map = make_map_from_arraymap(ArrayMap),	% Make an array holds map tupples.
+	{G, PList } = make_all_vertex(Map,G),	% map tupples to vertex.  PList holds {Pos, Vertex} tupple.
 	VertexDict = dict:from_list(PList),	% dictionary for pos tupple - vertex reference.
-	path_finder:make_all_edges(Map, G, VertexDict, PList),	% fill connected path by Map into G
+	make_all_edges(Map, G, VertexDict, PList),	% fill connected path by Map into G
 	RevDict = dict:from_list([{V,P} || {P,V} <- dict:to_list(VertexDict)]),	% dictionary for vertex - pos reference.
 	{map, Map, G, PList, VertexDict, RevDict}.
 
@@ -83,7 +85,7 @@ pick_path(G, VertexDict, RevDict, StartPos, DestPos) ->
 	Result.
 
 make_all_edges(Map, G, VertexDict, PosList) ->
-	lists:map(fun(X) -> {P,_V} = X, path_finder:make_edges_for_one_cell(Map, G, VertexDict, P) end, PosList).
+	lists:map(fun(X) -> {P,_V} = X, make_edges_for_one_cell(Map, G, VertexDict, P) end, PosList).
 
 make_edges_for_one_cell(Map, G, VertexDict, Pos) ->
 	NeighborList = neighbors(Pos),

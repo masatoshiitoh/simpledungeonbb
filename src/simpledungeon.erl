@@ -28,8 +28,6 @@
 %%-----------------------------------
 
 -export([start/0]).
-%%-export([start/1]).
-%%-export([start/2]).
 -export([init/1]).
 -export([start_yaws/0]).
 
@@ -39,7 +37,7 @@ start() ->
 	{ok, Pid} = supervisor:start_link({local,?MODULE},?MODULE,[]),
 	unlink(Pid),
 	%% start database.
-	mmoasp:change_schema(),
+	db:change_schema(),
 	db:start(reset_tables),
 	start_yaws(),
 	Pid.

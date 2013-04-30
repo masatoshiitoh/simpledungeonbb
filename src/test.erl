@@ -21,11 +21,13 @@
 
 -module(test).
 
+-export([run_tests_with_log/0, up_scenarios/0, down_scenarios/1]).
+-export([repeat/2]).
+-export([sets_by_actions/2, sets_by_list/1]).
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
--compile(export_all).
 
 -import(lists, [foreach/2]).
 
@@ -33,7 +35,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 
 -ifdef(TEST).
-scenario_00_test()-> {atomic,ok} = mmoasp:change_schema().
+scenario_00_test()-> {atomic,ok} = db:change_schema().
 scenario_01_test()-> {end_of_run_tests} = check_session_data().
 scenario_03_test()-> {end_of_run_tests} = do_talk().
 scenario_04_test()-> {end_of_run_tests} = do_setter().
@@ -60,7 +62,7 @@ check_record_test() ->
 
 run_tests_with_log()
 	->
-		mmoasp:change_schema(),
+		db:change_schema(),
 		eunit:test(
 		[
 		

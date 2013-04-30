@@ -21,7 +21,7 @@
 
 -module(morningcall).
 -export([new/0, add/3, dispatch/2, cancel_all/1]).
--compile(export_all).
+%-compile(export_all).
 
 
 %%% sample codes %%%

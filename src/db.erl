@@ -25,8 +25,10 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--export([start/0, start/1, reset_tables/0]).
--compile(export_all).
+-export([start/0, start/1, stop/0]).
+-export([change_schema/0, reset_tables/0]).
+-export([do/1]).
+-export([demo/1, demo/2]).	%% for test code.
 
 -include_lib("stdlib/include/qlc.hrl").
 -import(lists, [foreach/2]).
@@ -59,6 +61,11 @@ access_cdata_01_test() ->
 %=======================
 % DB access layer.
 %=======================
+
+change_schema() ->
+	drop_all(),
+	do_this_once(),
+	start(reset_tables).
 
 start() ->
 	mnesia:start(),

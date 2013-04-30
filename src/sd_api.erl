@@ -20,6 +20,12 @@
 
 
 -module(sd_api).
+
+-export([login/4, logout/3]).
+-export([talk/4, get_list_to_know/2, getter/2, setter/3]).
+-export([delete_account/5, create_account/5, change_password/6]).
+-export([talk_to/4]).
+
 -include("sd_api.hrl").
 -include("mmoasp.hrl").
 
@@ -29,10 +35,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
-
-
--compile(export_all).
 
 
 %-----------------------------------------------------------
@@ -146,14 +148,20 @@ get_list_to_know_none_test() ->
 
 talk(whisper, SenderCid, ToCid, MessageBody) ->
 	F = fun(X) ->
-		mmoasp:talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
+		talk_to(X#session.pid, SenderCid, MessageBody, "whisper")
 	end,
 	mmoasp:apply_session(ToCid, F);
 
 talk(open, SenderCid, MessageBody, Radius) ->
-	[mmoasp:talk_to(X#session.pid, SenderCid, MessageBody, "open")
+	[talk_to(X#session.pid, SenderCid, MessageBody, "open")
 		|| X <- map2d:get_all_neighbor_sessions(SenderCid, Radius)],
 	{result, "ok"}.
+
+%%
+%% low level interface - talk to character identified by PID.
+%%
+talk_to(Pid, Sender, MessageBody, Mode) ->
+	Pid ! {self(), talk, Sender, MessageBody, Mode}.
 
 % caution !!
 % Following getter/2 and setter/2 are dangerous to open to web interfaces.

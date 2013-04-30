@@ -20,8 +20,8 @@
 
 
 -module(character).
--export([loop/2]).
--compile(export_all).
+-export([loop/2, stop_child/1]).
+
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 

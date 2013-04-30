@@ -21,14 +21,15 @@
 
 -module(u).
 
+-export([mn_strip_atomic/1]).
+-export([wait/1, gen_token/2, make_new_id/0]).
+-export([kv_get/2, kv_set/3]).
+
 -include_lib("mmoasp.hrl").
-%%-export([wait/1, db_setter/3, db_getter/2, make_new_id/0, distance/2, cid_pair/2, store_kvpairs/2, find_list_from_dict/2, add_new_member/2, list_to_hexstr/1]).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
--compile(export_all).
 
 %-----------------------------------------------------------
 %

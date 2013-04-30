@@ -20,12 +20,11 @@
 
 
 -module(move).
--compile(export_all).
 
-%-import(lists, [foreach/2]).
+-export([move/3]).
+-export([mapmove_call/3]).
 
 -include_lib("mmoasp.hrl").
-%%-include_lib("stdlib/include/qlc.hrl").
 
 %%
 %% 'map based move' main api

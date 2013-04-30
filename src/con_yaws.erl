@@ -20,10 +20,11 @@
 
 
 -module(con_yaws).
+
+-export([out/1]).
+
 -include("yaws_api.hrl").
 -include("mmoasp.hrl").
-
--compile(export_all).
 
 make_params({get, A}) ->
 	dict:from_list(yaws_api:parse_query(A));
