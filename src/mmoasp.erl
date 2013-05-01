@@ -24,7 +24,6 @@
 -export([start/0, start/1, stop/0]).
 -export([do_login/3, setdown_player/1, auth_get_cid/1]).
 -export([get_session/1, apply_initial_location/2, apply_session/2, apply_cdata/2]).
--export([notice_remove/3, notice_move/3, notice_move_list/3,notice_login/3,notice_logout/3]).
 -export([send_message_by_cid/2]).
 -export([gen_stat_from_cdata/1]).
 
@@ -43,16 +42,19 @@
 start() ->
 	battle_observer:start_link(),
 	db:start(reset_tables),
+	msg_hub:start_link(),
 	path_finder:start().
 
 start(reset_tables) ->
 	battle_observer:start_link(),
 	db:start(reset_tables),
+	msg_hub:start_link(),
 	path_finder:start().
 
 stop() ->
 	battle_observer:stop(),
 	path_finder:stop(),
+	msg_hub:stop(),
 	db:stop().
 	
 
@@ -92,40 +94,6 @@ do_login(Id, Pw, Cid) ->
 % notice functions.
 %-----------------------------------------------------------
 
-notice_login(SenderCid, {csummary, Cid, Name}, Radius) ->
-	send_message_to_neighbors(
-		SenderCid,
-		{sensor, {self(), notice_login, Cid, Name}},
-		Radius).
-
-notice_logout(SenderCid, {csummary, Cid}, Radius) ->
-	send_message_to_neighbors(
-		SenderCid,
-		{sensor, {self(), notice_logout, Cid}},
-		Radius).
-
-notice_remove(SenderCid, {csummary, Cid}, Radius) ->
-	send_message_to_neighbors(
-		SenderCid,
-		{sensor, {self(), notice_remove, Cid}},
-		Radius).
-
-notice_move(SenderCid, {transition, From, To, Duration}, Radius) ->
-	send_message_to_neighbors(
-		SenderCid,
-		{mapmove, {self(), notice_move, SenderCid, From, To, Duration}},
-		Radius).
-
-notice_move_list(SenderCid, {transition_list, L}, Radius) ->
-	send_message_to_neighbors(
-		SenderCid,
-		{mapmove, {self(), notice_move_list, SenderCid, L}},
-		Radius).
-
-send_message_to_neighbors(SenderCid, Message, Radius) ->
-	[X#session.pid ! Message
-		|| X <- map2d:get_neighbor_char_sessions(SenderCid, Radius)],
-	{result, "ok"}.
 
 send_message_by_cid(Cid, Message) ->
 	apply_session(Cid, fun(X) -> X#session.pid ! Message end).
@@ -148,7 +116,7 @@ do_setup_player(Cid, ExistingSession)
 	map2d:setup_player_initial_location(Cid),
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
-	notice_login(Cid, {csummary, Cid, CData#cdata.name}, map2d:default_distance()),
+	msg_hub:notice_login_old(Cid, {csummary, Cid, CData#cdata.name}, map2d:default_distance()),
 	{ok, Cid, R#task_env.token};
 
 do_setup_player(Cid, ExistingSession) ->
@@ -163,7 +131,7 @@ do_setdown_player(Cid, ExistingSession)
 		{ng, "no such character"};
 
 do_setdown_player(Cid, ExistingSession) ->
-	notice_logout(Cid, {csummary, Cid}, map2d:default_distance()),
+	msg_hub:notice_logout_old(Cid, {csummary, Cid}, map2d:default_distance()),
 	character:stop_child(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
 	case delete_session(Cid) of

@@ -44,7 +44,7 @@ stop_npc(Npcid) ->
 	end.
 
 remove_npc_from_db(Npcid) ->
-	mmoasp:notice_remove(Npcid, {csummary, Npcid}, map2d:default_distance()),
+	msg_hub:notice_remove_old(Npcid, {csummary, Npcid}, map2d:default_distance()),
 	case mnesia:transaction(fun() ->
 			mnesia:delete({session, Npcid})
 			end) of
