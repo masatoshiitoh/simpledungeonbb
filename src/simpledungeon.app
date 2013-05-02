@@ -3,7 +3,7 @@
   {modules,
 		[
 		battle,
-		battle_observer,
+		battle_mgr,
 		character,
 		character_stream,
 		con_yaws,

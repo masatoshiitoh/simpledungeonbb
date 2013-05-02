@@ -46,7 +46,7 @@ start() ->
 %%start(_Type, Args) -> start(Args).
 
 init(_Args) ->
-    ChildSpec = [notice_mgr(), path_finder(), battle_observer()],
+    ChildSpec = [notice_mgr(), path_finder(), battle_mgr()],
     {ok, {{one_for_one, 10, 60},ChildSpec}}.
 
 start_yaws() ->
@@ -89,12 +89,12 @@ path_finder() ->
     Modules = [path_finder],
     _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
-battle_observer() ->
-    ID = battle_observer,
-    StartFunc = {battle_observer, start_link, []},
+battle_mgr() ->
+    ID = battle_mgr,
+    StartFunc = {battle_mgr, start_link, []},
     Restart = permanent,
     Shutdown = brutal_kill,
     Type = worker,
-    Modules = [battle_observer],
+    Modules = [battle_mgr],
     _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 

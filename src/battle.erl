@@ -36,7 +36,7 @@
 single(CidFrom, CidTo, Method) ->
 	BattleResult = calc_single(CidFrom, CidTo, Method),
 	%% io:format("single BattleResult ~p ~n", [BattleResult]),
-	battle_observer:set_one(CidFrom, CidTo, BattleResult).
+	battle_mgr:set_one(CidFrom, CidTo, BattleResult).
 
 
 

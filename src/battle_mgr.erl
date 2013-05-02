@@ -18,7 +18,7 @@
 %%  http://www.gnu.org/copyleft/gpl.html
 %%
 
--module(battle_observer).
+-module(battle_mgr).
 -behaviour(gen_server).
 
 -ifdef(TEST).
@@ -151,12 +151,12 @@ code_change(_OldVsn, N, _Extra) -> {ok, N}.
 %%===== TEST CODES ==========================
 -ifdef(TEST).
 
-battle_observer_01_test() ->
+battle_mgr_01_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
 	V1 = sd_api:getter(Cid1, "hp"),
-	battle_observer:set_one(Npcid1, Cid1, {ok, 2}),
+	battle_mgr:set_one(Npcid1, Cid1, {ok, 2}),
 	V2 = sd_api:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 2),
@@ -177,7 +177,7 @@ battle_observer_01_test() ->
 	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
 	{end_of_run_tests}.
 
-battle_observer_pc_knockouted_test() ->
+battle_mgr_pc_knockouted_test() ->
 	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
 	{list_to_know, _, _, _} = sd_api:get_list_to_know(self(), Cid1),
 
@@ -185,7 +185,7 @@ battle_observer_pc_knockouted_test() ->
 	?assert(sd_api:getter(Npcid1, "type") == "npc"),
 
 	V1 = sd_api:getter(Cid1, "hp"),
-	battle_observer:set_one(Npcid1, Cid1, {ok, 9999}),
+	battle_mgr:set_one(Npcid1, Cid1, {ok, 9999}),
 	V2 = sd_api:getter(Cid1, "hp"),
 
 	?assert(V1 - V2 == 9999),
@@ -195,8 +195,6 @@ battle_observer_pc_knockouted_test() ->
 	{list_to_know, Actions1, _Stats1, _MoveList1}
 		= sd_api:get_list_to_know(self(), Cid1),
 
-%%	io:format("battle_observer_pc_knockouted_test ~p~n", [Actions1]),
-
 	?assert(
 		test:sets_by_actions(Actions1, attacker)
 		== test:sets_by_list([{attacker, Npcid1}])),
@@ -205,7 +203,6 @@ battle_observer_pc_knockouted_test() ->
 		test:sets_by_actions(Actions1, cid)
 		== test:sets_by_list([{cid, Cid1}])),
 
-%%	io:format("battle_observer_pc_knockouted_test: sets_by_actions(type) ~p~n", [test:sets_by_actions(Actions1, type)]),
 	?assert(
 		test:sets_by_actions(Actions1, type)
 		== test:sets_by_list([{type, "attack"}, {type, "killed"}])),

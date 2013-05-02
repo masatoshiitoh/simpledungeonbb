@@ -40,19 +40,19 @@
 %-----------------------------------------------------------
 
 start() ->
-	battle_observer:start_link(),
+	battle_mgr:start_link(),
 	db:start(reset_tables),
 	notice_mgr:start_link(),
 	path_finder:start().
 
 start(reset_tables) ->
-	battle_observer:start_link(),
+	battle_mgr:start_link(),
 	db:start(reset_tables),
 	notice_mgr:start_link(),
 	path_finder:start().
 
 stop() ->
-	battle_observer:stop(),
+	battle_mgr:stop(),
 	path_finder:stop(),
 	notice_mgr:stop(),
 	db:stop().

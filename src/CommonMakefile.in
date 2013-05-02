@@ -21,7 +21,7 @@
 program = simpledungeon
 objs = \
 	battle.beam \
-	battle_observer.beam \
+	battle_mgr.beam \
 	character.beam \
 	character_stream.beam \
 	con_yaws.beam \
@@ -47,7 +47,7 @@ objs = \
 all : $(objs)
 
 battle.beam : battle.erl mmoasp.hrl
-battle_observer.beam : battle_observer.erl mmoasp.hrl
+battle_mgr.beam : battle_mgr.erl mmoasp.hrl
 character.beam : character.erl mmoasp.hrl
 character_stream.beam : character_stream.erl mmoasp.hrl
 con_yaws.beam :con_yaws.erl mmoasp.hrl
