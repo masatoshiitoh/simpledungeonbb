@@ -47,23 +47,6 @@ move({map_id, SvId, MapId}, Cid, DestPos) ->
 	end.
 
 
-obsolete_move(Cid, DestPos) ->
-	F = fun(X) ->
-		NowPos = {pos, X#session.x, X#session.y},
-		{ok, Result} = path_finder:lookup_path({map_id, "hibari", 1}, NowPos, DestPos),
-		Result
-	end,
-	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
-	case WayPoints of
-		[] -> io:format("path unavailable.  no waypoints found.~n", []),
-			[];
-		[Start| Path] ->
-			FS = fun(X) ->
-				init_move(X#session.pid, Start, Path)
-			end,
-			mmoasp:apply_session(Cid, FS)
-	end.
-
 init_move(Pid, CurrentPos, Path) -> Pid ! {mapmove, {self(), init_move, CurrentPos, Path}}.
 
 set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.currpos == undefined ->
