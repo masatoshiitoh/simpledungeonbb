@@ -123,7 +123,7 @@ mapmove_call({_From, move}, R, I) ->
 			
 			Distance = map2d:distance(CurrPos, H),
 			Duration = duration_millisec(Distance),
-			msg_hub:notice_move_old(R#task_env.cid, {transition, CurrPos, H, Duration}, map2d:default_distance()),
+			notice_mgr:send_move(R#task_env.cid, CurrPos, H, Duration, map2d:default_distance()),
 			SelfPid = self(),
 			F = fun() ->
 				SelfPid ! {mapmove, {SelfPid, move}}
@@ -183,4 +183,4 @@ make_move_list(Acc, SenderCid, CurrPos, [H|T] ) ->
 notice_move_list_to_neighbor(SenderCid, RawWaypoints) ->
 	[Start|L] = RawWaypoints,
 	MoveList = make_move_list(SenderCid, Start, L),
-	msg_hub:notice_move_list_old(SenderCid, {transition_list, MoveList}, map2d:default_distance()).
+	notice_mgr:send_move_list(SenderCid, MoveList, map2d:default_distance()).

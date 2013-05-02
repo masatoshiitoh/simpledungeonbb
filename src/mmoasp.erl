@@ -42,19 +42,19 @@
 start() ->
 	battle_observer:start_link(),
 	db:start(reset_tables),
-	msg_hub:start_link(),
+	notice_mgr:start_link(),
 	path_finder:start().
 
 start(reset_tables) ->
 	battle_observer:start_link(),
 	db:start(reset_tables),
-	msg_hub:start_link(),
+	notice_mgr:start_link(),
 	path_finder:start().
 
 stop() ->
 	battle_observer:stop(),
 	path_finder:stop(),
-	msg_hub:stop(),
+	notice_mgr:stop(),
 	db:stop().
 	
 
@@ -116,7 +116,7 @@ do_setup_player(Cid, ExistingSession)
 	map2d:setup_player_initial_location(Cid),
 	%% notice login information to nearby.
 	CData = lookup_cdata(Cid),
-	msg_hub:notice_login_old(Cid, {csummary, Cid, CData#cdata.name}, map2d:default_distance()),
+	notice_mgr:send_login(Cid, Cid, CData#cdata.name, map2d:default_distance()),
 	{ok, Cid, R#task_env.token};
 
 do_setup_player(Cid, ExistingSession) ->
@@ -131,7 +131,7 @@ do_setdown_player(Cid, ExistingSession)
 		{ng, "no such character"};
 
 do_setdown_player(Cid, ExistingSession) ->
-	msg_hub:notice_logout_old(Cid, {csummary, Cid}, map2d:default_distance()),
+	notice_mgr:send_logout(Cid, Cid, map2d:default_distance()),
 	character:stop_child(Cid),
 	stop_stream((get_session(Cid))#session.stream_pid),
 	case delete_session(Cid) of

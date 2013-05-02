@@ -31,7 +31,7 @@ objs = \
 	morningcall.beam \
 	mout.beam \
 	move.beam \
-	msg_hub.beam \
+	notice_mgr.beam \
 	npc.beam \
 	path_finder.beam \
 	sd_api.beam \
@@ -57,7 +57,7 @@ mmoasp.beam :mmoasp.erl mmoasp.hrl
 morningcall.beam : morningcall.erl mmoasp.hrl
 mout.beam : mout.erl mmoasp.hrl
 move.beam : move.erl mmoasp.hrl
-msg_hub.beam : msg_hub.erl mmoasp.hrl
+notice_mgr.beam : notice_mgr.erl mmoasp.hrl
 npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl
 sd_api.beam : sd_api.erl sd_api.hrl mmoasp.hrl

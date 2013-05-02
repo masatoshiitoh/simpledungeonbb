@@ -12,7 +12,7 @@
 		morningcall,
 		mout,
 		move,
-		msg_hub,
+		notice_mgr,
 		npc,
 		path_finder,
 		simpledungeon,

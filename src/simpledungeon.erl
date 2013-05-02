@@ -46,7 +46,7 @@ start() ->
 %%start(_Type, Args) -> start(Args).
 
 init(_Args) ->
-    ChildSpec = [msg_hub(), path_finder(), battle_observer()],
+    ChildSpec = [notice_mgr(), path_finder(), battle_observer()],
     {ok, {{one_for_one, 10, 60},ChildSpec}}.
 
 start_yaws() ->
@@ -71,13 +71,13 @@ start_yaws() ->
 	%% now configure Yaws
 	yaws_api:setconf(GC, SCList).
 
-msg_hub() ->
-    ID = msg_hub,
-    StartFunc = {msg_hub, start_link, []},
+notice_mgr() ->
+    ID = notice_mgr,
+    StartFunc = {notice_mgr, start_link, []},
     Restart = permanent,
     Shutdown = brutal_kill,
     Type = worker,
-    Modules = [msg_hub],
+    Modules = [notice_mgr],
     _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 path_finder() ->

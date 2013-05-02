@@ -85,7 +85,7 @@ battle_observer,
 con_yaws,
 map2d,
 sd_api,
-msg_hub,
+notice_mgr,
 test
 		],
 		[{report,{eunit_surefire,[{dir,"."}]}}]).

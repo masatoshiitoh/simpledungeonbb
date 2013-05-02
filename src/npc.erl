@@ -44,7 +44,7 @@ stop_npc(Npcid) ->
 	end.
 
 remove_npc_from_db(Npcid) ->
-	msg_hub:notice_remove_old(Npcid, {csummary, Npcid}, map2d:default_distance()),
+	notice_mgr:send_remove(Npcid, Npcid, map2d:default_distance()),
 	case mnesia:transaction(fun() ->
 			mnesia:delete({session, Npcid})
 			end) of
