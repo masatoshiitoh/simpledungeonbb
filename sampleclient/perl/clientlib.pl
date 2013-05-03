@@ -39,7 +39,8 @@ sub autotest {
 	($uid, $pw) = @_;
 	my @cmd_begin = (
 		"subscribe $uid $pw",
-		"login $uid $pw",
+		"passwd $uid $pw newpw",
+		"login $uid newpw",
 	);
 
 	my @cmd_loop = (

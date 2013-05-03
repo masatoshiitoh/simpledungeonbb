@@ -122,7 +122,7 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 
 	case Result of
 		{atomic, ok} ->
-			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
+			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
 		{ng, Reason} ->
 			mout:return_json(mout:encode_json_array_with_result("failed", [{reason, Reason}]))
 	end;
