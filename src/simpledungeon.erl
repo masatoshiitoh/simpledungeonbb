@@ -42,10 +42,6 @@ start() ->
 	con_yaws:start_yaws(?MODULE),
 	Pid.
 
-init(_Args) ->
-    ChildSpec = [notice_mgr(), path_finder(), battle_mgr()],
-    {ok, {{one_for_one, 10, 60},ChildSpec}}.
-
 notice_mgr() ->
     ID = notice_mgr,
     StartFunc = {notice_mgr, start_link, []},
@@ -57,7 +53,7 @@ notice_mgr() ->
 
 path_finder() ->
     ID = path_finder,
-    StartFunc = {path_finder, start, []},
+    StartFunc = {path_finder, start_link, []},
     Restart = permanent,
     Shutdown = brutal_kill,
     Type = worker,
@@ -72,4 +68,13 @@ battle_mgr() ->
     Type = worker,
     Modules = [battle_mgr],
     _ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+%%
+%% Callback for supervisor behaviour.
+%%
+
+init(_Args) ->
+    ChildSpec = [notice_mgr(), path_finder(), battle_mgr()],
+    {ok, {{one_for_one, 10, 60},ChildSpec}}.
+
 

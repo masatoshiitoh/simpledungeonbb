@@ -47,12 +47,14 @@ start_yaws(Sup) ->
 	{ok, SCList, GC, ChildSpecs} =
 	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
 
+	%% start embedded yaws in supervision tree.
 	[supervisor:start_child(Sup, Ch) || Ch <- ChildSpecs],
-	%% now configure Yaws
+
+	%% now configure Yaws and return.
 	yaws_api:setconf(GC, SCList).
 
 %%
-%% dispacher for RESTful service (caller out/3)
+%% dispacher for RESTful service (caller of out/3)
 %%
 out(A) ->
 	{http_request, Req, _params, _unknown} = A#arg.req,

@@ -43,13 +43,13 @@ start() ->
 	battle_mgr:start_link(),
 	db:start(reset_tables),
 	notice_mgr:start_link(),
-	path_finder:start().
+	path_finder:start_link().
 
 start(reset_tables) ->
 	battle_mgr:start_link(),
 	db:start(reset_tables),
 	notice_mgr:start_link(),
-	path_finder:start().
+	path_finder:start_link().
 
 stop() ->
 	battle_mgr:stop(),

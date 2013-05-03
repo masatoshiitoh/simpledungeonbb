@@ -24,12 +24,15 @@
 
 -export([make_map_from_arraymap/1, arraymap/0]).
 -export([lookup_path/3]).
--export([start/0, stop/0]).
+-export([start_link/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 
-start()	-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-stop()	-> gen_server:call(?MODULE, stop).
+start_link() ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+stop() ->
+	gen_server:call(?MODULE, stop).
 
 lookup_path({map_id, SvId, MapId}, StartPos, DestPos) ->
 	gen_server:call(?MODULE, {lookup, {map_id, SvId, MapId}, StartPos, DestPos}).
