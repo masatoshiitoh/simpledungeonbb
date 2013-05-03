@@ -89,7 +89,7 @@ prepare_id_password({Method, A}) ->
 	{Id, Pw, Ipaddr}.
 
 prepare_change_password({Method, A}) ->
-	Params = make_params({post, A}),
+	Params = make_params({Method, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	NewPw = param(Params, "newpassword"),
@@ -107,31 +107,18 @@ prepare_talk({Method, A}) ->
 	{Token, Talked}.
 
 prepare_move({Method, A}) ->
-	Params = make_params({post, A}),
+	Params = make_params({Method, A}),
 	Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
 	{Token, X, Y}.
 
 prepare_set_value({Method, A}) ->
-	Params = make_params({get, A}),
+	Params = make_params({Method, A}),
 	Token = param(Params, "token"),
+	Key = param(Params, "key"),
 	Value = param(Params, "value"),
-	{Token, Value}.
-
-%% GET version of login. This is only for test with web browser.
-%% This will be disabled soon.
-out(A, 'GET', ["service", _SVID, "login"]) ->
-	{Id, Pw, Ipaddr} = prepare_id_password({get, A}),
-
-	Result = sd_api:login(self(), Id, Pw, Ipaddr),
-
-	case Result of
-		{ok, Cid, Token} ->
-			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
-		{ng} ->
-			mout:return_html(mout:encode_json_array_with_result("failed", []))
-	end;
+	{Token, Key, Value}.
 
 
 %% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
@@ -270,9 +257,9 @@ out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Set attribute
-%% Call "POST http://localhost:8002/service/hibari/set/cid0001/  value=VALUE"
+%% Call "POST http://localhost:8002/service/hibari/set/cid0001  key=Key&value=VALUE"
 out(A, 'POST', ["service", _SVID, "set", Cid, Key]) ->
-	{Token, Value} = prepare_set_value({post, A}),
+	{Token, Key, Value} = prepare_set_value({post, A}),
 
 	Result = character:setter(Cid, Token, Key, Value),
 
