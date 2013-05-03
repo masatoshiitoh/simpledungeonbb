@@ -60,66 +60,10 @@ out(A) ->
 	Path = string:tokens(Uri#url.path, "/"),
 	out(A, Req, Path).
 
-%%
-%% read parameters into dict.
-%%
-make_params({get, A}) ->
-	dict:from_list(yaws_api:parse_query(A));
-
-make_params({post, A}) ->
-	dict:from_list(yaws_api:parse_post(A)).
 
 %%
-%% read one parameter from dict.
+%% following out/3s implement web API.
 %%
-param(ParamsDict, Key) ->
-	case dict:find(Key, ParamsDict) of
-		{ok, Value} -> Value;
-		error -> void
-	end.
-
-%%
-%% read parameters into tuple.
-%%
-prepare_id_password({Method, A}) ->
-	Params = make_params({Method, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	{Id, Pw, Ipaddr}.
-
-prepare_change_password({Method, A}) ->
-	Params = make_params({Method, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	NewPw = param(Params, "newpassword"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
-	{Id, Pw, NewPw, Ipaddr}.
-
-prepare_token({Method, A}) ->
-	Params = make_params({Method, A}),
-	Token = param(Params, "token").
-
-prepare_talk({Method, A}) ->
-	Params = make_params({Method, A}),
-	Token = param(Params, "token"),
-	Talked = param(Params, "talked"),
-	{Token, Talked}.
-
-prepare_move({Method, A}) ->
-	Params = make_params({Method, A}),
-	Token = param(Params, "token"),
-	X = erlang:list_to_integer(param(Params, "x")),
-	Y = erlang:list_to_integer(param(Params, "y")),
-	{Token, X, Y}.
-
-prepare_set_value({Method, A}) ->
-	Params = make_params({Method, A}),
-	Token = param(Params, "token"),
-	Key = param(Params, "key"),
-	Value = param(Params, "value"),
-	{Token, Key, Value}.
-
 
 %% [test] stream I/F "GET http://localhost:8001/service/hibari/stream/listtoknow/cid1234"
 out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
@@ -284,4 +228,68 @@ out(A, _Method, _Params) ->
 		A#arg.appmod_prepath,
 		A#arg.querydata]),
 	{status, 404}.
+
+
+
+%%
+%% --------- Parameter handle functions ---------
+%%
+%% read parameters into dict.
+%%
+make_params({get, A}) ->
+	dict:from_list(yaws_api:parse_query(A));
+
+make_params({post, A}) ->
+	dict:from_list(yaws_api:parse_post(A)).
+
+%%
+%% read one parameter from dict.
+%%
+param(ParamsDict, Key) ->
+	case dict:find(Key, ParamsDict) of
+		{ok, Value} -> Value;
+		error -> void
+	end.
+
+%%
+%% read parameters into tuple.
+%%
+prepare_id_password({Method, A}) ->
+	Params = make_params({Method, A}),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr}.
+
+prepare_change_password({Method, A}) ->
+	Params = make_params({Method, A}),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	NewPw = param(Params, "newpassword"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, NewPw, Ipaddr}.
+
+prepare_token({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token").
+
+prepare_talk({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token"),
+	Talked = param(Params, "talked"),
+	{Token, Talked}.
+
+prepare_move({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token"),
+	X = erlang:list_to_integer(param(Params, "x")),
+	Y = erlang:list_to_integer(param(Params, "y")),
+	{Token, X, Y}.
+
+prepare_set_value({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token"),
+	Key = param(Params, "key"),
+	Value = param(Params, "value"),
+	{Token, Key, Value}.
 
