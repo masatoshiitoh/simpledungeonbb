@@ -27,6 +27,9 @@
 -include("yaws_api.hrl").
 -include("mmoasp.hrl").
 
+%%
+%% initialize yaws with con_yaws.
+%%
 start_yaws(Sup) ->
 	Id = "simpledungeon",
 	GconfList = [
@@ -44,25 +47,66 @@ start_yaws(Sup) ->
 	{ok, SCList, GC, ChildSpecs} =
 	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
 
-%%	[supervisor:start_child({local,?MODULE}, Ch) || Ch <- ChildSpecs], %% this code causes crash.
 	[supervisor:start_child(Sup, Ch) || Ch <- ChildSpecs],
 	%% now configure Yaws
 	yaws_api:setconf(GC, SCList).
 
+%%
+%% dispacher for RESTful service (caller out/3)
+%%
+out(A) ->
+	{http_request, Req, _params, _unknown} = A#arg.req,
+	Uri = yaws_api:request_url(A),
+	Path = string:tokens(Uri#url.path, "/"),
+	out(A, Req, Path).
+
+%%
+%% read parameters into dict.
+%%
 make_params({get, A}) ->
 	dict:from_list(yaws_api:parse_query(A));
 
 make_params({post, A}) ->
 	dict:from_list(yaws_api:parse_post(A)).
 
-%% GET version of login. This is only for test with web browser.
-%% This will be disabled soon.
-out(A, 'GET', ["service", _SVID, "login"]) ->
-	Params = make_params({get, A}),
+%%
+%% read one parameter from dict.
+%%
+param(ParamsDict, Key) ->
+	case dict:find(Key, ParamsDict) of
+		{ok, Value} -> Value;
+		error -> void
+	end.
+
+%%
+%% read parameters into tuple.
+%%
+prepare_id_password({Method, A}) ->
+	Params = make_params({Method, A}),
 	Id = param(Params, "id"),
 	Pw = param(Params, "password"),
 	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr}.
+
+prepare_change_password({Method, A}) ->
+	Params = make_params({post, A}),
+	Id = param(Params, "id"),
+	Pw = param(Params, "password"),
+	NewPw = param(Params, "newpassword"),
+	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, NewPw, Ipaddr}.
+
+prepare_token({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token").
+
+%% GET version of login. This is only for test with web browser.
+%% This will be disabled soon.
+out(A, 'GET', ["service", _SVID, "login"]) ->
+	{Id, Pw, Ipaddr} = prepare_id_password({get, A}),
+
 	Result = sd_api:login(self(), Id, Pw, Ipaddr),
+
 	case Result of
 		{ok, Cid, Token} ->
 			mout:return_html(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
@@ -78,11 +122,10 @@ out(A, 'GET', ["service", _SVID, "stream", "listtoknow", CID]) ->
 
 % create account.
 out(A, 'POST', ["service", SVID, "create_account"]) ->
-	Params = make_params({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr} = prepare_id_password({post, A}),
+
 	Result = sd_api:create_account(self(), SVID, Id, Pw, Ipaddr),
+
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -93,11 +136,10 @@ out(A, 'POST', ["service", SVID, "create_account"]) ->
 
 % create account.
 out(A, 'POST', ["service", SVID, "delete_account"]) ->
-	Params = make_params({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr} = prepare_id_password({post, A}),
+
 	Result = sd_api:delete_account(self(), SVID, Id, Pw, Ipaddr),
+
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -108,11 +150,10 @@ out(A, 'POST', ["service", SVID, "delete_account"]) ->
 
 % Add New Player Character.
 out(A, 'POST', ["service", SVID, "subscribe"]) ->
-	Params = make_params({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr} = prepare_id_password({post, A}),
+
 	Result = sd_api:create_account(self(), SVID, Id, Pw, Ipaddr),
+
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{result, "ok"}]));
@@ -123,12 +164,10 @@ out(A, 'POST', ["service", SVID, "subscribe"]) ->
 %% Change Password.
 %% "POST http://localhost:8002/service/hibari/change_password/  id=id0001&password=pw0001&newpassword=pw9991"
 out(A, 'POST', ["service", SVID, "change_password"]) ->
-	Params = make_params({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	NewPw = param(Params, "newpassword"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, NewPw, Ipaddr} = prepare_change_password({post, A}),
+
 	Result = sd_api:change_password(self(), SVID, Id, Pw, NewPw, Ipaddr),
+
 	case Result of
 		{atomic, ok} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{id, Id}]));
@@ -139,11 +178,10 @@ out(A, 'POST', ["service", SVID, "change_password"]) ->
 %% Login
 %% Call "POST http://localhost:8002/service/hibari/login/  id=id0001&password=pw0001"
 out(A, 'POST', ["service", _SVID, "login"]) ->
-	Params = make_params({post, A}),
-	Id = param(Params, "id"),
-	Pw = param(Params, "password"),
-	{Ipaddr, _Port} = A#arg.client_ip_port,
+	{Id, Pw, Ipaddr} = prepare_id_password({post, A}),
+
 	Result = sd_api:login(self(),Id, Pw, Ipaddr),
+
 	case Result of
 		{ok, Cid, Token} ->
 			mout:return_json(mout:encode_json_array_with_result("ok", [{cid, Cid}, {token, Token}]));
@@ -154,9 +192,10 @@ out(A, 'POST', ["service", _SVID, "login"]) ->
 %% Logout
 %% Call "POST http://localhost:8001/service/hibari/logout/cid0001  token=Token"
 out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
-	Params = make_params({post, A}),
-	Token = param(Params, "token"),
+	Token = prepare_token({post, A}),
+
 	Result = sd_api:logout(self(), CidX, Token),
+
 	case Result of
 		{ok, CidX} ->
 			mout:return_json(mout:encode_json_array_with_result("ok",[]));
@@ -167,10 +206,11 @@ out(A, 'POST', ["service", _SVID, "logout", CidX]) ->
 %% Get list to know (Your client calls this every xx sec.)
 %% Call "POST http://localhost:8002/service/hibari/listtoknow/cid0001  token=Token"
 out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
-	Params = make_params({post, A}),
-	_Token = param(Params, "token"),
+	_Token = prepare_token({post, A}),
+
 	mmoasp:send_message_by_cid(CidX, {self(), update_neighbor_status, map2d:default_distance()}),
 	{list_to_know, ListToKnow, NeighborStats, MovePaths} = sd_api:get_list_to_know(self(), CidX),
+
 	mout:return_json(mout:struct_list_to_json(
 		[{struct, X} || X <- ListToKnow]
 		 ++
@@ -185,7 +225,9 @@ out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
 	Params = make_params({post, A}),
 	_Token = param(Params, "token"),
 	Talked = param(Params, "talked"),
+
 	Result = sd_api:talk(open, CidX, Talked, map2d:default_distance()),
+
 	mout:return_json(json:encode({struct, [Result]}));
 
 %% Whisper (person to person talk)
@@ -200,14 +242,17 @@ out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	_Token = param(Params, "token"),
 	X = erlang:list_to_integer(param(Params, "x")),
 	Y = erlang:list_to_integer(param(Params, "y")),
+
 	_Result = move:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
+
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Attack
 out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
-	Params = make_params({post, A}),
-	_Token = param(Params, "token"),
+	_Token = prepare_token({post, A}),
+
 	_Result = battle:single(CidX, CidTo),
+
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Set attribute
@@ -216,7 +261,9 @@ out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
 	Params = make_params({get, A}),
 	Value = param(Params, "value"),
 	Token = param(Params, "token"),
+
 	Result = character:setter(Cid, Token, Key, Value),
+
 	case Result of
 		{ok, _K, _V} ->
 			{html, io_lib:format("KV Storage Setter OK. owner=~p, key=~p, value=~p<br>",[Cid, Key, Value])};
@@ -253,16 +300,3 @@ out(A, _Method, _Params) ->
 		A#arg.querydata]),
 	{status, 404}.
 
-%% dispacher for RESTful service (caller out/3)
-out(A) ->
-	{http_request, Req, _params, _unknown} = A#arg.req,
-	Uri = yaws_api:request_url(A),
-	Path = string:tokens(Uri#url.path, "/"),
-	out(A, Req, Path).
-
-
-param(ParamsDict, Key) ->
-	case dict:find(Key, ParamsDict) of
-		{ok, Value} -> Value;
-		error -> void
-	end.

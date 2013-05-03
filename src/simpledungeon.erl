@@ -42,9 +42,6 @@ start() ->
 	con_yaws:start_yaws(?MODULE),
 	Pid.
 
-%%start(_) -> start().
-%%start(_Type, Args) -> start(Args).
-
 init(_Args) ->
     ChildSpec = [notice_mgr(), path_finder(), battle_mgr()],
     {ok, {{one_for_one, 10, 60},ChildSpec}}.
