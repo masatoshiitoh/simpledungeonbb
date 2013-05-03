@@ -26,6 +26,7 @@
 -export([get_session/1, apply_initial_location/2, apply_session/2, apply_cdata/2]).
 -export([send_message_by_cid/2]).
 -export([gen_stat_from_cdata/1]).
+-export([get_player_character_template/2,do_change_password/7]).
 
 -include("mmoasp.hrl").
 -import(lists, [foreach/2]).
@@ -68,8 +69,18 @@ get_player_character_template(Id, Pass) ->
 	[
 		{auth_basic, Cid, Id, Pass},
 		{cdata, Cid, Name, [{"align", "neutral"}]},
-		{location, Cid, 1, {pos, 1,3}, offline, offline}
+		{location, Cid, 1, 1, 1, 0}
+
 	].
+
+-ifdef(TEST).
+
+get_player_character_template_test() ->
+	[A,C,L] = get_player_character_template("idnew", "pwnew"),
+	?assert({auth_basic, "cidnew", "idnew", "pwnew"} == A),
+	{end_of_run_tests}.
+
+-endif.
 
 do_change_password(Cid, From, Svid, Id, Pw, NewPw, Ipaddr) when Cid == void ->
 	{ng, check_id_and_password};

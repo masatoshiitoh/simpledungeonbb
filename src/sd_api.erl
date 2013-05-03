@@ -26,6 +26,9 @@
 -export([delete_account/5, create_account/5, change_password/6]).
 -export([talk_to/4]).
 
+-compile(export_all).
+
+
 -include("sd_api.hrl").
 -include("mmoasp.hrl").
 
@@ -41,15 +44,48 @@
 %% account management.
 %-----------------------------------------------------------
 
-delete_account(From, Svid, Id, Pw, Ipaddr) -> not_implemented.
+delete_account(From, _Svid, Id, Pw, Ipaddr) -> not_implemented.
 
 create_account(From, Svid, Id, Pw, Ipaddr) ->
+	Rows =  mmoasp:get_player_character_template(Id, Pw),
 	mnesia:transaction(fun() ->
-			foreach(fun mnesia:write/1, mmoasp:get_player_character_template(Id, Pw))
+			foreach(fun mnesia:write/1,Rows)
 		end).
 
 change_password(From, Svid, Id, Pw, NewPw, Ipaddr) ->
 	mmoasp:do_change_password(mmoasp:auth_get_cid({basic, Id, Pw}), From, Svid, Id, Pw, NewPw, Ipaddr).
+
+-ifdef(TEST).
+
+create_account_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	create_account(self(), "hibari", "id9999", "pw9999", {192,168,1,200}),
+	
+	{ok, Cid3, Token3}
+		= login(self(), "id9999", "pw9999", {192,168,1,200}),
+	logout(self(), Cid3, Token1),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+change_password_test() ->
+	{scenarios, Cid1, Token1, Cid2, Token2, Npcid1} = test:up_scenarios(),
+	
+	create_account(self(), "hibari", "id9999", "pw9999", {192,168,1,200}),
+	change_password(self(), "hibari", "id9999", "pw9999", "pwnew", {192,168,1,200}),
+	
+	{ok, Cid3, Token3}
+		= login(self(), "id9999", "pwnew", {192,168,1,200}),
+	logout(self(), Cid3, Token1),
+	
+	test:down_scenarios({scenarios, Cid1, Token1, Cid2, Token2, Npcid1}),
+	{end_of_run_tests}.
+
+
+%% TODO: make failure path tests!!
+
+-endif.
 
 %-----------------------------------------------------------
 %% authorization.

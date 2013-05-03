@@ -35,14 +35,14 @@ stop_child(Cid) ->
 		fun(X) -> X#session.pid ! {system, {self(), stop_process}} end).
 
 setter(Cid, Token, Key, Value) ->
-	mmoasp:setter(Cid, Key, Value).
+	sd_api:setter(Cid, Key, Value).
 
 % core loop -----------------------------------------------
 
 % process user operation.
 % mmoasp:db_login spawns this loop.
 
-% this loop will expire 1800 second (just hard coded) after last operation.
+% this loop will expire 60 second (just hard coded) after last operation.
 
 % UTimer holds timer request.
 % You can clear it with cancel_timer(), whenever you need.
@@ -50,10 +50,10 @@ setter(Cid, Token, Key, Value) ->
 loop(undefined, _) -> ok;	%% exit loop.
 
 loop(R, I)
-	when I#idle.since_last_op > 300*1000*1000->
+	when I#idle.since_last_op > 60*1000*1000->
 	
 	io:format("character: time out.~n"),
-	mmoasp:logout(self(), R#task_env.cid, R#task_env.token);
+	sd_api:logout(self(), R#task_env.cid, R#task_env.token);
 
 loop(R, I) ->
 	{NewR, NewI} = receive
@@ -90,12 +90,12 @@ loop(R, I) ->
 
 		%% Attribute setter
 		{_From, set, Token, Key, Value} when Token == R#task_env.token ->
-			mmoasp:setter(R#task_env.cid, Key, Value),
+			sd_api:setter(R#task_env.cid, Key, Value),
 			{R, task:mk_idle_reset()};
 
 		%% Attribute setter simple
 		{set, Key, Value} ->
-			mmoasp:setter(R#task_env.cid, Key, Value),
+			sd_api:setter(R#task_env.cid, Key, Value),
 			{R, task:mk_idle_reset()}
 
 	after 1000 ->
