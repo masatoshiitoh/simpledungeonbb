@@ -22,9 +22,32 @@
 -module(con_yaws).
 
 -export([out/1]).
+-export([start_yaws/1]).
 
 -include("yaws_api.hrl").
 -include("mmoasp.hrl").
+
+start_yaws(Sup) ->
+	Id = "simpledungeon",
+	GconfList = [
+		{logdir, "./test/log"},
+		{ebin_dir, [".","../ebin"]},
+		{id, Id}],
+	Docroot = "../docroot",
+	SconfList = [
+		{port, 8002},
+		{listen, {0,0,0,0}},
+		{docroot, Docroot},
+		{appmods, [{"/service", con_yaws}]}
+	],
+
+	{ok, SCList, GC, ChildSpecs} =
+	    yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
+
+%%	[supervisor:start_child({local,?MODULE}, Ch) || Ch <- ChildSpecs], %% this code causes crash.
+	[supervisor:start_child(Sup, Ch) || Ch <- ChildSpecs],
+	%% now configure Yaws
+	yaws_api:setconf(GC, SCList).
 
 make_params({get, A}) ->
 	dict:from_list(yaws_api:parse_query(A));
