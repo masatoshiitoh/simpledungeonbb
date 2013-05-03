@@ -100,6 +100,25 @@ prepare_token({Method, A}) ->
 	Params = make_params({Method, A}),
 	Token = param(Params, "token").
 
+prepare_talk({Method, A}) ->
+	Params = make_params({Method, A}),
+	Token = param(Params, "token"),
+	Talked = param(Params, "talked"),
+	{Token, Talked}.
+
+prepare_move({Method, A}) ->
+	Params = make_params({post, A}),
+	Token = param(Params, "token"),
+	X = erlang:list_to_integer(param(Params, "x")),
+	Y = erlang:list_to_integer(param(Params, "y")),
+	{Token, X, Y}.
+
+prepare_set_value({Method, A}) ->
+	Params = make_params({get, A}),
+	Token = param(Params, "token"),
+	Value = param(Params, "value"),
+	{Token, Value}.
+
 %% GET version of login. This is only for test with web browser.
 %% This will be disabled soon.
 out(A, 'GET', ["service", _SVID, "login"]) ->
@@ -222,10 +241,8 @@ out(A, 'POST', ["service", _SVID, "listtoknow", CidX]) ->
 %% Talk (open talk)
 %% Call "POST http://localhost:8001/service/hibari/talk/cid1234  token=Token&talked=hello"
 out(A, 'POST', ["service", _SVID, "talk", CidX]) ->
-	Params = make_params({post, A}),
-	_Token = param(Params, "token"),
-	Talked = param(Params, "talked"),
-
+	{Token, Talked} = prepare_talk({post, A}),
+	
 	Result = sd_api:talk(open, CidX, Talked, map2d:default_distance()),
 
 	mout:return_json(json:encode({struct, [Result]}));
@@ -238,10 +255,7 @@ out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
 %% Move
 %% Callr "POST http://localhost:8001/service/hibari/move/cid1234  token=Token&x=3&y=3"
 out(A, 'POST', ["service", SVID, "move", CidX]) ->
-	Params = make_params({post, A}),
-	_Token = param(Params, "token"),
-	X = erlang:list_to_integer(param(Params, "x")),
-	Y = erlang:list_to_integer(param(Params, "y")),
+	{Token, X, Y} = prepare_move({post, A}),
 
 	_Result = move:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
 
@@ -256,11 +270,9 @@ out(A, 'POST', ["service", _SVID, "attack", CidX, CidTo]) ->
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 
 %% Set attribute
-%% Call "GET http://localhost:8002/service/hibari/set/cid0001/KEY?value=VALUE"
-out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
-	Params = make_params({get, A}),
-	Value = param(Params, "value"),
-	Token = param(Params, "token"),
+%% Call "POST http://localhost:8002/service/hibari/set/cid0001/  value=VALUE"
+out(A, 'POST', ["service", _SVID, "set", Cid, Key]) ->
+	{Token, Value} = prepare_set_value({post, A}),
 
 	Result = character:setter(Cid, Token, Key, Value),
 
@@ -275,20 +287,6 @@ out(A, 'GET', ["service", _SVID, "set", Cid, Key]) ->
 out(_A, 'POST', ["service", _SVID, "startnpc", NpcidX]) ->
 	npc:start_npc(NpcidX),
 	mout:return_json(mout:encode_json_array_with_result("ok",[{"npcid", NpcidX}]));
-
-
-% Add New Non Player Character.
-out(A, 'POST', ["service", _SVID, "ping"]) ->
-	Params = make_params({post, A}),
-	AdminId = param(Params, "admin_id"),
-	ConnectPhrase = param(Params, "connect_phrase"),
-	mout:return_json(
-		mout:encode_json_array_with_result(
-			"ok",
-			[{"status", ok},
-			{"admin_id", AdminId},
-			{"connect_phrase", ConnectPhrase}]));
-
 
 %% sample for "catch all" handler.
 out(A, _Method, _Params) ->
