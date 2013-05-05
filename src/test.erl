@@ -72,7 +72,7 @@ db,
 mmoasp,
 morningcall,
 mout,
-move,
+move_old,
 npc,
 path_finder,
 simpledungeon,
@@ -280,11 +280,13 @@ do_pc_move() ->
 	?assert(S0#session.map == 1),
 	
 	%% moving !
-	io:format("order move 1,3 to 3,3 ~p~n", [move:move({map_id, "hibari", 1}, Cid1, {pos, 3,3})]),
+	Mov1 = move_old:move({map_id, "hibari", 1}, Cid1, {pos, 3,3}),
+	io:format("order move 1,3 to 3,3 ~p~n", [Mov1]),
 	receive
 		after 500 -> ok
 	end,
-	io:format("RE-order move to 1,2 ~p~n", [move:move({map_id, "hibari", 1}, Cid1, {pos, 1,2})]),
+	Mov2 = move_old:move({map_id, "hibari", 1}, Cid1, {pos, 1,2}),
+	io:format("RE-order move to 1,2 ~p~n", [Mov2]),
 	receive
 		after 3000 -> ok
 	end,
@@ -318,7 +320,8 @@ do_npc_move() ->
 	io:format("location of ~p: ~p~n", [Cid1, db:demo(location, Cid1)]),
 	
 	%% NPC moving !
-	io:format("NPC move to 2,2 ~p~n", [move:move({map_id, "hibari", 1}, Npcid1, {pos, 3,1})]),
+	Mov1 = move_old:move({map_id, "hibari", 1}, Npcid1, {pos, 3,1}),
+	io:format("NPC move to 2,2 ~p~n", [Mov1]),
 	receive
 		after 1100 -> ok
 	end,

@@ -21,11 +21,18 @@
 
 -module(character).
 -export([loop/2, stop_child/1]).
+-export([start_link/1]).
 
 -include_lib("mmoasp.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 
-% API: sends message to child
+% API
+
+start_link(Cid) ->
+	io:format("character:start passed arg ~p~n", [Cid]),
+	Pid = spawn_link(fun() -> character:loop(mmoasp:setup_task_env(Cid), task:mk_idle_reset()) end),
+	{ok, Pid}.
+
 whoareyou(Cid) ->
 	mmoasp:apply_session(Cid,
 		fun(X) -> X#session.pid ! {test, {self(), whoareyou}} end).
@@ -60,7 +67,7 @@ loop(R, I) ->
 		{test, X} -> task:test_call(X, R, I);
 		{system, X} -> task:system_call(X, R, I);
 		{timer, X} -> task:timer_call(X, R, I);
-		{mapmove, X} -> move:mapmove_call(X,R,I);
+		{mapmove, X} -> move_old:mapmove_call(X,R,I);
 		{sensor, X} -> task:sensor_call(X,R,I);
 		{event, X} -> task:event_call(X,R,I);
 		

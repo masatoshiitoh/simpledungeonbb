@@ -19,7 +19,7 @@
 %%
 
 
--module(move).
+-module(move_old).
 
 -export([move/3]).
 -export([mapmove_call/3]).
@@ -37,7 +37,7 @@ move({map_id, SvId, MapId}, Cid, DestPos) ->
 	end,
 	{atomic, WayPoints} = mmoasp:apply_session(Cid, F),
 	case WayPoints of
-		[] -> io:format("path unavailable.  no waypoints found.~n", []),
+		[] -> %% io:format("path unavailable.  no waypoints found.~n", []),
 			[];
 		[Start| Path] ->
 			FS = fun(X) ->
@@ -55,7 +55,7 @@ set_new_route({_From, init_move, CurrPos, WayPoints}, R, _I) when R#task_env.cur
 	{NewR, task:mk_idle_reset()};
 
 set_new_route({_From, init_move, _CurrPos, WayPoints}, R, _I) ->
-	io:format("set_new_route: overwrite waypoints.~n", []),
+	%%io:format("set_new_route: overwrite waypoints.~n", []),
 	%% write currpos and waypoint into R record.
 	NewR = R#task_env{waypoints = WayPoints},
 	{NewR, task:mk_idle_reset()}.
@@ -95,13 +95,13 @@ mapmove_call({_From, move}, R, I) ->
 	map2d:setpos(R#task_env.cid, CurrPos),
 	case WayPoints of
 		[] ->
-			io:format("mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
+			%% io:format("move_old:mapmove_call:~p arrived at: ~p~n", [R#task_env.cid, CurrPos]),
 			{pos, _X, _Y} = CurrPos,
 			NewR = R#task_env{waypoints = [], currpos = undefined},
 			{NewR, task:mk_idle_update(I)};
 
 		[H | T] ->
-			io:format("mapmove_call:~p start move: ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
+			%% io:format("move_old:mapmove_call:~p start move ~p to ~p ~n", [R#task_env.cid, CurrPos, H]),
 			{pos, _X, _Y} = CurrPos,
 			
 			Distance = map2d:distance(CurrPos, H),
@@ -124,8 +124,8 @@ mapmove_call({_From, move}, R, I) ->
 %%
 
 mapmove_call({_From, notice_move_list, SenderCid, MoveList}, R, I) ->
-	%%io:format("mapmove_call:~p got ~p 's move list: ~p ~n", [R#task_env.cid, SenderCid, MoveList]),
-	io:format("mapmove_call:~p store move list info: ~p ~n", [R#task_env.cid, json:encode(make_move_list_info(SenderCid, MoveList))]),
+	%% io:format("mapmove_call:~p got ~p 's move list: ~p ~n", [R#task_env.cid, SenderCid, MoveList]),
+	%% io:format("mapmove_call:~p store move list info: ~p ~n", [R#task_env.cid, json:encode(make_move_list_info(SenderCid, MoveList))]),
 	NewMovePathDict = dict:store(SenderCid, make_move_list_info(SenderCid, MoveList), R#task_env.move_path_dict),
 	NewR = R#task_env{move_path_dict = NewMovePathDict},
 	{NewR, task:mk_idle_update(I)};

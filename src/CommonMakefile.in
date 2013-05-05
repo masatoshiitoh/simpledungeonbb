@@ -20,6 +20,11 @@
 
 program = simpledungeon
 objs = \
+	actor_pool.beam \
+	actor_pool_mgr.beam \
+	actor_pool_sup.beam \
+	actor_pool_supersup.beam \
+	actor_sup.beam \
 	battle.beam \
 	battle_mgr.beam \
 	character.beam \
@@ -30,7 +35,7 @@ objs = \
 	mmoasp.beam \
 	morningcall.beam \
 	mout.beam \
-	move.beam \
+	move_old.beam \
 	notice_mgr.beam \
 	npc.beam \
 	path_finder.beam \
@@ -46,6 +51,11 @@ objs = \
 
 all : $(objs)
 
+actor_pool.beam : actor_pool.erl
+actor_pool_mgr.beam : actor_pool_mgr.erl
+actor_pool_sup.beam : actor_pool_sup.erl
+actor_pool_supersup.beam : actor_pool_supersup.erl
+actor_sup.beam : actor_sup.erl
 battle.beam : battle.erl mmoasp.hrl
 battle_mgr.beam : battle_mgr.erl mmoasp.hrl
 character.beam : character.erl mmoasp.hrl
@@ -56,7 +66,7 @@ map2d.beam :map2d.erl mmoasp.hrl map2d.hrl
 mmoasp.beam :mmoasp.erl mmoasp.hrl
 morningcall.beam : morningcall.erl mmoasp.hrl
 mout.beam : mout.erl mmoasp.hrl
-move.beam : move.erl mmoasp.hrl
+move_old.beam : move_old.erl mmoasp.hrl
 notice_mgr.beam : notice_mgr.erl mmoasp.hrl
 npc.beam : npc.erl mmoasp.hrl
 path_finder.beam : path_finder.erl mmoasp.hrl

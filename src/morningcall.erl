@@ -48,7 +48,7 @@ loop(DJobs) ->
 			loop(morningcall:add(2000,F, NewNewDJobs))
 
 	after 10000 ->
-		io:format("morningcall: timed out~n", []),
+		%% io:format("morningcall: timed out~n", []),
 		loop(DJobs)
 	end.
 %%% sample codes (end)%%%
@@ -64,10 +64,10 @@ add(After, Fun, DJobs) ->
 	Id = u:make_new_id(),
 	case timer:send_after(After, {timer, {goodmorning, Id}}) of
 		{ok, TRef} ->
-			io:format("added with id ~p~n", [Id]),
+			%% io:format("added with id ~p~n", [Id]),
 			dict:store(Id, {morningcall, Fun, TRef}, DJobs);
 		{error, Reason} ->
-			io:format("morningcall:add error. Reason = ~p~n", [Reason]),
+			%% io:format("morningcall:add error. Reason = ~p~n", [Reason]),
 			DJobs
 	end.
 

@@ -190,7 +190,7 @@ out(_A, 'POST', ["service", SVID, "whisper", CidX, _TalkTo, Talked]) ->
 out(A, 'POST', ["service", SVID, "move", CidX]) ->
 	{Token, X, Y} = prepare_move({post, A}),
 
-	_Result = move:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
+	_Result = move_old:move({map_id, SVID, 1}, CidX, {pos, X, Y}),%%% TODO Write {map_id,SV,MAPID} appropriately !!
 
 	mout:return_json(mout:encode_json_array_with_result("ok",[]));
 

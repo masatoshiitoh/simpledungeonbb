@@ -11,7 +11,7 @@
 		mmoasp,
 		morningcall,
 		mout,
-		move,
+		move_old,
 		notice_mgr,
 		npc,
 		path_finder,

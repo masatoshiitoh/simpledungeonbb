@@ -78,20 +78,20 @@ loop(undefined, _) -> ok;	%% exit loop.
 loop(R, I) ->
 	{NewR, NewI} = receive
 		{system, X} -> 
-			io:format("task:system_call ~p~n", [X]),
+			%io:format("task:system_call ~p~n", [X]),
 			task:system_call(X, R, I);
 		{timer, X} ->
-			io:format("task:timer_call ~p~n", [X]),
+			%io:format("task:timer_call ~p~n", [X]),
 			task:timer_call(X, R, I);
 		{mapmove, X} ->
-			io:format("move:mapmove_call ~p~n", [X]),
-			move:mapmove_call(X,R,I);
+			%io:format("move_old:mapmove_call ~p~n", [X]),
+			move_old:mapmove_call(X,R,I);
 		{event, X} ->
-			io:format("check_killed ~p~n", [X]),
+			%io:format("check_killed ~p~n", [X]),
 			check_killed(X, R, I);
 
 		{_From, talk, Talker, MessageBody, Mode} ->
-			io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
+			%io:format("*** npc: get chat. ~p~n", [{talk, Talker, MessageBody, Mode}]),
 			{R,I}
 	end,
 	loop(NewR, NewI).

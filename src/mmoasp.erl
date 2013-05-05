@@ -28,6 +28,8 @@
 -export([gen_stat_from_cdata/1]).
 -export([get_player_character_template/2,do_change_password/7]).
 
+-export([setup_task_env/1]).
+
 -include("mmoasp.hrl").
 -import(lists, [foreach/2]).
 -include_lib("stdlib/include/qlc.hrl").
