@@ -1,0 +1,12 @@
+{application, simpledungeonbb,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { simpledungeonbb_app, []}},
+  {env, []}
+ ]}.

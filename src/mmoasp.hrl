@@ -24,7 +24,15 @@
 %% under development:
 %-record(task_env, {cid, cdata, event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined}).
 %-record(task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined}).
--record( task_env, {cid,        event_queue, stat_dict, token, utimer, waypoints = [], currpos = undefined, move_path_dict = dict:new()}).
+-record(task_env, {	cid :: string(),
+					event_queue,
+					stat_dict,
+					token,
+					utimer,
+					waypoints = [],
+					currpos = undefined,
+					move_path_dict = dict:new()
+					}).
 -record(idle,  {since_last_op = 0, last_op = erlang:now()}).
 
 -record(cdata,	{cid, name, attr}).
